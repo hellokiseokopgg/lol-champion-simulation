@@ -20,7 +20,7 @@ enum Commands {
 
         /// Second champion name (e.g., Darius)
         #[arg(short = 'b', long)]
-        champion_b: String,
+        champion_b: Option<String>,
 
         /// Number of iterations to run
         #[arg(short, long, default_value_t = 100)]
@@ -41,6 +41,7 @@ fn main() {
 
     match &cli.command {
         Commands::Simulate { champion_a, champion_b, iterations, html_out } => {
+            let champion_b = champion_b.clone().unwrap_or_else(|| "Dummy".to_string());
             info!("Initializing LoL Champion Simulation Engine...");
             info!("Matchup: {} vs {}", champion_a, champion_b);
             info!("Iterations: {}", iterations);
@@ -50,7 +51,7 @@ fn main() {
             let champ_a_module = registry.get(champion_a).unwrap_or_else(|| {
                 panic!("Champion {} not found in registry", champion_a);
             });
-            let champ_b_module = registry.get(champion_b).unwrap_or_else(|| {
+            let champ_b_module = registry.get(&champion_b).unwrap_or_else(|| {
                 panic!("Champion {} not found in registry", champion_b);
             });
 

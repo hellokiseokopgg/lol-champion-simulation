@@ -3,6 +3,7 @@ pub mod darius;
 pub mod garen;
 pub mod jinx;
 pub mod zed;
+pub mod dummy;
 
 use lol_core::champion::ChampionModule;
 use std::collections::HashMap;
@@ -24,6 +25,7 @@ impl ChampionRegistry {
         };
         registry.register(Box::new(ahri::AhriModule));
         registry.register(Box::new(darius::DariusModule));
+        registry.register(Box::new(dummy::DummyModule));
         registry.register(Box::new(garen::GarenModule));
         registry.register(Box::new(jinx::JinxModule));
         registry.register(Box::new(zed::ZedModule));
