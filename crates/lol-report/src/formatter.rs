@@ -188,7 +188,10 @@ impl Formatter {
 
         let mut json_items = String::from("{\n");
         for (i, (champ, items)) in collector.champion_items.iter().enumerate() {
-            let items_list = items.iter().map(|(id, name)| format!("{{\"id\": \"{}\", \"name\": \"{}\"}}", id, name)).collect::<Vec<_>>().join(", ");
+            let items_list = items.iter().map(|(id, name)| {
+                let localized = translator.translate_buff(name);
+                format!("{{\"id\": \"{}\", \"name\": \"{}\"}}", id, localized)
+            }).collect::<Vec<_>>().join(", ");
             json_items.push_str(&format!(r#"  "{}": [{}]"#, champ.0, items_list));
             if i < collector.champion_items.len() - 1 {
                 json_items.push_str(",\n");

@@ -671,9 +671,6 @@ actions+=/AutoAttack
 
 <script>
     const events = [
-  { "type": "item_acquisition", "time": 0, "target": "Garen", "item_id": "6631", "item_name": "Stridebreaker" },
-  { "type": "item_acquisition", "time": 0, "target": "Garen", "item_id": "3033", "item_name": "Mortal Reminder" },
-  { "type": "item_acquisition", "time": 0, "target": "Garen", "item_id": "3046", "item_name": "Phantom Dancer" },
   { "type": "cast", "time": 0, "source": "Garen", "ability": "Q" },
   { "type": "buff_apply", "time": 0, "target": "Garen", "buff_name": "결정적 일격" },
   { "type": "cast", "time": 0.25, "source": "Garen", "ability": "E" },
@@ -1062,8 +1059,8 @@ actions+=/AutoAttack
   { "type": "damage", "time": 59.60000000000028, "source": "Garen", "ability": "AutoAttack", "amount": 154.4262304135594 }
 ];
     const itemsData = {
-  "Garen": [{"id": "6631", "name": "Stridebreaker"}, {"id": "3033", "name": "Mortal Reminder"}, {"id": "3046", "name": "Phantom Dancer"}],
-  "Dummy": []
+  "Dummy": [],
+  "Garen": [{"id": "6631", "name": "발걸음 분쇄기"}, {"id": "3033", "name": "필멸자의 운명"}, {"id": "3046", "name": "유령 무희"}]
 };
     
     // UI Elements
@@ -1122,7 +1119,6 @@ actions+=/AutoAttack
     const buffs = events.filter(e => e.type === "buff_apply");
     let resourceUpdates = events.filter(e => e.type === "resource_update");
     const levelUps = events.filter(e => e.type === "level_up");
-    const itemAcquisitions = events.filter(e => e.type === "item_acquisition");
     
     let maxTime = 0;
     events.forEach(e => { if (e.time > maxTime) maxTime = e.time; });
@@ -1235,6 +1231,15 @@ actions+=/AutoAttack
             timelineContent.appendChild(node);
         });
 
+        function getItemId(champ, name) {
+            if (itemsData && itemsData[champ]) {
+                for (const item of itemsData[champ]) {
+                    if (item.name === name) return item.id;
+                }
+            }
+            return null;
+        }
+
         // 2.5 Item/Buff Effects
         let buffLastX = -999;
         let buffCurrentY = 120;
@@ -1249,7 +1254,17 @@ actions+=/AutoAttack
             node.style.display = 'flex';
             node.style.alignItems = 'center';
             node.style.justifyContent = 'center';
-            node.innerHTML = '<span style="color: #d8b4fe; font-size: 12px; font-weight: bold;">E</span>';
+            node.style.overflow = 'hidden';
+            
+            const itemId = getItemId(buff.target, buff.buff_name) || getItemId(buff.source, buff.buff_name);
+            if (itemId) {
+                const iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/item/${itemId}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
+                node.style.backgroundColor = 'transparent';
+                node.style.border = '1px solid #10b981'; // Green border for items
+                node.innerHTML = `<img src="${iconUrl}" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';"><span style="display:none; color: #d8b4fe; font-size: 12px; font-weight: bold;">E</span>`;
+            } else {
+                node.innerHTML = '<span style="color: #d8b4fe; font-size: 12px; font-weight: bold;">E</span>';
+            }
             
             const x = buff.time * PX_PER_SEC + OFFSET_X; // .event-icon CSS already centers it via translateX(-50%)
             
@@ -1298,42 +1313,6 @@ actions+=/AutoAttack
             
             node.addEventListener('mouseenter', (e) => {
                 tooltip.innerHTML = `<strong>Level Up: ${lvl.level}</strong><br>Time: <span class="time">${lvl.time.toFixed(3)}s</span><br>Target: ${lvl.target}`;
-                tooltip.style.opacity = 1;
-                tooltip.style.left = (e.clientX + 15) + 'px';
-                tooltip.style.top = (e.clientY + 15) + 'px';
-            });
-            node.addEventListener('mousemove', (e) => {
-                tooltip.style.left = (e.clientX + 15) + 'px';
-                tooltip.style.top = (e.clientY + 15) + 'px';
-            });
-            node.addEventListener('mouseleave', () => tooltip.style.opacity = 0);
-
-            timelineContent.appendChild(node);
-        });
-
-        // 2.7 Item Acquisition Events
-        itemAcquisitions.forEach(item => {
-            const node = document.createElement('div');
-            node.className = 'event-icon';
-            node.style.width = '24px';
-            node.style.height = '24px';
-            node.style.borderRadius = '4px';
-            node.style.border = '2px solid #10b981';
-            node.style.backgroundColor = '#064e3b';
-            node.style.display = 'flex';
-            node.style.alignItems = 'center';
-            node.style.justifyContent = 'center';
-            node.style.overflow = 'hidden';
-            
-            const iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/item/${item.item_id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
-            node.innerHTML = `<img src="${iconUrl}" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';"><span style="display:none; color: #6ee7b7; font-size: 12px; font-weight: bold;">I</span>`;
-            
-            const x = item.time * PX_PER_SEC + OFFSET_X;
-            node.style.left = x + 'px';
-            node.style.top = '170px'; // Bottom area
-            
-            node.addEventListener('mouseenter', (e) => {
-                tooltip.innerHTML = `<strong>Item Acquired: ${item.item_name}</strong><br>Time: <span class="time">${item.time.toFixed(3)}s</span><br>Target: ${item.target}`;
                 tooltip.style.opacity = 1;
                 tooltip.style.left = (e.clientX + 15) + 'px';
                 tooltip.style.top = (e.clientY + 15) + 'px';
@@ -1492,6 +1471,15 @@ actions+=/AutoAttack
             let details = '';
             let color = 'var(--text-main)';
 
+            function getItemIdLocal(champ, name) {
+                if (itemsData && itemsData[champ]) {
+                    for (const item of itemsData[champ]) {
+                        if (item.name === name) return item.id;
+                    }
+                }
+                return null;
+            }
+
             if (e.type === 'cast') {
                 eventType = 'Cast';
                 details = `Used <strong style="color:var(--color-green);">${e.ability}</strong>`;
@@ -1504,14 +1492,22 @@ actions+=/AutoAttack
                 color = '#f87171';
             } else if (e.type === 'buff_apply') {
                 eventType = 'Buff Apply';
-                details = `Gained <strong style="color:#a855f7;">${e.buff_name}</strong>`;
+                const itemId = getItemIdLocal(e.target, e.buff_name);
+                if (itemId) {
+                    const iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/item/${itemId}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
+                    details = `<img src="${iconUrl}" style="width:16px; height:16px; vertical-align:middle; border-radius:3px; margin-right:4px;" onerror="this.style.display='none';"> Gained <strong style="color:#a855f7;">${e.buff_name}</strong>`;
+                } else {
+                    details = `Gained <strong style="color:#a855f7;">${e.buff_name}</strong>`;
+                }
             } else if (e.type === 'buff_expire') {
                 eventType = 'Buff Expire';
-                details = `Lost <strong style="color:var(--text-muted);">${e.buff_name}</strong>`;
-            } else if (e.type === 'item_acquisition') {
-                eventType = 'Item Acquired';
-                const iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/item/${e.item_id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
-                details = `<img src="${iconUrl}" style="width:16px; height:16px; vertical-align:middle; border-radius:3px; margin-right:4px;" onerror="this.style.display='none';"> Acquired <strong style="color:var(--color-green);">${e.item_name}</strong>`;
+                const itemId = getItemIdLocal(e.target, e.buff_name);
+                if (itemId) {
+                    const iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/item/${itemId}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
+                    details = `<img src="${iconUrl}" style="width:16px; height:16px; vertical-align:middle; border-radius:3px; margin-right:4px;" onerror="this.style.display='none';"> Lost <strong style="color:var(--text-muted);">${e.buff_name}</strong>`;
+                } else {
+                    details = `Lost <strong style="color:var(--text-muted);">${e.buff_name}</strong>`;
+                }
             } else {
                 return; // Skip resource updates for log to keep it clean
             }
