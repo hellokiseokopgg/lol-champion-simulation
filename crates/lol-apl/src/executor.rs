@@ -63,7 +63,15 @@ impl lol_core::event::SimEvent for ActorTickEvent {
                             if let Some(state) = champ_inst.state().abilities.get_state(slot) {
                                 level = state.level;
                             }
-                            base_cooldown = ability.base_cooldown(level);
+                            
+                            if slot == lol_core::types::AbilitySlot::AutoAttack {
+                                let as_stat = champ_inst.state().stats.current.attack_speed;
+                                base_cooldown = 1.0 / as_stat.max(0.1);
+                            } else {
+                                let ah = champ_inst.state().stats.current.ability_haste;
+                                let cdr = ah / (100.0 + ah);
+                                base_cooldown = ability.base_cooldown(level) * (1.0 - cdr);
+                            }
                         }
                     }
                 }

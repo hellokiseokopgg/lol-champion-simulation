@@ -206,11 +206,24 @@ impl Ability for GarenE {
     fn cost(&self, _level: u32) -> f64 { 0.0 }
     fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, target: &ChampionId) {
         ctx.apply_buff(actor, Box::new(GarenEBuff));
+        
+        let bonus_as_percent = if let Some(champ_ref) = ctx.champions.get(actor) {
+            let champ = champ_ref.borrow();
+            let stats = champ.state().stats.current.clone();
+            let ratio = stats.attack_speed_ratio.unwrap_or(0.625);
+            ((stats.attack_speed / ratio) - 1.0).max(0.0)
+        } else {
+            0.0
+        };
+
+        let extra_ticks = (bonus_as_percent / 0.25).floor() as u32;
+        let ticks = 7 + extra_ticks;
+
         let e_event = JudgmentTickEvent {
             attacker: actor.clone(),
             defender: target.clone(),
-            ticks_remaining: 7,
-            tick_interval: 0.5,
+            ticks_remaining: ticks,
+            tick_interval: 3.0 / ticks as f64,
             base_damage: 20.0,
             ad_ratio: 0.4,
             hits_landed: 0,
