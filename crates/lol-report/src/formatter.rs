@@ -59,6 +59,9 @@ impl Formatter {
                 CombatEvent::Damage { source, .. } => {
                     actor_events.entry(source.clone()).or_insert_with(Vec::new).push(event.clone());
                 }
+                CombatEvent::BuffApply { target, .. } => {
+                    actor_events.entry(target.clone()).or_insert_with(Vec::new).push(event.clone());
+                }
                 _ => {}
             }
         }
@@ -76,6 +79,10 @@ impl Formatter {
                         let ms = (time.as_f64() * 1000.0) as u64;
                         let ability_str = format!("{:?}", ability);
                         out.push_str(&format!("    Dmg {} : {}, {}\n", ability_str, ms, ms + 100));
+                    }
+                    CombatEvent::BuffApply { time, buff_name, .. } => {
+                        let ms = (time.as_f64() * 1000.0) as u64;
+                        out.push_str(&format!("    Effect {} : {}, {}\n", buff_name, ms, ms + 150));
                     }
                     _ => {}
                 }
