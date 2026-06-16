@@ -5,9 +5,14 @@ pub struct AhriModule;
 impl ChampionModule for AhriModule {
     fn id(&self) -> &str { "Ahri" }
 
-    fn create_instance(&self, config: ChampionConfig) -> Box<dyn ChampionInstance> {
+    fn create_instance(&self, mut config: ChampionConfig) -> Box<dyn ChampionInstance> {
+        let bonus_stats = config.aggregate_bonus_stats();
+        let mut item_effects = Vec::new();
+        for item in &mut config.item_build.items {
+            item_effects.append(&mut item.effects);
+        }
         Box::new(AhriInstance {
-            state: ChampionState::new(config.base_stats.clone(), lol_core::types::ResourceType::Mana),
+            state: ChampionState::new(config.base_stats.clone(), lol_core::types::ResourceType::Mana, bonus_stats, item_effects),
         })
     }
 }
@@ -26,5 +31,9 @@ impl ChampionInstance for AhriInstance {
     
     fn get_ability(&self, _slot: lol_core::types::AbilitySlot) -> Option<&dyn lol_core::ability::Ability> {
         None
+    }
+    
+    fn take_damage(&mut self, amount: f64) -> bool {
+        self.state.health.reduce(amount)
     }
 }

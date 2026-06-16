@@ -13,14 +13,20 @@ impl ChampionModule for GarenModule {
         "Garen"
     }
 
-    fn create_instance(&self, config: ChampionConfig) -> Box<dyn ChampionInstance> {
+    fn create_instance(&self, mut config: ChampionConfig) -> Box<dyn ChampionInstance> {
         let mut base_stats = config.base_stats.clone();
         
         // Garen W Passive: Gains 30 Armor and MR at max stacks. We assume max stacks.
         base_stats.armor += 30.0;
         base_stats.magic_resist += 30.0;
         
-        let mut state = ChampionState::new(base_stats, lol_core::types::ResourceType::None);
+        let bonus_stats = config.aggregate_bonus_stats();
+        let mut item_effects = Vec::new();
+        for item in &mut config.item_build.items {
+            item_effects.append(&mut item.effects);
+        }
+        
+        let mut state = ChampionState::new(base_stats, lol_core::types::ResourceType::None, bonus_stats, item_effects);
         
         // Initialize abilities to rank 5 for testing (except R to 3)
         if let Some(q) = state.abilities.get_state_mut(AbilitySlot::Q) { q.level = 5; }
@@ -64,6 +70,10 @@ impl ChampionInstance for GarenInstance {
     
     fn get_ability(&self, slot: lol_core::types::AbilitySlot) -> Option<&dyn lol_core::ability::Ability> {
         self.abilities.iter().find(|a| a.slot() == slot).map(|a| a.as_ref())
+    }
+    
+    fn take_damage(&mut self, amount: f64) -> bool {
+        self.state.health.reduce(amount)
     }
 }
 
@@ -138,11 +148,9 @@ impl Ability for GarenQ {
     fn base_cooldown(&self, _level: u32) -> f64 { 8.0 }
     fn cost(&self, _level: u32) -> f64 { 0.0 }
     fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, _target: &ChampionId) {
+        ctx.apply_buff(actor, Box::new(GarenQBuff));
         if let Some(champ_ref) = ctx.champions.get(actor) {
-            let mut champ = champ_ref.borrow_mut();
-            champ.state_mut().buffs.apply_effect(Box::new(GarenQBuff), ctx.current_time);
-            champ.state_mut().abilities.reset_cooldown(AbilitySlot::AutoAttack);
-            champ.update_stats();
+            champ_ref.borrow_mut().state_mut().abilities.reset_cooldown(AbilitySlot::AutoAttack);
         }
     }
     fn clone_box(&self) -> Box<dyn Ability> { Box::new(self.clone()) }
@@ -161,10 +169,7 @@ impl Ability for GarenW {
     }
     fn cost(&self, _level: u32) -> f64 { 0.0 }
     fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, _target: &ChampionId) {
-        if let Some(champ_ref) = ctx.champions.get(actor) {
-            champ_ref.borrow_mut().state_mut().buffs.apply_effect(Box::new(GarenWBuff), ctx.current_time);
-            champ_ref.borrow_mut().update_stats();
-        }
+        ctx.apply_buff(actor, Box::new(GarenWBuff));
     }
     fn clone_box(&self) -> Box<dyn Ability> { Box::new(self.clone()) }
 }
@@ -177,9 +182,7 @@ impl Ability for GarenE {
     fn base_cooldown(&self, _level: u32) -> f64 { 9.0 }
     fn cost(&self, _level: u32) -> f64 { 0.0 }
     fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, target: &ChampionId) {
-        if let Some(champ_ref) = ctx.champions.get(actor) {
-            champ_ref.borrow_mut().state_mut().buffs.apply_effect(Box::new(GarenEBuff), ctx.current_time);
-        }
+        ctx.apply_buff(actor, Box::new(GarenEBuff));
         let e_event = JudgmentTickEvent {
             attacker: actor.clone(),
             defender: target.clone(),
@@ -275,9 +278,15 @@ impl Ability for GarenAutoAttack {
                 false,
             );
         }
+        
+        ctx.trigger_on_hit(actor, target, &damage_result);
+        ctx.trigger_on_physical_damage(actor, target, &damage_result);
 
         if let Some(d) = ctx.champions.get(target) {
-            d.borrow_mut().as_mut().state_mut().health.consume(damage_result.final_damage);
+            let is_dead = d.borrow_mut().take_damage(damage_result.final_damage);
+            if is_dead {
+                ctx.new_events.push((0.0, Box::new(lol_core::event::DeathEvent { target: target.clone() })));
+            }
         }
     }
     fn clone_box(&self) -> Box<dyn Ability> { Box::new(self.clone()) }
@@ -338,18 +347,20 @@ impl SimEvent for JudgmentTickEvent {
             );
         }
 
+        ctx.trigger_on_physical_damage(&self.attacker, &self.defender, &damage_result);
+
         if let Some(d) = ctx.champions.get(&self.defender) {
-            d.borrow_mut().as_mut().state_mut().health.consume(damage_result.final_damage);
+            let is_dead = d.borrow_mut().take_damage(damage_result.final_damage);
+            if is_dead {
+                ctx.new_events.push((0.0, Box::new(lol_core::event::DeathEvent { target: self.defender.clone() })));
+            }
         }
 
         let new_hits = self.hits_landed + 1;
         
         // Apply shred if 6 hits landed
         if new_hits == 6 {
-            if let Some(d) = ctx.champions.get(&self.defender) {
-                d.borrow_mut().as_mut().state_mut().buffs.apply_effect(Box::new(GarenEArmorShred), ctx.current_time);
-                d.borrow_mut().as_mut().update_stats();
-            }
+            ctx.apply_buff(&self.defender, Box::new(GarenEArmorShred));
         }
 
         if self.ticks_remaining > 1 {
@@ -411,7 +422,10 @@ impl SimEvent for DemacianJusticeEvent {
         }
 
         if let Some(d) = ctx.champions.get(&self.defender) {
-            d.borrow_mut().as_mut().state_mut().health.consume(damage_result.final_damage);
+            let is_dead = d.borrow_mut().take_damage(damage_result.final_damage);
+            if is_dead {
+                ctx.new_events.push((0.0, Box::new(lol_core::event::DeathEvent { target: self.defender.clone() })));
+            }
         }
     }
     fn name(&self) -> &str { "DemacianJustice" }

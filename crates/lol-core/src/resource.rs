@@ -27,7 +27,17 @@ impl Resource {
             self.current -= amount;
             true
         } else {
+            false
+        }
+    }
+
+    /// Reduces the resource by a specific amount, clamping at 0. Returns true if it hit 0.
+    pub fn reduce(&mut self, amount: f64) -> bool {
+        self.current -= amount;
+        if self.current <= 0.0 {
             self.current = 0.0;
+            true
+        } else {
             false
         }
     }

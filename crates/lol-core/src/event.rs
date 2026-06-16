@@ -28,6 +28,64 @@ pub struct SimContext {
     pub new_events: Vec<(f64, Box<dyn SimEvent>)>,
     /// Access to the champions in the simulation.
     pub champions: HashMap<crate::types::ChampionId, Rc<RefCell<Box<dyn crate::champion::ChampionInstance>>>>,
+    /// Flag to indicate if the simulation should terminate early (e.g., due to death).
+    pub is_simulation_over: bool,
+}
+
+impl SimContext {
+    /// Helper method to apply a buff to a champion and automatically schedule its expiration.
+    pub fn apply_buff(&mut self, target: &crate::types::ChampionId, effect: Box<dyn crate::buff::StatusEffect>) {
+        let duration = effect.duration();
+        let buff_id = effect.id();
+        let buff_name = effect.name().to_string();
+        
+        if let Some(champ_ref) = self.champions.get(target) {
+            let mut champ = champ_ref.borrow_mut();
+            champ.state_mut().buffs.apply_effect(effect, self.current_time);
+            champ.update_stats();
+        }
+        
+        if let Some(recorder) = &self.recorder {
+            recorder.borrow_mut().record_buff_apply(self.current_time, target.clone(), buff_name);
+        }
+        
+        self.new_events.push((duration, Box::new(BuffExpireEvent {
+            target: target.clone(),
+            buff_id,
+        })));
+    }
+
+    pub fn trigger_on_hit(&mut self, actor: &crate::types::ChampionId, target: &crate::types::ChampionId, damage_result: &crate::damage::DamageResult) {
+        let items = if let Some(champ_ref) = self.champions.get(actor) {
+            std::mem::take(&mut champ_ref.borrow_mut().state_mut().items)
+        } else {
+            return;
+        };
+
+        for effect in items.effects() {
+            effect.on_hit(self, actor, target, damage_result);
+        }
+
+        if let Some(champ_ref) = self.champions.get(actor) {
+            champ_ref.borrow_mut().state_mut().items = items;
+        }
+    }
+
+    pub fn trigger_on_physical_damage(&mut self, actor: &crate::types::ChampionId, target: &crate::types::ChampionId, damage_result: &crate::damage::DamageResult) {
+        let items = if let Some(champ_ref) = self.champions.get(actor) {
+            std::mem::take(&mut champ_ref.borrow_mut().state_mut().items)
+        } else {
+            return;
+        };
+
+        for effect in items.effects() {
+            effect.on_physical_damage(self, actor, target, damage_result);
+        }
+
+        if let Some(champ_ref) = self.champions.get(actor) {
+            champ_ref.borrow_mut().state_mut().items = items;
+        }
+    }
 }
 
 /// Trait representing an event that occurs at a specific point in simulation time.
@@ -37,6 +95,100 @@ pub trait SimEvent {
     
     /// Provide a human-readable name for the event, useful for debugging.
     fn name(&self) -> &str;
+}
+
+/// Event representing the death of a champion.
+pub struct DeathEvent {
+    pub target: crate::types::ChampionId,
+}
+
+impl SimEvent for DeathEvent {
+    fn execute(&self, ctx: &mut SimContext, _event_manager: &mut EventManager) {
+        if let Some(recorder) = &ctx.recorder {
+            recorder.borrow_mut().record_death(ctx.current_time, self.target.clone());
+        }
+        ctx.is_simulation_over = true;
+    }
+
+    fn name(&self) -> &str {
+        "DeathEvent"
+    }
+}
+
+/// Event representing the expiration of a buff/debuff.
+pub struct BuffExpireEvent {
+    pub target: crate::types::ChampionId,
+    pub buff_id: crate::types::EffectId,
+}
+
+impl SimEvent for BuffExpireEvent {
+    fn execute(&self, ctx: &mut SimContext, _event_manager: &mut EventManager) {
+        if let Some(champ_ref) = ctx.champions.get(&self.target) {
+            let mut champ = champ_ref.borrow_mut();
+            if champ.state_mut().buffs.remove_effect_if_expired(&self.buff_id, ctx.current_time) {
+                champ.update_stats();
+                
+                if let Some(recorder) = &ctx.recorder {
+                    recorder.borrow_mut().record_buff_expire(ctx.current_time, self.target.clone(), self.buff_id.0.clone());
+                }
+            }
+        }
+    }
+
+    fn name(&self) -> &str {
+        "BuffExpireEvent"
+    }
+}
+
+/// Event representing a tick of periodic damage (DoT).
+pub struct DoTTickEvent {
+    pub source: crate::types::ChampionId,
+    pub target: crate::types::ChampionId,
+    pub effect_id: crate::types::EffectId,
+    pub damage: f64,
+    pub damage_type: crate::types::DamageType,
+}
+
+impl SimEvent for DoTTickEvent {
+    fn execute(&self, ctx: &mut SimContext, _event_manager: &mut EventManager) {
+        // If the buff is no longer active, DoT stops ticking.
+        let is_active = if let Some(champ_ref) = ctx.champions.get(&self.target) {
+            champ_ref.borrow().state().buffs.has_effect_by_id(&self.effect_id, ctx.current_time)
+        } else {
+            false
+        };
+        
+        if !is_active {
+            return;
+        }
+
+        // Apply damage directly (simplified DoT mitigation could be applied here)
+        // Note: DoTs usually use the stats at the time of application, or dynamically update.
+        // We'll just apply raw damage directly to HP for now.
+        if let Some(champ_ref) = ctx.champions.get(&self.target) {
+            let mut champ = champ_ref.borrow_mut();
+            let is_dead = champ.take_damage(self.damage);
+            
+            if let Some(recorder) = &ctx.recorder {
+                recorder.borrow_mut().record_damage(
+                    ctx.current_time,
+                    self.source.clone(),
+                    self.target.clone(),
+                    crate::types::AbilitySlot::Passive, // Or the specific ability slot
+                    self.damage,
+                    false,
+                );
+            }
+            
+            if is_dead {
+                ctx.new_events.push((0.0, Box::new(DeathEvent { target: self.target.clone() })));
+            }
+        }
+    }
+
+    fn name(&self) -> &str {
+        "DoTTickEvent"
+    }
 }
 
 /// Internal wrapper for queued events to enforce ordering in the priority queue.
@@ -112,7 +264,7 @@ impl EventManager {
     /// Run the simulation event loop up to `max_time`.
     pub fn run(&mut self, ctx: &mut SimContext, max_time: SimTime) {
         while let Some(peeked) = self.queue.peek() {
-            if peeked.time > max_time {
+            if peeked.time > max_time || ctx.is_simulation_over {
                 break;
             }
 
@@ -190,7 +342,7 @@ mod tests {
             }),
         );
 
-        let mut ctx = SimContext { current_time: SimTime::new(0.0), recorder: None, new_events: Vec::new(), champions: HashMap::new() };
+        let mut ctx = SimContext { current_time: SimTime::new(0.0), recorder: None, new_events: Vec::new(), champions: HashMap::new(), is_simulation_over: false };
         manager.run(&mut ctx, SimTime::new(10.0));
 
         let executed = log.lock().unwrap();
@@ -220,7 +372,7 @@ mod tests {
             }),
         );
 
-        let mut ctx = SimContext { current_time: SimTime::new(0.0), recorder: None, new_events: Vec::new() };
+        let mut ctx = SimContext { current_time: SimTime::new(0.0), recorder: None, new_events: Vec::new(), champions: HashMap::new(), is_simulation_over: false };
         manager.run(&mut ctx, SimTime::new(2.0));
 
         let executed = log.lock().unwrap();

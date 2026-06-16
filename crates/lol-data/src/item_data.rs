@@ -56,6 +56,40 @@ pub struct ItemStats {
     pub ability_haste: f32,
 }
 
+impl ItemData {
+    pub fn into_item(self) -> lol_core::item::Item {
+        lol_core::item::Item {
+            id: self.id.clone(),
+            name: self.name,
+            stats: lol_core::stats::StatBlock {
+                attack_damage: self.stats.attack_damage as f64,
+                ability_power: self.stats.ability_power as f64,
+                armor: self.stats.armor as f64,
+                magic_resist: self.stats.magic_resist as f64,
+                health: self.stats.hp as f64,
+                mana: self.stats.mp as f64,
+                attack_speed: self.stats.attack_speed as f64,
+                crit_chance: self.stats.crit_chance as f64,
+                movement_speed: self.stats.move_speed_flat as f64,
+                ability_haste: self.stats.ability_haste as f64,
+                armor_pen_flat: self.stats.armor_pen_flat as f64,
+                armor_pen_percent: self.stats.armor_pen_percent as f64,
+                magic_pen_flat: self.stats.magic_pen_flat as f64,
+                magic_pen_percent: self.stats.magic_pen_percent as f64,
+                life_steal: self.stats.life_steal as f64,
+                ..Default::default()
+            },
+            effects: {
+                let mut effects: Vec<Box<dyn lol_core::item::ItemEffect>> = Vec::new();
+                if self.id == "black_cleaver" {
+                    effects.push(Box::new(lol_core::item::BlackCleaverEffect));
+                }
+                effects
+            },
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

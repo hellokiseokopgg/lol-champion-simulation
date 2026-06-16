@@ -47,6 +47,7 @@ impl GameSimulation {
             recorder,
             new_events: Vec::new(),
             champions: self.actors.clone(),
+            is_simulation_over: false,
         };
         
         let max_time = SimTime::new(self.config.max_duration);

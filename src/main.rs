@@ -55,8 +55,9 @@ fn main() {
             });
 
             // Load JSON data for champions
-            let data_a: lol_data::champion_data::ChampionData = serde_json::from_str(&std::fs::read_to_string(format!("data/champions/{}.json", champion_a.to_lowercase())).expect("Failed to load champion A data")).unwrap();
-            let data_b: lol_data::champion_data::ChampionData = serde_json::from_str(&std::fs::read_to_string(format!("data/champions/{}.json", champion_b.to_lowercase())).expect("Failed to load champion B data")).unwrap();
+            let loader = lol_data::loader::DataLoader::new("data");
+            let data_a = loader.load_champion(&champion_a.to_lowercase()).unwrap();
+            let data_b = loader.load_champion(&champion_b.to_lowercase()).unwrap();
 
             // Create instances
             let base_stats_a = lol_core::stats::StatBlock {
@@ -73,9 +74,15 @@ fn main() {
                 movement_speed: data_a.base_stats.move_speed as f64,
                 ..Default::default()
             };
+            let all_items = loader.load_all_items().unwrap_or_default();
+            let mut item_build_a = lol_core::item::ItemBuild::new();
+            if let Some(bc) = all_items.iter().find(|i| i.id == "black_cleaver") {
+                let _ = item_build_a.add_item(bc.clone().into_item());
+            }
+
             let config_a = ChampionConfig {
                 level: 1,
-                item_build: lol_core::item::ItemBuild::new(),
+                item_build: item_build_a,
                 rune_page: lol_core::rune::RunePage::default(),
                 base_stats: base_stats_a,
             };
@@ -117,13 +124,25 @@ fn main() {
             // For now, we mock the damage directly to test reporting
             let collector = std::rc::Rc::new(std::cell::RefCell::new(lol_report::collector::DataCollector::new()));
             
-            let apl_script = "
+            let garen_apl_script = "
 actions+=/R,if=target.health.pct<30
 actions+=/AutoAttack,if=buff.Judgment.down
 actions+=/Q,if=buff.Judgment.down
 actions+=/E
 actions+=/W
 ";
+            let darius_apl_script = "
+actions+=/R,if=target.buff.Hemorrhage.stack>4
+actions+=/Q,if=cooldown.AutoAttack.ready&buff.Crippling Strike.down
+actions+=/W
+actions+=/AutoAttack
+";
+            let apl_script = if champion_a.eq_ignore_ascii_case("darius") {
+                darius_apl_script
+            } else {
+                garen_apl_script
+            };
+
             let garen_apl = lol_apl::parser::ActionPriorityList::parse(apl_script).unwrap();
 
             let tick_event = lol_apl::executor::ActorTickEvent {

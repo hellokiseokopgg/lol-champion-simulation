@@ -1,37 +1,84 @@
 use crate::stats::StatBlock;
+use crate::event::SimContext;
+use crate::types::ChampionId;
+use crate::damage::DamageResult;
 
 /// Represents an effect provided by an item (e.g., passive or active).
 pub trait ItemEffect {
     fn name(&self) -> &str;
     
-    /// Triggered when the champion casts an ability.
-    fn on_ability_cast(&self, _sim: &mut crate::event::SimContext, _champion: &mut dyn crate::champion::ChampionInstance) {}
+    /// Triggered when the champion hits a target with a basic attack.
+    fn on_hit(&self, _sim: &mut SimContext, _actor: &ChampionId, _target: &ChampionId, _damage: &DamageResult) {}
+
+    /// Triggered when the champion deals physical damage (from AA or Ability).
+    fn on_physical_damage(&self, _sim: &mut SimContext, _actor: &ChampionId, _target: &ChampionId, _damage: &DamageResult) {}
     
-    /// Triggered when the champion's basic attack hits.
-    fn on_attack_hit(&self, _sim: &mut crate::event::SimContext, _champion: &mut dyn crate::champion::ChampionInstance, _target: &mut dyn crate::champion::ChampionInstance) {}
+    /// Triggered when the champion deals magic damage.
+    fn on_magic_damage(&self, _sim: &mut SimContext, _actor: &ChampionId, _target: &ChampionId, _damage: &DamageResult) {}
 }
 
-pub struct Spellblade {
-    pub base_ad_multiplier: f64, // e.g. 2.0 for Trinity Force
+/// Manages the item effects for a champion.
+#[derive(Default)]
+pub struct ItemManager {
+    effects: Vec<Box<dyn ItemEffect>>,
 }
 
-struct SpellbladeBuff;
-impl crate::buff::StatusEffect for SpellbladeBuff {
-    fn id(&self) -> crate::types::EffectId { crate::types::EffectId("Spellblade".to_string()) }
-    fn name(&self) -> &str { "Spellblade" }
-    fn duration(&self) -> f64 { 10.0 }
-    fn refresh_behavior(&self) -> crate::buff::RefreshBehavior { crate::buff::RefreshBehavior::RefreshDuration }
-    fn max_stacks(&self) -> u32 { 1 }
-    fn stat_modifiers(&self, _stacks: u32) -> crate::stats::StatBlock { crate::stats::StatBlock::new() } // Real implementation would add damage on hit
-}
-
-impl ItemEffect for Spellblade {
-    fn name(&self) -> &str {
-        "Spellblade"
+impl ItemManager {
+    pub fn new() -> Self {
+        Self {
+            effects: Vec::new(),
+        }
     }
 
-    fn on_ability_cast(&self, _sim: &mut crate::event::SimContext, champion: &mut dyn crate::champion::ChampionInstance) {
-        champion.state_mut().buffs.apply_effect(Box::new(SpellbladeBuff), _sim.current_time);
+    pub fn add_effect(&mut self, effect: Box<dyn ItemEffect>) {
+        self.effects.push(effect);
+    }
+    
+    pub fn effects(&self) -> &Vec<Box<dyn ItemEffect>> {
+        &self.effects
+    }
+}
+
+pub struct BlackCleaverShred;
+
+impl crate::buff::StatusEffect for BlackCleaverShred {
+    fn id(&self) -> crate::types::EffectId {
+        crate::types::EffectId("BlackCleaverShred".into())
+    }
+
+    fn name(&self) -> &str {
+        "Black Cleaver Shred"
+    }
+
+    fn duration(&self) -> f64 {
+        6.0
+    }
+
+    fn refresh_behavior(&self) -> crate::buff::RefreshBehavior {
+        crate::buff::RefreshBehavior::AddStack
+    }
+
+    fn max_stacks(&self) -> u32 {
+        6
+    }
+
+    fn stat_modifiers(&self, stacks: u32) -> StatBlock {
+        let mut stats = StatBlock::new();
+        // 4% armor reduction per stack, up to 24% at 6 stacks.
+        stats.armor_reduction_percent = 0.04 * stacks as f64;
+        stats
+    }
+}
+
+pub struct BlackCleaverEffect;
+
+impl ItemEffect for BlackCleaverEffect {
+    fn name(&self) -> &str {
+        "Black Cleaver"
+    }
+
+    fn on_physical_damage(&self, ctx: &mut SimContext, _actor: &ChampionId, target: &ChampionId, _damage: &DamageResult) {
+        ctx.apply_buff(target, Box::new(BlackCleaverShred));
     }
 }
 
@@ -127,4 +174,73 @@ mod tests {
         }
         assert_eq!(build.items.len(), 6);
     }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::stats::StatBlock;
+    use crate::types::{ResourceType, DamageType};
+    use crate::champion::ChampionState;
+
+    struct DummyChampionInstance {
+        state: ChampionState,
+    }
+    impl crate::champion::ChampionInstance for DummyChampionInstance {
+        fn state(&self) -> &ChampionState { &self.state }
+        fn state_mut(&mut self) -> &mut ChampionState { &mut self.state }
+        fn update_stats(&mut self) {}
+        fn get_ability(&self, _slot: crate::types::AbilitySlot) -> Option<&dyn crate::ability::Ability> { None }
+        fn take_damage(&mut self, amount: f64) -> bool { self.state.health.reduce(amount) }
+    }
+
+    #[test]
+    fn test_black_cleaver_shred() {
+        let mut sim = SimContext {
+            champions: std::collections::HashMap::new(),
+            current_time: crate::types::SimTime::new(0.0),
+            new_events: vec![],
+            is_simulation_over: false,
+            recorder: None,
+        };
+        let target_id = ChampionId("Target".into());
+        
+        let mut target_stats = StatBlock::new();
+        target_stats.armor = 100.0;
+        let mut target_state = ChampionState::new(target_stats, ResourceType::None, StatBlock::new(), vec![]);
+        target_state.stats.recalculate_current(&StatBlock::new());
+        
+        sim.champions.insert(target_id.clone(), std::rc::Rc::new(std::cell::RefCell::new(
+            Box::new(DummyChampionInstance { state: target_state }) as Box<dyn crate::champion::ChampionInstance>
+        )));
+        
+        let actor_id = ChampionId("Actor".into());
+        let bc_effect = BlackCleaverEffect;
+        let damage_result = crate::damage::DamageResult {
+            raw_damage: 10.0,
+            final_damage: 10.0,
+            mitigated_damage: 0.0,
+            is_critical: false,
+            damage_type: DamageType::Physical,
+        };
+        
+        // 1st hit
+        bc_effect.on_physical_damage(&mut sim, &actor_id, &target_id, &damage_result);
+        
+        let armor_reduction = sim.champions.get(&target_id).unwrap().borrow().state().buffs.aggregate_stats().armor_reduction_percent;
+        assert_eq!(armor_reduction, 0.04); // 1 stack = 4%
+        
+        // 6th hit
+        for _ in 0..5 {
+            bc_effect.on_physical_damage(&mut sim, &actor_id, &target_id, &damage_result);
+        }
+        
+        let armor_reduction_max = sim.champions.get(&target_id).unwrap().borrow().state().buffs.aggregate_stats().armor_reduction_percent;
+        assert_eq!(armor_reduction_max, 0.24); // 6 stacks = 24%
+        
+        // 7th hit (should not exceed 6 stacks)
+        bc_effect.on_physical_damage(&mut sim, &actor_id, &target_id, &damage_result);
+        let armor_reduction_cap = sim.champions.get(&target_id).unwrap().borrow().state().buffs.aggregate_stats().armor_reduction_percent;
+        assert_eq!(armor_reduction_cap, 0.24);
+    }
+}
 }

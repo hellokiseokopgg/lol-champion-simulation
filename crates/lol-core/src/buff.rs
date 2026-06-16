@@ -97,9 +97,37 @@ impl BuffManager {
         })
     }
 
+    /// Checks if a buff is active by id.
+    pub fn has_effect_by_id(&self, id: &EffectId, current_time: SimTime) -> bool {
+        if let Some(active) = self.active_effects.get(id) {
+            active.expiration_time > current_time
+        } else {
+            false
+        }
+    }
+
+    /// Gets the number of stacks of a buff by name. Returns 0 if not found or expired.
+    pub fn get_stacks_by_name(&self, name: &str, current_time: SimTime) -> u32 {
+        self.active_effects.values()
+            .find(|active| active.effect.name().eq_ignore_ascii_case(name) && active.expiration_time > current_time)
+            .map(|active| active.stacks)
+            .unwrap_or(0)
+    }
+
     /// Removes a specific effect entirely.
     pub fn remove_effect(&mut self, id: &EffectId) {
         self.active_effects.remove(id);
+    }
+
+    /// Removes a specific effect if it has expired at the given time. Returns true if removed.
+    pub fn remove_effect_if_expired(&mut self, id: &EffectId, current_time: SimTime) -> bool {
+        if let Some(active) = self.active_effects.get(id) {
+            if active.expiration_time <= current_time {
+                self.active_effects.remove(id);
+                return true;
+            }
+        }
+        false
     }
 
     /// Aggregates all stat modifiers from currently active effects.

@@ -18,6 +18,12 @@ pub struct ChampionConfig {
     pub base_stats: StatBlock,
 }
 
+impl ChampionConfig {
+    pub fn aggregate_bonus_stats(&self) -> StatBlock {
+        self.item_build.aggregate_stats() + self.rune_page.aggregate_stats()
+    }
+}
+
 /// The core mutable state of a champion during a simulation.
 pub struct ChampionState {
     /// The three-layer stats architecture for the champion.
@@ -30,16 +36,28 @@ pub struct ChampionState {
     pub buffs: BuffManager,
     /// Ability state tracking (cooldowns, levels).
     pub abilities: AbilitySlotManager,
+    /// Item effect management.
+    pub items: crate::item::ItemManager,
 }
 
 impl ChampionState {
-    pub fn new(base_stats: StatBlock, resource_type: ResourceType) -> Self {
+    pub fn new(base_stats: StatBlock, resource_type: ResourceType, bonus_stats: StatBlock, item_effects: Vec<Box<dyn crate::item::ItemEffect>>) -> Self {
+        let mut stats = ThreeLayerStats::new(base_stats.clone());
+        stats.recalculate_initial(&bonus_stats);
+        stats.recalculate_current(&StatBlock::new()); // Make sure current reflects initial
+        
+        let mut item_manager = crate::item::ItemManager::new();
+        for effect in item_effects {
+            item_manager.add_effect(effect);
+        }
+        
         Self {
-            stats: ThreeLayerStats::new(base_stats.clone()),
-            resource: Resource::new(base_stats.mana, resource_type),
-            health: Resource::new(base_stats.health, ResourceType::None),
+            resource: Resource::new(stats.current.mana, resource_type),
+            health: Resource::new(stats.current.health, ResourceType::None),
+            stats,
             buffs: BuffManager::new(),
             abilities: AbilitySlotManager::new(),
+            items: item_manager,
         }
     }
 }
@@ -57,6 +75,9 @@ pub trait ChampionInstance {
     
     /// Returns a reference to the ability in the given slot, if it exists.
     fn get_ability(&self, slot: crate::types::AbilitySlot) -> Option<&dyn crate::ability::Ability>;
+    
+    /// Applies damage to the champion's health pool. Returns true if the champion is dead.
+    fn take_damage(&mut self, amount: f64) -> bool;
 }
 
 /// A factory trait for generating instances of a specific champion.
