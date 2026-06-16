@@ -76,7 +76,7 @@ fn main() {
             };
             let all_items = loader.load_all_items().unwrap_or_default();
             let mut item_build_a = lol_core::item::ItemBuild::new();
-            if let Some(bc) = all_items.iter().find(|i| i.id == "black_cleaver") {
+            if let Some(bc) = all_items.iter().find(|i| i.id == "3071") {
                 let _ = item_build_a.add_item(bc.clone().into_item());
             }
 

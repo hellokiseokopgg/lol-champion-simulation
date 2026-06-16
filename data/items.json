@@ -1,6 +1,6 @@
 [
   {
-    "id": "long_sword",
+    "id": "1036",
     "name": "Long Sword",
     "cost": 350,
     "stats": {
@@ -8,7 +8,7 @@
     }
   },
   {
-    "id": "black_cleaver",
+    "id": "3071",
     "name": "Black Cleaver",
     "cost": 3000,
     "stats": {
@@ -18,7 +18,7 @@
     }
   },
   {
-    "id": "infinity_edge",
+    "id": "3031",
     "name": "Infinity Edge",
     "cost": 3400,
     "stats": {

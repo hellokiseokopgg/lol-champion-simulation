@@ -81,7 +81,7 @@ impl ItemData {
             },
             effects: {
                 let mut effects: Vec<Box<dyn lol_core::item::ItemEffect>> = Vec::new();
-                if self.id == "black_cleaver" {
+                if self.id == "3071" || self.id == "black_cleaver" {
                     effects.push(Box::new(lol_core::item::BlackCleaverEffect));
                 }
                 effects
