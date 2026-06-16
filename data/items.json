@@ -45,5 +45,14 @@
       "crit_chance": 0.25,
       "armor_pen_percent": 0.30
     }
+  },
+  {
+    "id": "3046",
+    "name": "Phantom Dancer",
+    "cost": 2600,
+    "stats": {
+      "attack_speed": 0.60,
+      "crit_chance": 0.20
+    }
   }
 ]
