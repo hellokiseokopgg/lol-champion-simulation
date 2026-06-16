@@ -23,6 +23,7 @@ impl Formatter {
                 }
             }
             writeln!(output, "  Total Damage: {:.1}", champ_stat.total_damage).unwrap();
+            writeln!(output, "  Damage Taken: {:.1}", champ_stat.damage_taken).unwrap();
             writeln!(output, "  DPS: {:.1}", champ_stat.dps).unwrap();
             writeln!(output, "  Ability Breakdown:").unwrap();
             

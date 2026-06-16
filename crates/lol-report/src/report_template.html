@@ -685,14 +685,18 @@
         for (const [champ, items] of Object.entries(itemsData)) {
             const col = document.createElement('div');
             col.className = 'col';
-            const champImgUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/champion/${champ}.png?image=c_crop,h_103,w_103,x_9,y_9/q_auto:good,f_webp,w_160,h_160&v=1612`;
+            const isDummy = champ.toLowerCase() === "dummy";
+            const champImgUrl = isDummy 
+                ? 'https://raw.communitydragon.org/latest/game/assets/characters/practicetool_targetdummy/hud/practicetool_targetdummy_circle.png'
+                : `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/champion/${champ}.png?image=c_crop,h_103,w_103,x_9,y_9/q_auto:good,f_webp,w_160,h_160&v=1612`;
+            
             let html = `
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <div style="width: 48px; height: 48px; border-radius: 50%; border: 2px solid #4b5563; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.4); background: #2a2b36; display: flex; align-items: center; justify-content: center;">
                         <img src="${champImgUrl}" alt="${champ}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                         <span style="display: none; font-size: 14px; font-weight: bold; color: #e5e7eb;">${champ.substring(0, 2).toUpperCase()}</span>
                     </div>
-                    <h4 style="margin: 0; font-size: 16px;">${champ}</h4>
+                    <h4 style="margin: 0; font-size: 16px;">${isDummy ? 'Target Dummy' : champ}</h4>
                 </div>
             `;
             if (items.length === 0) {

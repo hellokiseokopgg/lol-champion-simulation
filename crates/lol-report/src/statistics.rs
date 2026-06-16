@@ -5,6 +5,7 @@ use std::collections::HashMap;
 #[derive(Debug, Default)]
 pub struct ChampionStats {
     pub total_damage: f64,
+    pub damage_taken: f64,
     pub dps: f64,
     pub ability_breakdown: HashMap<AbilitySlot, f64>,
 }
@@ -31,19 +32,25 @@ impl Statistics {
 
         for event in &collector.events {
             match event {
-                CombatEvent::Damage { time, source, amount, ability, .. } => {
+                CombatEvent::Damage { time, source, target, amount, ability, .. } => {
                     let time_val = time.0.into_inner();
                     if time_val > end_time {
                         end_time = time_val;
                     }
 
-                    let champ_stat = stats
+                    let source_stat = stats
                         .champion_stats
                         .entry(source.clone())
                         .or_insert_with(ChampionStats::default);
 
-                    champ_stat.total_damage += amount;
-                    *champ_stat.ability_breakdown.entry(*ability).or_insert(0.0) += amount;
+                    source_stat.total_damage += amount;
+                    *source_stat.ability_breakdown.entry(*ability).or_insert(0.0) += amount;
+
+                    let target_stat = stats
+                        .champion_stats
+                        .entry(target.clone())
+                        .or_insert_with(ChampionStats::default);
+                    target_stat.damage_taken += amount;
                 }
                 CombatEvent::Cast { time, .. } | CombatEvent::Death { time, .. } => {
                     let time_val = time.0.into_inner();
