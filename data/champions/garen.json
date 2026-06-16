@@ -1,0 +1,60 @@
+{
+    "id": "garen",
+    "name": "Garen",
+    "base_stats": {
+        "hp": 690,
+        "mp": 0,
+        "hp_regen": 8,
+        "mp_regen": 0,
+        "armor": 38,
+        "magic_resist": 32,
+        "attack_damage": 69,
+        "attack_speed": 0.625,
+        "attack_range": 175,
+        "move_speed": 340
+    },
+    "growth_stats": {
+        "hp": 98,
+        "mp": 0,
+        "hp_regen": 0.5,
+        "mp_regen": 0,
+        "armor": 4.2,
+        "magic_resist": 2.05,
+        "attack_damage": 4.5,
+        "attack_speed": 0.0365
+    },
+    "skills": [
+        {
+            "id": "garen_q",
+            "name": "Decisive Strike",
+            "base_damage": [30, 60, 90, 120, 150],
+            "cooldowns": [8, 8, 8, 8, 8],
+            "ad_ratio": [0.5, 0.5, 0.5, 0.5, 0.5],
+            "ap_ratio": [0, 0, 0, 0, 0]
+        },
+        {
+            "id": "garen_w",
+            "name": "Courage",
+            "base_damage": [0, 0, 0, 0, 0],
+            "cooldowns": [23, 21, 19, 17, 15],
+            "ad_ratio": [0, 0, 0, 0, 0],
+            "ap_ratio": [0, 0, 0, 0, 0]
+        },
+        {
+            "id": "garen_e",
+            "name": "Judgment",
+            "base_damage": [4, 8, 12, 16, 20],
+            "cooldowns": [9, 9, 9, 9, 9],
+            "ad_ratio": [0.32, 0.34, 0.36, 0.38, 0.40],
+            "ap_ratio": [0, 0, 0, 0, 0]
+        },
+        {
+            "id": "garen_r",
+            "name": "Demacian Justice",
+            "base_damage": [150, 300, 450],
+            "cooldowns": [120, 100, 80],
+            "ad_ratio": [0, 0, 0],
+            "ap_ratio": [0, 0, 0]
+        }
+    ]
+}

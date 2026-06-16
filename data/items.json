@@ -1,0 +1,29 @@
+[
+  {
+    "id": "long_sword",
+    "name": "Long Sword",
+    "cost": 350,
+    "stats": {
+      "attack_damage": 10.0
+    }
+  },
+  {
+    "id": "black_cleaver",
+    "name": "Black Cleaver",
+    "cost": 3000,
+    "stats": {
+      "attack_damage": 55.0,
+      "hp": 400.0,
+      "ability_haste": 20.0
+    }
+  },
+  {
+    "id": "infinity_edge",
+    "name": "Infinity Edge",
+    "cost": 3400,
+    "stats": {
+      "attack_damage": 65.0,
+      "crit_chance": 0.20
+    }
+  }
+]

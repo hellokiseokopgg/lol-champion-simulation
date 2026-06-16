@@ -1,0 +1,22 @@
+[
+  {
+    "id": "conqueror",
+    "name": "Conqueror",
+    "tree": "Precision",
+    "stats": {}
+  },
+  {
+    "id": "lethal_tempo",
+    "name": "Lethal Tempo",
+    "tree": "Precision",
+    "stats": {}
+  },
+  {
+    "id": "grasp_of_the_undying",
+    "name": "Grasp of the Undying",
+    "tree": "Resolve",
+    "stats": {
+      "hp": 5.0
+    }
+  }
+]

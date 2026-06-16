@@ -1,0 +1,11 @@
+[package]
+name = "lol-report"
+version = "0.1.0"
+edition = "2024"
+description = "Simulation result collection, statistics, and report formatting"
+
+[dependencies]
+lol-core = { path = "../lol-core" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tracing = "0.1"

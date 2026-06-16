@@ -1,0 +1,27 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/lol-core",
+    "crates/lol-data",
+    "crates/lol-champions",
+    "crates/lol-apl",
+    "crates/lol-report",
+]
+
+[package]
+name = "lol-champion-simulation"
+version = "0.1.0"
+edition = "2024"
+description = "League of Legends 1v1 champion combat simulation engine"
+license = "MIT"
+
+[dependencies]
+lol-core = { path = "crates/lol-core" }
+lol-data = { path = "crates/lol-data" }
+lol-champions = { path = "crates/lol-champions" }
+lol-apl = { path = "crates/lol-apl" }
+lol-report = { path = "crates/lol-report" }
+clap = { version = "4", features = ["derive"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+serde_json = "1"

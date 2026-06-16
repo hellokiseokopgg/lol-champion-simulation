@@ -1,0 +1,26 @@
+{
+    "id": "Jinx",
+    "name": "Jinx",
+    "base_stats": {
+        "health": 630.0,
+        "health_regen": 3.75,
+        "mana": 260.0,
+        "mana_regen": 6.7,
+        "attack_damage": 59.0,
+        "ability_power": 0.0,
+        "armor": 26.0,
+        "magic_resist": 30.0,
+        "attack_speed": 0.625,
+        "attack_speed_ratio": 0.625,
+        "movement_speed": 325.0,
+        "crit_chance": 0.0,
+        "crit_damage": 1.75,
+        "armor_pen_flat": 0.0,
+        "armor_pen_percent": 0.0,
+        "magic_pen_flat": 0.0,
+        "magic_pen_percent": 0.0,
+        "ability_haste": 0.0,
+        "life_steal": 0.0,
+        "omnivamp": 0.0
+    }
+}

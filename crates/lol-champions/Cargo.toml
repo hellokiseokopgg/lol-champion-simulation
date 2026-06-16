@@ -1,0 +1,10 @@
+[package]
+name = "lol-champions"
+version = "0.1.0"
+edition = "2024"
+description = "Champion module implementations"
+
+[dependencies]
+lol-core = { path = "../lol-core" }
+lol-data = { path = "../lol-data" }
+tracing = "0.1"

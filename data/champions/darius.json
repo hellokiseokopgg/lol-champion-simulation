@@ -1,0 +1,27 @@
+{
+    "id": "darius",
+    "name": "Darius",
+    "base_stats": {
+        "hp": 652,
+        "mp": 263,
+        "hp_regen": 10,
+        "mp_regen": 6.6,
+        "armor": 39,
+        "magic_resist": 32,
+        "attack_damage": 64,
+        "attack_speed": 0.625,
+        "attack_range": 175,
+        "move_speed": 340
+    },
+    "growth_stats": {
+        "hp": 114,
+        "mp": 57.5,
+        "hp_regen": 0.95,
+        "mp_regen": 0.35,
+        "armor": 5.2,
+        "magic_resist": 2.05,
+        "attack_damage": 5.0,
+        "attack_speed": 0.01
+    },
+    "skills": []
+}

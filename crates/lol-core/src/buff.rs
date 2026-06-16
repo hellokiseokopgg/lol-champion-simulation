@@ -1,0 +1,187 @@
+use std::collections::HashMap;
+
+use crate::stats::StatBlock;
+use crate::types::{EffectId, SimTime};
+
+/// How a buff behaves when re-applied while already active.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RefreshBehavior {
+    /// Resets the duration to maximum, does not stack.
+    RefreshDuration,
+    /// Adds a stack, up to a maximum.
+    AddStack,
+    /// Does nothing if already active.
+    Ignore,
+    /// Adds the duration of the new buff to the existing duration.
+    ExtendDuration,
+}
+
+/// A trait for effects that can be applied to champions (Buffs or Debuffs).
+pub trait StatusEffect {
+    fn id(&self) -> EffectId;
+    fn name(&self) -> &str;
+    fn duration(&self) -> f64;
+    fn refresh_behavior(&self) -> RefreshBehavior;
+    fn max_stacks(&self) -> u32;
+    
+    /// Calculate stat modifiers this effect provides based on current stacks.
+    fn stat_modifiers(&self, stacks: u32) -> StatBlock;
+}
+
+/// Tracks an active instance of a status effect.
+pub struct ActiveEffect {
+    pub effect: Box<dyn StatusEffect>,
+    pub expiration_time: SimTime,
+    pub stacks: u32,
+}
+
+/// Manages active buffs and debuffs on a champion.
+pub struct BuffManager {
+    active_effects: HashMap<EffectId, ActiveEffect>,
+}
+
+impl Default for BuffManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl BuffManager {
+    pub fn new() -> Self {
+        Self {
+            active_effects: HashMap::new(),
+        }
+    }
+
+    /// Applies a status effect. Updates duration or stacks if it already exists according to its refresh behavior.
+    pub fn apply_effect(&mut self, effect: Box<dyn StatusEffect>, current_time: SimTime) {
+        let id = effect.id();
+        let duration = effect.duration();
+        let expiration_time = current_time + duration;
+        
+        if let Some(active) = self.active_effects.get_mut(&id) {
+            match effect.refresh_behavior() {
+                RefreshBehavior::RefreshDuration => {
+                    active.expiration_time = expiration_time;
+                }
+                RefreshBehavior::AddStack => {
+                    active.expiration_time = expiration_time;
+                    active.stacks = (active.stacks + 1).min(effect.max_stacks());
+                }
+                RefreshBehavior::Ignore => {}
+                RefreshBehavior::ExtendDuration => {
+                    active.expiration_time = active.expiration_time + duration;
+                }
+            }
+        } else {
+            self.active_effects.insert(
+                id,
+                ActiveEffect {
+                    effect,
+                    expiration_time,
+                    stacks: 1,
+                },
+            );
+        }
+    }
+
+    /// Cleans up expired effects at the given simulation time.
+    pub fn cleanup_expired(&mut self, current_time: SimTime) {
+        self.active_effects.retain(|_, active| active.expiration_time > current_time);
+    }
+
+    /// Removes a specific effect entirely.
+    pub fn remove_effect(&mut self, id: &EffectId) {
+        self.active_effects.remove(id);
+    }
+
+    /// Aggregates all stat modifiers from currently active effects.
+    pub fn aggregate_stats(&self) -> StatBlock {
+        let mut total_stats = StatBlock::new();
+        for active in self.active_effects.values() {
+            total_stats = total_stats + active.effect.stat_modifiers(active.stacks);
+        }
+        total_stats
+    }
+
+    /// Returns the number of stacks of a specific effect, or 0 if not active.
+    pub fn get_stacks(&self, id: &EffectId) -> u32 {
+        self.active_effects.get(id).map_or(0, |e| e.stacks)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct TestBuff {
+        id: EffectId,
+        behavior: RefreshBehavior,
+        max_stacks: u32,
+        duration: f64,
+        ad_per_stack: f64,
+    }
+
+    impl StatusEffect for TestBuff {
+        fn id(&self) -> EffectId { self.id.clone() }
+        fn name(&self) -> &str { "Test Buff" }
+        fn duration(&self) -> f64 { self.duration }
+        fn refresh_behavior(&self) -> RefreshBehavior { self.behavior }
+        fn max_stacks(&self) -> u32 { self.max_stacks }
+        fn stat_modifiers(&self, stacks: u32) -> StatBlock {
+            let mut stats = StatBlock::new();
+            stats.attack_damage = self.ad_per_stack * stacks as f64;
+            stats
+        }
+    }
+
+    #[test]
+    fn test_buff_stacking() {
+        let mut manager = BuffManager::new();
+        let buff_id = EffectId("test_stack".to_string());
+        
+        let make_buff = || Box::new(TestBuff {
+            id: buff_id.clone(),
+            behavior: RefreshBehavior::AddStack,
+            max_stacks: 3,
+            duration: 5.0,
+            ad_per_stack: 10.0,
+        });
+
+        manager.apply_effect(make_buff(), SimTime::new(0.0));
+        assert_eq!(manager.get_stacks(&buff_id), 1);
+        assert_eq!(manager.aggregate_stats().attack_damage, 10.0);
+
+        manager.apply_effect(make_buff(), SimTime::new(2.0));
+        assert_eq!(manager.get_stacks(&buff_id), 2);
+        assert_eq!(manager.aggregate_stats().attack_damage, 20.0);
+
+        // Max stacks is 3
+        manager.apply_effect(make_buff(), SimTime::new(3.0));
+        manager.apply_effect(make_buff(), SimTime::new(4.0));
+        assert_eq!(manager.get_stacks(&buff_id), 3);
+        assert_eq!(manager.aggregate_stats().attack_damage, 30.0);
+    }
+
+    #[test]
+    fn test_buff_expiration() {
+        let mut manager = BuffManager::new();
+        let buff_id = EffectId("test_exp".to_string());
+        
+        let buff = Box::new(TestBuff {
+            id: buff_id.clone(),
+            behavior: RefreshBehavior::RefreshDuration,
+            max_stacks: 1,
+            duration: 5.0,
+            ad_per_stack: 10.0,
+        });
+
+        manager.apply_effect(buff, SimTime::new(0.0));
+        
+        manager.cleanup_expired(SimTime::new(4.0));
+        assert_eq!(manager.get_stacks(&buff_id), 1);
+
+        manager.cleanup_expired(SimTime::new(5.1));
+        assert_eq!(manager.get_stacks(&buff_id), 0);
+    }
+}
