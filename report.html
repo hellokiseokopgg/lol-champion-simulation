@@ -498,16 +498,16 @@
 
     <!-- Simulation Options -->
     <div class="panel">
-        <div class="panel-header">
+        <div class="panel-header" style="cursor: pointer;" onclick="const b=this.nextElementSibling; const i=this.querySelector('.toggle-icon'); if(b.style.display==='none'){b.style.display='flex'; i.innerHTML='&#9660;';}else{b.style.display='none'; i.innerHTML='&#9654;';}">
             <div class="panel-header-left">
-                <span>&#11167;</span> Simulation Options <span class="badge purple" style="margin-left: 8px;">BETA</span>
+                <span class="toggle-icon">&#9654;</span> Simulation Options <span class="badge" style="margin-left: 8px; background: #374151; color: #9ca3af; border: 1px dashed #4b5563;">TODO</span>
             </div>
             <div class="panel-header-right">
                 <span class="badge blue">Monte Carlo (1000)</span>
                 <span class="badge green">Realistic</span>
             </div>
         </div>
-        <div class="panel-body">
+        <div class="panel-body" style="display: none;">
             <div class="col">
                 <h4>Proc Effects</h4>
                 <p>Simulate trinket procs using expected value calculation.</p>
@@ -560,13 +560,9 @@
         <div class="timeline-header">
             <div class="timeline-title">Rotation Timeline</div>
             <div class="timeline-controls">
-                <label class="checkbox-group" style="opacity:0.5;"><input type="checkbox" id="cbCasts" checked disabled> Casts</label>
-                <label class="checkbox-group" style="opacity:0.5;"><input type="checkbox" id="cbResource" checked disabled> Resource</label>
-                <span style="margin-left: 10px;">Zoom</span>
+                <span>Zoom</span>
                 <input type="range" class="zoom-slider" id="zoomSlider" min="20" max="200" value="80">
-                <span id="headerStats" style="margin-left: 10px;">45 casts | 60s | 1500ms GCD</span>
-                <div style="width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--border-color); display:flex; align-items:center; justify-content:center; margin-left: 10px; opacity: 0.5;"></div>
-                <button class="btn-outline" disabled style="opacity:0.5; cursor:not-allowed;">&#10515; PNG</button>
+                <span id="headerStats" style="margin-left: 10px;">45 casts | 60s | 1500ms GCD (Global Cooldown)</span>
             </div>
         </div>
         
@@ -611,9 +607,7 @@
 
         <div class="playback-bar">
             <div class="play-controls">
-                <button class="play-btn" disabled style="opacity:0.5; cursor:not-allowed;" title="Not implemented">&#128065;</button>
                 <button class="play-btn" id="playBtn">&#9654;</button>
-                <span style="font-size: 12px; color: var(--text-muted); opacity: 0.5;" title="Not implemented">1x</span>
                 <button class="play-btn" id="prevBtn">&lt;</button>
             </div>
             <input type="range" class="time-slider" id="mainScrubber" value="0" min="0" max="100" step="0.1">
@@ -838,7 +832,7 @@
     events.forEach(e => { if (e.time > maxTime) maxTime = e.time; });
     const duration = maxTime > 0 ? maxTime : 60;
     
-    document.getElementById('headerStats').innerText = `${casts.length} casts | ${duration.toFixed(0)}s | 1.50s GCD`;
+    document.getElementById('headerStats').innerText = `${casts.length} casts | ${duration.toFixed(0)}s | 1.50s GCD (Global Cooldown)`;
     document.getElementById('cardFooter').innerHTML = `<strong>${casts.length}</strong> casts &nbsp;*&nbsp; <strong class="f-green">100%</strong> GCD uptime &nbsp;*&nbsp; <strong class="f-orange">0</strong> wasted &nbsp;*&nbsp; <strong>1.50s</strong> GCD`;
 
     mainScrubber.max = duration + 5;
@@ -908,13 +902,27 @@
                 node.style.backgroundImage = `url('https://opgg-static.akamaized.net/meta/images/lol/16.12.1/spell/${cast.source}${cast.ability}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612')`;
             }
 
-            // Resource Delta Label (Mocked for visuals)
-            const isPos = Math.random() > 0.5;
-            const deltaVal = Math.floor(Math.random() * 20) + 5;
-            const deltaDiv = document.createElement('div');
-            deltaDiv.className = 'resource-delta ' + (isPos ? 'positive' : 'negative');
-            deltaDiv.innerText = (isPos ? '+' : '-') + deltaVal;
-            node.appendChild(deltaDiv);
+            // Display resource delta if the champion uses resources
+            if (resourceUpdates.length > 0) {
+                let deltaVal = 0;
+                for (let i = 0; i < resourceUpdates.length; i++) {
+                    let r = resourceUpdates[i];
+                    if (Math.abs(r.time - cast.time) < 0.05) {
+                        let prevAmount = i > 0 ? resourceUpdates[i-1].amount : 100; // default max 100 for percentage
+                        deltaVal = r.amount - prevAmount;
+                        break;
+                    }
+                }
+                
+                if (Math.abs(deltaVal) > 0.1) {
+                    const isPos = deltaVal > 0;
+                    const deltaDiv = document.createElement('div');
+                    deltaDiv.className = 'resource-delta ' + (isPos ? 'positive' : 'negative');
+                    deltaDiv.innerText = (isPos ? '+' : '') + Math.floor(deltaVal);
+                    node.appendChild(deltaDiv);
+                }
+            }
+
 
             node.addEventListener('mouseenter', (e) => {
                 tooltip.innerHTML = `<strong>${cast.ability}</strong>Cast: <span class="time">${cast.time.toFixed(3)}s</span>`;
@@ -985,9 +993,7 @@
         
         // Auto scroll timeline
         const scrollLeft = playTime * PX_PER_SEC + OFFSET_X - (scrollWrapper.clientWidth / 2);
-        if (scrollLeft > 0 && isPlaying) {
-            scrollWrapper.scrollLeft = scrollLeft;
-        }
+        scrollWrapper.scrollLeft = Math.max(0, scrollLeft);
 
         // Highlight Combat Log
         if (window.sortedLogEvents) {
@@ -1012,7 +1018,7 @@
                         if (container) {
                             // Calculate relative offset
                             const targetTop = newRow.offsetTop - container.clientHeight / 2;
-                            container.scrollTo({ top: targetTop, behavior: 'smooth' });
+                            container.scrollTo({ top: targetTop, behavior: isPlaying ? 'smooth' : 'auto' });
                         }
                     }
                 }
