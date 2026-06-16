@@ -169,12 +169,11 @@ impl Formatter {
                         time.as_f64(), target.0, level
                     ))
                 }
-                CombatEvent::ItemAcquisition { time, target, item_name } => {
-                    // Try to translate if we had a dictionary, else use raw
+                CombatEvent::ItemAcquisition { time, target, item_id, item_name } => {
                     let localized = translator.translate_buff(&item_name); 
                     Some(format!(
-                        r#"  {{ "type": "item_acquisition", "time": {}, "target": "{}", "item_name": "{}" }}"#,
-                        time.as_f64(), target.0, localized
+                        r#"  {{ "type": "item_acquisition", "time": {}, "target": "{}", "item_id": "{}", "item_name": "{}" }}"#,
+                        time.as_f64(), target.0, item_id, localized
                     ))
                 }
             };

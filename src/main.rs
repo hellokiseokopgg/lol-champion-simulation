@@ -222,8 +222,15 @@ fn main() {
                 sim.add_actor(id_b.clone(), inst_b);
 
                 let collector = std::rc::Rc::new(std::cell::RefCell::new(lol_report::collector::DataCollector::new()));
-                collector.borrow_mut().champion_items.insert(id_a.clone(), items_a);
-                collector.borrow_mut().champion_items.insert(id_b.clone(), items_b);
+                collector.borrow_mut().champion_items.insert(id_a.clone(), items_a.clone());
+                collector.borrow_mut().champion_items.insert(id_b.clone(), items_b.clone());
+
+                for (id, name) in items_a {
+                    collector.borrow_mut().record_item_acquisition(lol_core::types::SimTime::new(0.0), id_a.clone(), id.clone(), name.clone());
+                }
+                for (id, name) in items_b {
+                    collector.borrow_mut().record_item_acquisition(lol_core::types::SimTime::new(0.0), id_b.clone(), id.clone(), name.clone());
+                }
 
                 let tick_event = lol_apl::executor::ActorTickEvent {
                     actor: id_a.clone(),

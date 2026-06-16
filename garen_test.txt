@@ -1,0 +1,6 @@
+items=6631,3033,3046
+actions+=/R,if=target.health.pct<30
+actions+=/Q
+actions+=/E
+actions+=/W
+actions+=/AutoAttack

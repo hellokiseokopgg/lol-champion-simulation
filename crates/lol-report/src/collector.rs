@@ -44,6 +44,7 @@ pub enum CombatEvent {
     ItemAcquisition {
         time: SimTime,
         target: ChampionId,
+        item_id: String,
         item_name: String,
     },
 }
@@ -105,8 +106,8 @@ impl DataCollector {
         self.events.push(CombatEvent::ResourceUpdate { time, target, resource_type, amount, max });
     }
 
-    pub fn record_item_acquisition(&mut self, time: SimTime, target: ChampionId, item_name: String) {
-        self.events.push(CombatEvent::ItemAcquisition { time, target, item_name });
+    pub fn record_item_acquisition(&mut self, time: SimTime, target: ChampionId, item_id: String, item_name: String) {
+        self.events.push(CombatEvent::ItemAcquisition { time, target, item_id, item_name });
     }
 
     pub fn record_level_up(&mut self, time: SimTime, target: ChampionId, level: u32) {
@@ -139,8 +140,8 @@ impl lol_core::event::EventRecorder for DataCollector {
         self.record_resource_update(time, target, resource_type, amount, max);
     }
     
-    fn record_item_acquisition(&mut self, time: SimTime, target: ChampionId, item_name: String) {
-        self.record_item_acquisition(time, target, item_name);
+    fn record_item_acquisition(&mut self, time: SimTime, target: ChampionId, item_id: String, item_name: String) {
+        self.record_item_acquisition(time, target, item_id, item_name);
     }
     
     fn record_level_up(&mut self, time: SimTime, target: ChampionId, level: u32) {

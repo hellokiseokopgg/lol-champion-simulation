@@ -924,7 +924,10 @@
             node.style.display = 'flex';
             node.style.alignItems = 'center';
             node.style.justifyContent = 'center';
-            node.innerHTML = `<span style="color: #6ee7b7; font-size: 12px; font-weight: bold;">I</span>`;
+            node.style.overflow = 'hidden';
+            
+            const iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/item/${item.item_id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
+            node.innerHTML = `<img src="${iconUrl}" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';"><span style="display:none; color: #6ee7b7; font-size: 12px; font-weight: bold;">I</span>`;
             
             const x = item.time * PX_PER_SEC + OFFSET_X;
             node.style.left = x + 'px';
@@ -1106,6 +1109,10 @@
             } else if (e.type === 'buff_expire') {
                 eventType = 'Buff Expire';
                 details = `Lost <strong style="color:var(--text-muted);">${e.buff_name}</strong>`;
+            } else if (e.type === 'item_acquisition') {
+                eventType = 'Item Acquired';
+                const iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/item/${e.item_id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
+                details = `<img src="${iconUrl}" style="width:16px; height:16px; vertical-align:middle; border-radius:3px; margin-right:4px;" onerror="this.style.display='none';"> Acquired <strong style="color:var(--color-green);">${e.item_name}</strong>`;
             } else {
                 return; // Skip resource updates for log to keep it clean
             }

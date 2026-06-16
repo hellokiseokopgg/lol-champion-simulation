@@ -14,7 +14,7 @@ pub trait EventRecorder {
     fn record_buff_apply(&mut self, time: SimTime, target: crate::types::ChampionId, buff_name: String);
     fn record_buff_expire(&mut self, time: SimTime, target: crate::types::ChampionId, buff_name: String);
     fn record_resource_update(&mut self, time: SimTime, target: crate::types::ChampionId, resource_type: String, amount: f64, max: f64);
-    fn record_item_acquisition(&mut self, time: SimTime, target: crate::types::ChampionId, item_name: String);
+    fn record_item_acquisition(&mut self, time: SimTime, target: crate::types::ChampionId, item_id: String, item_name: String);
     fn record_level_up(&mut self, time: SimTime, target: crate::types::ChampionId, level: u32);
 }
 
@@ -158,7 +158,7 @@ impl SimEvent for ItemAcquisitionEvent {
             champ.update_stats();
         }
         if let Some(recorder) = &ctx.recorder {
-            recorder.borrow_mut().record_item_acquisition(ctx.current_time, self.target.clone(), self.item_name.clone());
+            recorder.borrow_mut().record_item_acquisition(ctx.current_time, self.target.clone(), self.item_id.clone(), self.item_name.clone());
         }
     }
 
