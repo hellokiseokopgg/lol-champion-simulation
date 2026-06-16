@@ -5,6 +5,7 @@ edition = "2024"
 description = "Action Priority List parser and executor"
 
 [dependencies]
+itertools = "0.15.0"
 lol-core = { path = "../lol-core" }
 thiserror = "2"
 tracing = "0.1"
