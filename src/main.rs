@@ -29,6 +29,10 @@ enum Commands {
         /// Output HTML report path (e.g., report.html)
         #[arg(long)]
         html_out: Option<String>,
+
+        /// Language for report output (e.g., ko, en)
+        #[arg(long, default_value = "ko")]
+        lang: String,
     },
 }
 
@@ -40,7 +44,7 @@ fn main() {
     let cli = Cli::parse();
 
     match &cli.command {
-        Commands::Simulate { champion_a, champion_b, iterations, html_out } => {
+        Commands::Simulate { champion_a, champion_b, iterations, html_out, lang } => {
             let champion_b = champion_b.clone().unwrap_or_else(|| "Dummy".to_string());
             info!("Initializing LoL Champion Simulation Engine...");
             info!("Matchup: {} vs {}", champion_a, champion_b);
@@ -170,14 +174,17 @@ actions+=/AutoAttack
 
             let max_time = lol_core::types::SimTime::new(60.0);
             let stats = lol_report::statistics::Statistics::calculate(&collector.borrow(), max_time);
+            
+            let translator = lol_report::i18n::Translator::new(&lang);
+            
             let report = lol_report::formatter::Formatter::format_text(&stats, &collector.borrow());
-            let gantt = lol_report::formatter::Formatter::format_gantt(&collector.borrow());
+            let gantt = lol_report::formatter::Formatter::format_gantt(&collector.borrow(), &translator);
 
             println!("\n{}", report);
             println!("\n{}", gantt);
 
             if let Some(path) = html_out {
-                let html = lol_report::formatter::Formatter::format_html(&collector.borrow(), apl_script);
+                let html = lol_report::formatter::Formatter::format_html(&collector.borrow(), apl_script, &translator);
                 std::fs::write(path, html).expect("Failed to write HTML report");
                 info!("Saved HTML report to {}", path);
             }

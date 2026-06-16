@@ -1165,7 +1165,7 @@
             node.style.justifyContent = 'center';
             node.innerHTML = '<span style="color: #d8b4fe; font-size: 12px; font-weight: bold;">E</span>';
             
-            const x = buff.time * PX_PER_SEC + OFFSET_X - 12; // center 24px icon
+            const x = buff.time * PX_PER_SEC + OFFSET_X; // .event-icon CSS already centers it via translateX(-50%)
             
             if (x - buffLastX < 16) {
                 buffCurrentY = (buffCurrentY === 120) ? 148 : 120;
