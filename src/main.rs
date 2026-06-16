@@ -121,7 +121,31 @@ fn main() {
             let mut item_build_a = lol_core::item::ItemBuild::new();
 
             // Build setup
-            // (We will use timeline events instead of adding them at start)
+            if let Some(opgg_url) = opgg {
+                info!("Fetching items from OP.GG: {}", opgg_url);
+                match lol_data::scraper::OpggScraper::fetch_items(opgg_url) {
+                    Ok(item_ids) => {
+                        info!("Found items: {:?}", item_ids);
+                        for id in item_ids {
+                            if let Some(item) = all_items.iter().find(|i| i.id == id) {
+                                let _ = item_build_a.add_item(item.clone().into_item());
+                            } else {
+                                tracing::warn!("Item {} not found in loader", id);
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        tracing::error!("Failed to fetch items from OP.GG: {}", e);
+                        if let Some(bc) = all_items.iter().find(|i| i.id == "3071") {
+                            let _ = item_build_a.add_item(bc.clone().into_item());
+                        }
+                    }
+                }
+            } else {
+                if let Some(bc) = all_items.iter().find(|i| i.id == "3071") {
+                    let _ = item_build_a.add_item(bc.clone().into_item());
+                }
+            }
 
             let growth_stats_a = lol_core::stats::StatBlock {
                 health: data_a.growth_stats.hp as f64,
@@ -148,7 +172,7 @@ fn main() {
             };
 
             let config_a = lol_core::champion::ChampionConfig {
-                level: 1, // Start at level 1 for timeline sim!
+                level: 18, // Max level
                 item_build: item_build_a,
                 rune_page: lol_core::rune::RunePage::default(),
                 base_stats: base_stats_a,
@@ -170,7 +194,7 @@ fn main() {
                 ..Default::default()
             };
             let config_b = ChampionConfig {
-                level: 1,
+                level: 18, // Max level
                 item_build: lol_core::item::ItemBuild::new(),
                 rune_page: lol_core::rune::RunePage::default(),
                 base_stats: base_stats_b,
@@ -178,7 +202,7 @@ fn main() {
             };
 
             let mut sim = lol_core::sim::GameSimulation::new(lol_core::sim::SimConfig {
-                max_duration: 1605.0, // 26 minutes 45 seconds = 1605 seconds
+                max_duration: 60.0, // 1 minute simulation
             });
 
             let items_a: Vec<(String, String)> = config_a.item_build.items.iter().map(|i| (i.id.clone(), i.name.clone())).collect();
@@ -233,44 +257,6 @@ actions+=/AutoAttack
                 lol_core::types::SimTime::new(0.0),
                 Box::new(tick_event),
             );
-
-            // Schedule Level Up events (level 1 to 18 over 1600 seconds ~ every 94 seconds)
-            for lvl in 2..=18 {
-                sim.event_manager_mut().schedule(
-                    lol_core::types::SimTime::new((lvl - 1) as f64 * 94.0),
-                    Box::new(lol_core::event::LevelUpEvent {
-                        target: id_a.clone(),
-                    }),
-                );
-            }
-
-            // Schedule Item Acquisition Events based on the OP.GG screenshot
-            // 11 min (660s): Stridebreaker (6631)
-            if let Some(stridebreaker) = all_items.iter().find(|i| i.id == "6631") {
-                sim.event_manager_mut().schedule(
-                    lol_core::types::SimTime::new(660.0),
-                    Box::new(lol_core::event::ItemAcquisitionEvent {
-                        target: id_a.clone(),
-                        item_id: stridebreaker.id.clone(),
-                        item_name: stridebreaker.name.clone(),
-                        item_stats: stridebreaker.clone().into_item().stats,
-                    }),
-                );
-            }
-
-            // 19 min (1140s): Mortal Reminder (3033)
-            if let Some(mortal) = all_items.iter().find(|i| i.id == "3033") {
-                sim.event_manager_mut().schedule(
-                    lol_core::types::SimTime::new(1140.0),
-                    Box::new(lol_core::event::ItemAcquisitionEvent {
-                        target: id_a.clone(),
-                        item_id: mortal.id.clone(),
-                        item_name: mortal.name.clone(),
-                        item_stats: mortal.clone().into_item().stats,
-                    }),
-                );
-            }
-
 
             sim.run(Some(collector.clone()));
 
