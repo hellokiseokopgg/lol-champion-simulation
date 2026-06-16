@@ -72,6 +72,11 @@ data/champions/{champion_id}.json
 data/items.json
 data/runes.json
 ```
+- 아이템 `id`는 라이엇 공식 아이템 ID 체계 (예: `"3071"`)를 따릅니다.
+- **메타 데이터 참조 API**: `https://ddragon.leagueoflegends.com/cdn/16.12.1/data/en_US/item.json`
+- **아이템 아이콘(CDN) 이미지 URL 패턴**:
+  - `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/item/{ITEM_ID}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`
+  - HTML 리포트 등에서 아이템 이미지를 렌더링할 때 위 OP.GG CDN 패턴을 유추하여 사용합니다.
 
 ## Key Patterns
 
