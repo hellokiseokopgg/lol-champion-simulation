@@ -202,7 +202,7 @@ impl Formatter {
         let template = include_str!("report_template.html");
         template
             .replace("/* __EVENTS_JSON__ */", &json_events)
-            .replace("/* __APL_SCRIPT__ */", apl_script)
+            .replace("<!-- __APL_SCRIPT__ -->", apl_script)
             .replace("/* __ITEMS_JSON__ */", &json_items)
     }
 }
