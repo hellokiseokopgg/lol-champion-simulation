@@ -33,6 +33,10 @@ enum Commands {
         /// Language for report output (e.g., ko, en)
         #[arg(long, default_value = "ko")]
         lang: String,
+
+        /// OP.GG Match URL to fetch item build automatically
+        #[arg(long)]
+        opgg: Option<String>,
     },
 }
 
@@ -44,7 +48,7 @@ fn main() {
     let cli = Cli::parse();
 
     match &cli.command {
-        Commands::Simulate { champion_a, champion_b, iterations, html_out, lang } => {
+        Commands::Simulate { champion_a, champion_b, iterations, html_out, lang, opgg } => {
             let champion_b = champion_b.clone().unwrap_or_else(|| "Dummy".to_string());
             info!("Initializing LoL Champion Simulation Engine...");
             info!("Matchup: {} vs {}", champion_a, champion_b);
@@ -62,7 +66,41 @@ fn main() {
             // Load JSON data for champions
             let loader = lol_data::loader::DataLoader::new("data");
             let data_a = loader.load_champion(&champion_a.to_lowercase()).unwrap();
-            let data_b = loader.load_champion(&champion_b.to_lowercase()).unwrap();
+            
+            let data_b = if champion_b.eq_ignore_ascii_case("dummy") {
+                // Return mock data for Dummy
+                lol_data::champion_data::ChampionData {
+                    id: "Dummy".to_string(),
+                    name: "Target Dummy".to_string(),
+                    base_stats: lol_data::champion_data::BaseStats {
+                        hp: 1000000.0,
+                        mp: 0.0,
+                        hp_regen: 0.0,
+                        mp_regen: 0.0,
+                        armor: 100.0,
+                        magic_resist: 100.0,
+                        attack_damage: 0.0,
+                        attack_speed: 0.0,
+                        attack_range: 0.0,
+                        move_speed: 0.0,
+                    },
+                    growth_stats: lol_data::champion_data::GrowthStats {
+                        hp: 0.0,
+                        mp: 0.0,
+                        hp_regen: 0.0,
+                        mp_regen: 0.0,
+                        armor: 0.0,
+                        magic_resist: 0.0,
+                        attack_damage: 0.0,
+                        attack_speed: 0.0,
+                    },
+                    skills: Vec::new(),
+                }
+            } else {
+                loader.load_champion(&champion_b.to_lowercase()).unwrap()
+            };
+
+
 
             // Create instances
             let base_stats_a = lol_core::stats::StatBlock {
@@ -81,8 +119,32 @@ fn main() {
             };
             let all_items = loader.load_all_items().unwrap_or_default();
             let mut item_build_a = lol_core::item::ItemBuild::new();
-            if let Some(bc) = all_items.iter().find(|i| i.id == "3071") {
-                let _ = item_build_a.add_item(bc.clone().into_item());
+
+            // Build setup
+            if let Some(opgg_url) = opgg {
+                info!("Fetching items from OP.GG: {}", opgg_url);
+                match lol_data::scraper::OpggScraper::fetch_items(opgg_url) {
+                    Ok(item_ids) => {
+                        info!("Found items: {:?}", item_ids);
+                        for id in item_ids {
+                            if let Some(item) = all_items.iter().find(|i| i.id == id) {
+                                let _ = item_build_a.add_item(item.clone().into_item());
+                            } else {
+                                tracing::warn!("Item {} not found in loader", id);
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        tracing::error!("Failed to fetch items from OP.GG: {}", e);
+                        if let Some(bc) = all_items.iter().find(|i| i.id == "3071") {
+                            let _ = item_build_a.add_item(bc.clone().into_item());
+                        }
+                    }
+                }
+            } else {
+                if let Some(bc) = all_items.iter().find(|i| i.id == "3071") {
+                    let _ = item_build_a.add_item(bc.clone().into_item());
+                }
             }
 
             let config_a = ChampionConfig {
