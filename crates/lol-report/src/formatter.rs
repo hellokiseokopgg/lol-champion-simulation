@@ -163,6 +163,20 @@ impl Formatter {
                         time.as_f64(), target.0, resource_type, amount, max
                     ))
                 }
+                CombatEvent::LevelUp { time, target, level } => {
+                    Some(format!(
+                        r#"  {{ "type": "level_up", "time": {}, "target": "{}", "level": {} }}"#,
+                        time.as_f64(), target.0, level
+                    ))
+                }
+                CombatEvent::ItemAcquisition { time, target, item_name } => {
+                    // Try to translate if we had a dictionary, else use raw
+                    let localized = translator.translate_buff(&item_name); 
+                    Some(format!(
+                        r#"  {{ "type": "item_acquisition", "time": {}, "target": "{}", "item_name": "{}" }}"#,
+                        time.as_f64(), target.0, localized
+                    ))
+                }
             };
             if let Some(s) = json_str {
                 filtered_json_strs.push(s);

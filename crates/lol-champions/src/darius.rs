@@ -271,13 +271,14 @@ impl ChampionModule for DariusModule {
     fn id(&self) -> &str { "Darius" }
 
     fn create_instance(&self, mut config: ChampionConfig) -> Box<dyn ChampionInstance> {
-        let bonus_stats = config.aggregate_bonus_stats();
+        let rune_stats = config.rune_page.aggregate_stats();
+        let item_stats = config.item_build.aggregate_stats();
         let mut item_effects = Vec::new();
         for item in &mut config.item_build.items {
             item_effects.append(&mut item.effects);
         }
 
-        let mut state = ChampionState::new(config.base_stats.clone(), lol_core::types::ResourceType::Mana, bonus_stats, item_effects);
+        let mut state = ChampionState::new(config.level, config.base_stats.clone(), config.growth_stats.clone(), lol_core::types::ResourceType::Mana, rune_stats, item_stats, item_effects);
         
         // Setup base stats slightly for simulation level
         state.stats.base.attack_speed_ratio = Some(0.625);

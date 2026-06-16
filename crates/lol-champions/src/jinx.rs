@@ -6,19 +6,22 @@ impl ChampionModule for JinxModule {
     fn id(&self) -> &str { "Jinx" }
 
     fn create_instance(&self, mut config: ChampionConfig) -> Box<dyn ChampionInstance> {
-        let bonus_stats = config.aggregate_bonus_stats();
+        let rune_stats = config.rune_page.aggregate_stats();
+        let item_stats = config.item_build.aggregate_stats();
         let mut item_effects = Vec::new();
         for item in &mut config.item_build.items {
             item_effects.append(&mut item.effects);
         }
         Box::new(JinxInstance {
-            state: ChampionState::new(config.base_stats.clone(), lol_core::types::ResourceType::Mana, bonus_stats, item_effects),
+            state: ChampionState::new(config.level, config.base_stats.clone(), config.growth_stats.clone(), lol_core::types::ResourceType::Mana, rune_stats, item_stats, item_effects),
+            _config: config,
         })
     }
 }
 
 pub struct JinxInstance {
     state: ChampionState,
+    _config: ChampionConfig,
 }
 
 impl ChampionInstance for JinxInstance {

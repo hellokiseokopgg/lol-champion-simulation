@@ -16,6 +16,8 @@ pub struct ChampionConfig {
     pub rune_page: RunePage,
     /// Base stats at the starting level.
     pub base_stats: StatBlock,
+    /// Stat growth per level.
+    pub growth_stats: StatBlock,
 }
 
 impl ChampionConfig {
@@ -26,6 +28,16 @@ impl ChampionConfig {
 
 /// The core mutable state of a champion during a simulation.
 pub struct ChampionState {
+    /// The current level of the champion.
+    pub level: u32,
+    /// The base stats at level 1.
+    pub base_stats: StatBlock,
+    /// The stat growth per level.
+    pub growth_stats: StatBlock,
+    /// Stats provided by runes.
+    pub rune_stats: StatBlock,
+    /// Stats provided by items.
+    pub item_stats: StatBlock,
     /// The three-layer stats architecture for the champion.
     pub stats: ThreeLayerStats,
     /// The primary resource (e.g., HP/Mana) tracking.
@@ -41,9 +53,9 @@ pub struct ChampionState {
 }
 
 impl ChampionState {
-    pub fn new(base_stats: StatBlock, resource_type: ResourceType, bonus_stats: StatBlock, item_effects: Vec<Box<dyn crate::item::ItemEffect>>) -> Self {
+    pub fn new(level: u32, base_stats: StatBlock, growth_stats: StatBlock, resource_type: ResourceType, rune_stats: StatBlock, item_stats: StatBlock, item_effects: Vec<Box<dyn crate::item::ItemEffect>>) -> Self {
         let mut stats = ThreeLayerStats::new(base_stats.clone());
-        stats.recalculate_initial(&bonus_stats);
+        stats.recalculate_initial(&(rune_stats.clone() + item_stats.clone()));
         stats.recalculate_current(&StatBlock::new()); // Make sure current reflects initial
         
         let mut item_manager = crate::item::ItemManager::new();
@@ -52,6 +64,11 @@ impl ChampionState {
         }
         
         Self {
+            level,
+            base_stats: base_stats.clone(),
+            growth_stats,
+            rune_stats,
+            item_stats,
             resource: Resource::new(stats.current.mana, resource_type),
             health: Resource::new(stats.current.health, ResourceType::None),
             stats,
@@ -60,6 +77,7 @@ impl ChampionState {
             items: item_manager,
         }
     }
+
 }
 
 /// Trait representing an actively simulating champion.

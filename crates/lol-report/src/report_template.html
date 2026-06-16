@@ -722,6 +722,8 @@
     const damages = events.filter(e => e.type === "damage");
     const buffs = events.filter(e => e.type === "buff_apply");
     let resourceUpdates = events.filter(e => e.type === "resource_update");
+    const levelUps = events.filter(e => e.type === "level_up");
+    const itemAcquisitions = events.filter(e => e.type === "item_acquisition");
     
     let maxTime = 0;
     events.forEach(e => { if (e.time > maxTime) maxTime = e.time; });
@@ -864,6 +866,72 @@
             
             node.addEventListener('mouseenter', (e) => {
                 tooltip.innerHTML = `<strong>Item/Buff: ${buff.buff_name}</strong><br>Time: <span class="time">${buff.time.toFixed(3)}s</span><br>Target: ${buff.target}`;
+                tooltip.style.opacity = 1;
+                tooltip.style.left = (e.clientX + 15) + 'px';
+                tooltip.style.top = (e.clientY + 15) + 'px';
+            });
+            node.addEventListener('mousemove', (e) => {
+                tooltip.style.left = (e.clientX + 15) + 'px';
+                tooltip.style.top = (e.clientY + 15) + 'px';
+            });
+            node.addEventListener('mouseleave', () => tooltip.style.opacity = 0);
+
+            timelineContent.appendChild(node);
+        });
+
+        // 2.6 Level Up Events
+        levelUps.forEach(lvl => {
+            const node = document.createElement('div');
+            node.className = 'event-icon';
+            node.style.width = '20px';
+            node.style.height = '20px';
+            node.style.borderRadius = '50%';
+            node.style.border = '2px solid #eab308';
+            node.style.backgroundColor = '#713f12';
+            node.style.display = 'flex';
+            node.style.alignItems = 'center';
+            node.style.justifyContent = 'center';
+            node.innerHTML = `<span style="color: #fef08a; font-size: 10px; font-weight: bold;">${lvl.level}</span>`;
+            
+            const x = lvl.time * PX_PER_SEC + OFFSET_X;
+            node.style.left = x + 'px';
+            node.style.top = '10px'; // Near the top
+            
+            node.addEventListener('mouseenter', (e) => {
+                tooltip.innerHTML = `<strong>Level Up: ${lvl.level}</strong><br>Time: <span class="time">${lvl.time.toFixed(3)}s</span><br>Target: ${lvl.target}`;
+                tooltip.style.opacity = 1;
+                tooltip.style.left = (e.clientX + 15) + 'px';
+                tooltip.style.top = (e.clientY + 15) + 'px';
+            });
+            node.addEventListener('mousemove', (e) => {
+                tooltip.style.left = (e.clientX + 15) + 'px';
+                tooltip.style.top = (e.clientY + 15) + 'px';
+            });
+            node.addEventListener('mouseleave', () => tooltip.style.opacity = 0);
+
+            timelineContent.appendChild(node);
+        });
+
+        // 2.7 Item Acquisition Events
+        itemAcquisitions.forEach(item => {
+            const node = document.createElement('div');
+            node.className = 'event-icon';
+            node.style.width = '24px';
+            node.style.height = '24px';
+            node.style.borderRadius = '4px';
+            node.style.border = '2px solid #10b981';
+            node.style.backgroundColor = '#064e3b';
+            node.style.display = 'flex';
+            node.style.alignItems = 'center';
+            node.style.justifyContent = 'center';
+            node.innerHTML = `<span style="color: #6ee7b7; font-size: 12px; font-weight: bold;">I</span>`;
+            
+            const x = item.time * PX_PER_SEC + OFFSET_X;
+            node.style.left = x + 'px';
+            node.style.top = '170px'; // Bottom area
+            
+            node.addEventListener('mouseenter', (e) => {
+                tooltip.innerHTML = `<strong>Item Acquired: ${item.item_name}</strong><br>Time: <span class="time">${item.time.toFixed(3)}s</span><br>Target: ${item.target}`;
                 tooltip.style.opacity = 1;
                 tooltip.style.left = (e.clientX + 15) + 'px';
                 tooltip.style.top = (e.clientY + 15) + 'px';

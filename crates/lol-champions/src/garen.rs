@@ -20,13 +20,14 @@ impl ChampionModule for GarenModule {
         base_stats.armor += 30.0;
         base_stats.magic_resist += 30.0;
         
-        let bonus_stats = config.aggregate_bonus_stats();
+        let rune_stats = config.rune_page.aggregate_stats();
+        let item_stats = config.item_build.aggregate_stats();
         let mut item_effects = Vec::new();
         for item in &mut config.item_build.items {
             item_effects.append(&mut item.effects);
         }
         
-        let mut state = ChampionState::new(base_stats, lol_core::types::ResourceType::None, bonus_stats, item_effects);
+        let mut state = ChampionState::new(config.level, base_stats, config.growth_stats.clone(), lol_core::types::ResourceType::None, rune_stats, item_stats, item_effects);
         
         // Initialize abilities to rank 5 for testing (except R to 3)
         if let Some(q) = state.abilities.get_state_mut(AbilitySlot::Q) { q.level = 5; }
@@ -64,6 +65,28 @@ impl ChampionInstance for GarenInstance {
     }
 
     fn update_stats(&mut self) {
+        // 1. Recalculate base stats using growth logic
+        // Formula: Stat = Base + Growth * (Level - 1) * (0.7025 + 0.0175 * (Level - 1))
+        let level = self.state.level as f64;
+        let growth_multiplier = (level - 1.0) * (0.7025 + 0.0175 * (level - 1.0));
+        let mut new_base = self.state.base_stats.clone();
+        new_base.health += self.state.growth_stats.health * growth_multiplier;
+        new_base.mana += self.state.growth_stats.mana * growth_multiplier;
+        new_base.health_regen += self.state.growth_stats.health_regen * growth_multiplier;
+        new_base.mana_regen += self.state.growth_stats.mana_regen * growth_multiplier;
+        new_base.armor += self.state.growth_stats.armor * growth_multiplier;
+        new_base.magic_resist += self.state.growth_stats.magic_resist * growth_multiplier;
+        new_base.attack_damage += self.state.growth_stats.attack_damage * growth_multiplier;
+        // Attack speed growth is slightly different in LoL, but we'll use flat for simplicity
+        new_base.attack_speed += self.state.growth_stats.attack_speed * growth_multiplier;
+        
+        self.state.stats.base = new_base;
+
+        // 2. Recalculate initial stats (Base + Runes + Items)
+        let bonus = self.state.rune_stats.clone() + self.state.item_stats.clone();
+        self.state.stats.recalculate_initial(&bonus);
+
+        // 3. Recalculate current stats (Initial + Buffs)
         let buffs_stats = self.state.buffs.aggregate_stats();
         self.state.stats.recalculate_current(&buffs_stats);
     }

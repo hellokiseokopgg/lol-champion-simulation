@@ -14,6 +14,8 @@ pub trait EventRecorder {
     fn record_buff_apply(&mut self, time: SimTime, target: crate::types::ChampionId, buff_name: String);
     fn record_buff_expire(&mut self, time: SimTime, target: crate::types::ChampionId, buff_name: String);
     fn record_resource_update(&mut self, time: SimTime, target: crate::types::ChampionId, resource_type: String, amount: f64, max: f64);
+    fn record_item_acquisition(&mut self, time: SimTime, target: crate::types::ChampionId, item_name: String);
+    fn record_level_up(&mut self, time: SimTime, target: crate::types::ChampionId, level: u32);
 }
 
 /// Context provided to events when they are executed.
@@ -137,6 +139,58 @@ impl SimEvent for BuffExpireEvent {
 
     fn name(&self) -> &str {
         "BuffExpireEvent"
+    }
+}
+
+/// Event representing a champion acquiring an item.
+pub struct ItemAcquisitionEvent {
+    pub target: crate::types::ChampionId,
+    pub item_id: String,
+    pub item_name: String,
+    pub item_stats: crate::stats::StatBlock,
+}
+
+impl SimEvent for ItemAcquisitionEvent {
+    fn execute(&self, ctx: &mut SimContext, _event_manager: &mut EventManager) {
+        if let Some(champ_ref) = ctx.champions.get(&self.target) {
+            let mut champ = champ_ref.borrow_mut();
+            champ.state_mut().item_stats = champ.state().item_stats.clone() + self.item_stats.clone();
+            champ.update_stats();
+        }
+        if let Some(recorder) = &ctx.recorder {
+            recorder.borrow_mut().record_item_acquisition(ctx.current_time, self.target.clone(), self.item_name.clone());
+        }
+    }
+
+    fn name(&self) -> &str {
+        "ItemAcquisitionEvent"
+    }
+}
+
+/// Event representing a champion leveling up.
+pub struct LevelUpEvent {
+    pub target: crate::types::ChampionId,
+}
+
+impl SimEvent for LevelUpEvent {
+    fn execute(&self, ctx: &mut SimContext, _event_manager: &mut EventManager) {
+        let mut new_level = 0;
+        if let Some(champ_ref) = ctx.champions.get(&self.target) {
+            let mut champ = champ_ref.borrow_mut();
+            let state = champ.state_mut();
+            state.level = std::cmp::min(18, state.level + 1);
+            new_level = state.level;
+            champ.update_stats();
+        }
+        if new_level > 0 {
+            if let Some(recorder) = &ctx.recorder {
+                recorder.borrow_mut().record_level_up(ctx.current_time, self.target.clone(), new_level);
+            }
+        }
+    }
+
+    fn name(&self) -> &str {
+        "LevelUpEvent"
     }
 }
 
