@@ -718,6 +718,37 @@
     }
     
     // Process Data
+    const BUFF_TO_ITEM = {
+        "깍아내리기": "3071",
+        "열정": "3071",
+        "Black Cleaver Shred": "3071",
+        "Black Cleaver Fervor": "3071",
+        "비장한 걸음": "6631",
+        "망령의 왈츠": "3046",
+        "고통스러운 상처": "3033",
+        "발걸음 분쇄기": "6631",
+        "유령 무희": "3046",
+        "칠흑의 양날 도끼": "3071",
+        "필멸자의 운명": "3033",
+        "Stridebreaker": "6631",
+        "Phantom Dancer": "3046",
+        "Black Cleaver": "3071",
+        "Mortal Reminder": "3033"
+    };
+
+    function getItemId(champ, name) {
+        let itemId = BUFF_TO_ITEM[name];
+        if (itemId) return itemId;
+        
+        // Fallback
+        if (typeof itemsData !== 'undefined' && itemsData[champ]) {
+            for (const item of itemsData[champ]) {
+                if (item.name === name) return item.id;
+            }
+        }
+        return null;
+    }
+
     const casts = events.filter(e => e.type === "cast");
     const damages = events.filter(e => e.type === "damage");
     const buffs = events.filter(e => e.type === "buff_apply");
@@ -840,14 +871,7 @@
             timelineContent.appendChild(node);
         });
 
-        function getItemId(champ, name) {
-            if (itemsData && itemsData[champ]) {
-                for (const item of itemsData[champ]) {
-                    if (item.name === name) return item.id;
-                }
-            }
-            return null;
-        }
+
 
         // 2.5 Item/Buff Effects
         let buffLastX = -999;
@@ -1080,18 +1104,9 @@
             let details = '';
             let color = 'var(--text-main)';
 
-            function getItemIdLocal(champ, name) {
-                if (itemsData && itemsData[champ]) {
-                    for (const item of itemsData[champ]) {
-                        if (item.name === name) return item.id;
-                    }
-                }
-                return null;
-            }
-
             if (e.type === 'cast') {
                 eventType = 'Cast';
-                const itemId = getItemIdLocal(e.source, e.ability);
+                const itemId = getItemId(e.source, e.ability);
                 if (itemId) {
                     const iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/item/${itemId}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
                     details = `Used <img src="${iconUrl}" style="width:16px; height:16px; vertical-align:middle; border-radius:3px; margin-right:4px;" onerror="this.style.display='none';"> <strong style="color:var(--color-green);">${e.ability}</strong>`;
@@ -1100,7 +1115,7 @@
                 }
             } else if (e.type === 'damage') {
                 eventType = 'Damage';
-                const itemId = getItemIdLocal(e.source, e.ability);
+                const itemId = getItemId(e.source, e.ability);
                 if (itemId) {
                     const iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/item/${itemId}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
                     details = `<img src="${iconUrl}" style="width:16px; height:16px; vertical-align:middle; border-radius:3px; margin-right:4px;" onerror="this.style.display='none';"> <strong style="color:var(--color-cyan);">${e.ability}</strong> hit for <strong style="color:#f87171;">${e.amount.toFixed(1)}</strong>`;
@@ -1113,7 +1128,7 @@
                 color = '#f87171';
             } else if (e.type === 'buff_apply') {
                 eventType = 'Buff Apply';
-                const itemId = getItemIdLocal(e.target, e.buff_name);
+                const itemId = getItemId(e.target, e.buff_name);
                 if (itemId) {
                     const iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/item/${itemId}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
                     details = `<img src="${iconUrl}" style="width:16px; height:16px; vertical-align:middle; border-radius:3px; margin-right:4px;" onerror="this.style.display='none';"> Gained <strong style="color:#a855f7;">${e.buff_name}</strong>`;
@@ -1122,7 +1137,7 @@
                 }
             } else if (e.type === 'buff_expire') {
                 eventType = 'Buff Expire';
-                const itemId = getItemIdLocal(e.target, e.buff_name);
+                const itemId = getItemId(e.target, e.buff_name);
                 if (itemId) {
                     const iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/item/${itemId}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
                     details = `<img src="${iconUrl}" style="width:16px; height:16px; vertical-align:middle; border-radius:3px; margin-right:4px;" onerror="this.style.display='none';"> Lost <strong style="color:var(--text-muted);">${e.buff_name}</strong>`;
