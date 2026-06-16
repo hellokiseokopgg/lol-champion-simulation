@@ -36,51 +36,96 @@ impl Formatter {
     }
 
     pub fn format_gantt(collector: &DataCollector) -> String {
-        let mut output = String::new();
-        writeln!(output, "```mermaid").unwrap();
-        writeln!(output, "gantt").unwrap();
-        writeln!(output, "    title Combat Skill Timeline").unwrap();
-        writeln!(output, "    dateFormat x").unwrap();
-        writeln!(output, "    axisFormat %S.%L").unwrap();
-        writeln!(output, "").unwrap();
+        let mut out = String::new();
+        out.push_str("```mermaid\ngantt\n    title Combat Skill Timeline\n    dateFormat x\n    axisFormat %S.%L\n\n");
 
-        // Group events by source champion
-        let mut events_by_champ: std::collections::HashMap<String, Vec<&CombatEvent>> = std::collections::HashMap::new();
+        // Group events by actor
+        let mut actor_events = std::collections::HashMap::new();
         for event in &collector.events {
             match event {
-                CombatEvent::Damage { source, .. } | CombatEvent::Cast { source, .. } => {
-                    events_by_champ.entry(source.0.clone()).or_default().push(event);
+                CombatEvent::Cast { source, .. } => {
+                    actor_events.entry(source.clone()).or_insert_with(Vec::new).push(event.clone());
+                }
+                CombatEvent::Damage { source, .. } => {
+                    actor_events.entry(source.clone()).or_insert_with(Vec::new).push(event.clone());
                 }
                 _ => {}
             }
         }
 
-        for (champ, events) in events_by_champ {
-            writeln!(output, "    section {}", champ).unwrap();
-            let mut event_counter = 0;
+        for (actor, events) in actor_events {
+            out.push_str(&format!("    section {}\n", actor.0));
             for event in events {
                 match event {
                     CombatEvent::Cast { time, ability, .. } => {
-                        let start_ms = (time.as_f64() * 1000.0) as u64;
-                        let end_ms = start_ms + 200; // 200ms visual duration for casts
-                        writeln!(output, "    Cast {:?} : {}, {}", ability, start_ms, end_ms).unwrap();
-                        event_counter += 1;
+                        let ms = (time.as_f64() * 1000.0) as u64;
+                        let ability_str = format!("{:?}", ability);
+                        out.push_str(&format!("    Cast {} : {}, {}\n", ability_str, ms, ms + 200));
                     }
                     CombatEvent::Damage { time, ability, .. } => {
-                        let start_ms = (time.as_f64() * 1000.0) as u64;
-                        let end_ms = start_ms + 100; // 100ms visual duration for damage ticks
-                        writeln!(output, "    Dmg {:?} : {}, {}", ability, start_ms, end_ms).unwrap();
-                        event_counter += 1;
+                        let ms = (time.as_f64() * 1000.0) as u64;
+                        let ability_str = format!("{:?}", ability);
+                        out.push_str(&format!("    Dmg {} : {}, {}\n", ability_str, ms, ms + 100));
                     }
                     _ => {}
                 }
             }
-            if event_counter == 0 {
-                writeln!(output, "    No Actions : 0, 0").unwrap();
+        }
+        out.push_str("```\n");
+        out
+    }
+
+    pub fn format_html(collector: &DataCollector) -> String {
+        let mut json_events = String::from("[\n");
+        for (i, event) in collector.events.iter().enumerate() {
+            let json_str = match event {
+                CombatEvent::Cast { time, source, ability } => {
+                    format!(
+                        r#"  {{ "type": "cast", "time": {}, "source": "{}", "ability": "{:?}" }}"#,
+                        time.as_f64(), source.0, ability
+                    )
+                }
+                CombatEvent::Damage { time, source, ability, amount, .. } => {
+                    format!(
+                        r#"  {{ "type": "damage", "time": {}, "source": "{}", "ability": "{:?}", "amount": {} }}"#,
+                        time.as_f64(), source.0, ability, amount
+                    )
+                }
+                CombatEvent::Death { time, champion } => {
+                    format!(
+                        r#"  {{ "type": "death", "time": {}, "source": "{}" }}"#,
+                        time.as_f64(), champion.0
+                    )
+                }
+                CombatEvent::BuffApply { time, target, buff_name } => {
+                    format!(
+                        r#"  {{ "type": "buff_apply", "time": {}, "target": "{}", "buff_name": "{}" }}"#,
+                        time.as_f64(), target.0, buff_name
+                    )
+                }
+                CombatEvent::BuffExpire { time, target, buff_name } => {
+                    format!(
+                        r#"  {{ "type": "buff_expire", "time": {}, "target": "{}", "buff_name": "{}" }}"#,
+                        time.as_f64(), target.0, buff_name
+                    )
+                }
+                CombatEvent::ResourceUpdate { time, target, resource_type, amount, max } => {
+                    format!(
+                        r#"  {{ "type": "resource_update", "time": {}, "target": "{}", "resource_type": "{}", "amount": {}, "max": {} }}"#,
+                        time.as_f64(), target.0, resource_type, amount, max
+                    )
+                }
+            };
+            json_events.push_str(&json_str);
+            if i < collector.events.len() - 1 {
+                json_events.push_str(",\n");
+            } else {
+                json_events.push('\n');
             }
         }
+        json_events.push(']');
 
-        writeln!(output, "```").unwrap();
-        output
+        let html_template = include_str!("report_template.html");
+        html_template.replace("/* __EVENTS_JSON__ */", &json_events)
     }
 }

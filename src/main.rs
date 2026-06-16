@@ -25,6 +25,10 @@ enum Commands {
         /// Number of iterations to run
         #[arg(short, long, default_value_t = 100)]
         iterations: u32,
+
+        /// Output HTML report path (e.g., report.html)
+        #[arg(long)]
+        html_out: Option<String>,
     },
 }
 
@@ -36,7 +40,7 @@ fn main() {
     let cli = Cli::parse();
 
     match &cli.command {
-        Commands::Simulate { champion_a, champion_b, iterations } => {
+        Commands::Simulate { champion_a, champion_b, iterations, html_out } => {
             info!("Initializing LoL Champion Simulation Engine...");
             info!("Matchup: {} vs {}", champion_a, champion_b);
             info!("Iterations: {}", iterations);
@@ -143,6 +147,13 @@ actions+=/AutoAttack
 
             println!("\n{}", report);
             println!("\n{}", gantt);
+
+            if let Some(path) = html_out {
+                let html = lol_report::formatter::Formatter::format_html(&collector.borrow());
+                std::fs::write(path, html).expect("Failed to write HTML report");
+                info!("Saved HTML report to {}", path);
+            }
+            
             info!("Simulation complete.");
         }
     }

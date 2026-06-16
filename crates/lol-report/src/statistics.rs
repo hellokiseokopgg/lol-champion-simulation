@@ -51,6 +51,7 @@ impl Statistics {
                         end_time = time_val;
                     }
                 }
+                _ => {}
             }
         }
 

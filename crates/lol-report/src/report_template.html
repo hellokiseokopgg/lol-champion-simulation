@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Combat Simulation Report</title>
+    <style>
+        :root {
+            --bg-color: #1a1b26;
+            --panel-bg: #24283b;
+            --panel-header-bg: #1f2335;
+            --text-color: #a9b1d6;
+            --text-muted: #565f89;
+            --text-highlight: #c0caf5;
+            --border-color: #414868;
+            --accent-color: #7aa2f7;
+            --accent-hover: #8caaee;
+            --dmg-color: #f7768e;
+            --buff-color: rgba(65, 166, 181, 0.4);
+            --scrubber-color: #ff9e64;
+            --resource-color: rgba(122, 162, 247, 0.2);
+            --resource-stroke: #7aa2f7;
+            --icon-size: 36px;
+            --px-per-sec: 80px; 
+            --track-height: 48px;
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Mock Header Panel */
+        .mock-panel {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .mock-header {
+            background-color: var(--panel-header-bg);
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .mock-body {
+            padding: 15px;
+            display: flex;
+            gap: 15px;
+        }
+        .mock-btn {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        /* Toolbar */
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background-color: var(--panel-bg);
+            padding: 10px 15px;
+            border: 1px solid var(--border-color);
+            border-bottom: none;
+            border-radius: 6px 6px 0 0;
+        }
+
+        .play-btn {
+            background: var(--accent-color);
+            color: #15161e;
+            border: none;
+            border-radius: 4px;
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .play-btn:hover { background: var(--accent-hover); }
+
+        .time-display {
+            font-family: monospace;
+            font-size: 16px;
+            color: var(--text-highlight);
+            width: 80px;
+        }
+
+        .zoom-slider {
+            width: 100px;
+            cursor: pointer;
+        }
+
+        /* Timeline Container */
+        .timeline-container {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 0 0 6px 6px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .timeline-scroll-wrapper {
+            position: relative;
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding-bottom: 10px;
+        }
+
+        .timeline-content {
+            position: relative;
+            margin-top: 30px; /* space for axis */
+        }
+
+        /* Axis markers */
+        .time-axis {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 25px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--panel-header-bg);
+            z-index: 20;
+        }
+
+        .tick {
+            position: absolute;
+            top: 0;
+            bottom: -5px;
+            width: 1px;
+            background-color: var(--border-color);
+        }
+
+        .tick-label {
+            position: absolute;
+            top: 5px;
+            transform: translateX(-50%);
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .track-label {
+            position: sticky;
+            left: 10px;
+            display: inline-block;
+            background: var(--bg-color);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: var(--accent-color);
+            z-index: 15;
+            border: 1px solid var(--border-color);
+            font-weight: bold;
+        }
+
+        /* Buff blocks */
+        .buff-block {
+            position: absolute;
+            height: 14px;
+            background-color: var(--buff-color);
+            border-radius: 2px;
+            z-index: 2;
+        }
+
+        /* Event Icons */
+        .event-node {
+            position: absolute;
+            width: var(--icon-size);
+            height: var(--icon-size);
+            border: 2px solid #292e42;
+            border-radius: 4px;
+            background-color: var(--bg-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.1s, border-color 0.1s;
+            transform: translate(-50%, -50%);
+            background-size: cover;
+            z-index: 10;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .event-node:hover {
+            transform: translate(-50%, -50%) scale(1.15);
+            border-color: var(--accent-color);
+            z-index: 100;
+        }
+
+        /* Scrubber */
+        .scrubber-line {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: var(--scrubber-color);
+            z-index: 50;
+            pointer-events: none;
+        }
+        .scrubber-handle {
+            position: absolute;
+            top: 0;
+            width: 10px;
+            height: 10px;
+            background: var(--scrubber-color);
+            transform: translate(-4px, 15px) rotate(45deg);
+        }
+
+        /* Resource Area Graph */
+        .resource-graph {
+            position: relative;
+            height: 80px;
+            border-top: 1px solid var(--border-color);
+            margin-top: 20px;
+            background: rgba(0,0,0,0.1);
+        }
+        .resource-graph svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: fixed;
+            background: #1f2335;
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            color: var(--text-color);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s;
+            z-index: 9999;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+        .tooltip strong { color: var(--text-highlight); font-size: 14px; }
+        .tooltip .time { color: var(--accent-color); margin-top: 4px; display: block; }
+
+        /* Summary Stats */
+        .stats-bar {
+            display: flex;
+            gap: 20px;
+            padding: 15px;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            margin-top: 20px;
+        }
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; }
+        .stat-value { font-size: 16px; color: var(--text-highlight); font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <!-- Mock Options Panel -->
+    <div class="mock-panel">
+        <div class="mock-header">
+            <span>⚙️ Simulation Options</span>
+        </div>
+        <div class="mock-body">
+            <button class="mock-btn">Target: Darius</button>
+            <button class="mock-btn">Iterations: 100</button>
+            <button class="mock-btn">Network Latency: 0ms</button>
+        </div>
+    </div>
+
+    <!-- Timeline Toolbar -->
+    <div class="toolbar">
+        <button class="play-btn" id="playBtn">▶</button>
+        <div class="time-display" id="timeDisplay">0.00s</div>
+        <div style="flex: 1"></div>
+        <span style="font-size: 12px; color: var(--text-muted)">ZOOM</span>
+        <input type="range" class="zoom-slider" id="zoomSlider" min="20" max="200" value="80">
+    </div>
+
+    <!-- Timeline Container -->
+    <div class="timeline-container">
+        <div class="timeline-scroll-wrapper" id="scrollWrapper">
+            <div class="time-axis" id="timeAxis"></div>
+            
+            <div class="timeline-content" id="timelineContent">
+                <!-- Tracks and Icons will be injected here -->
+            </div>
+            
+            <!-- Scrubber -->
+            <div class="scrubber-line" id="scrubber">
+                <div class="scrubber-handle"></div>
+            </div>
+
+            <!-- Resource Graph -->
+            <div class="resource-graph" id="resourceGraph">
+                <div class="track-label" style="position: absolute; left: 10px; top: 10px;">HP (Mock)</div>
+                <svg id="svgGraph"></svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Bar -->
+    <div class="stats-bar" id="statsBar">
+        <!-- Injected via JS -->
+    </div>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+    const events = /* __EVENTS_JSON__ */;
+    
+    // Process events
+    const casts = events.filter(e => e.type === "cast");
+    const damages = events.filter(e => e.type === "damage");
+    let buffApplies = events.filter(e => e.type === "buff_apply");
+    let resourceUpdates = events.filter(e => e.type === "resource_update");
+    
+    // Summary calculation
+    let totalDamage = 0;
+    damages.forEach(d => totalDamage += d.amount);
+    let maxTime = 0;
+    events.forEach(e => { if (e.time > maxTime) maxTime = e.time; });
+    const duration = maxTime > 0 ? maxTime : 60;
+    
+    // Mock Buffs if none exist (for visual demonstration of high-fidelity)
+    if (buffApplies.length === 0) {
+        casts.forEach(c => {
+            if (c.ability === "E") {
+                buffApplies.push({ type: "mock_buff", time: c.time, target: c.source, buff_name: "Judgment", duration: 3.0 });
+            }
+            if (c.ability === "W") {
+                buffApplies.push({ type: "mock_buff", time: c.time, target: c.source, buff_name: "Courage", duration: 2.0 });
+            }
+        });
+    }
+
+    // Mock Resource Updates if none exist (Mock HP or Fury)
+    if (resourceUpdates.length === 0) {
+        let currentRes = 100;
+        for(let i=0; i<=duration; i+=1) {
+            currentRes = Math.max(0, currentRes - (Math.random() * 5));
+            resourceUpdates.push({ time: i, amount: currentRes, max: 100 });
+        }
+    }
+
+    document.getElementById('statsBar').innerHTML = `
+        <div class="stat-item"><span class="stat-label">Duration</span><span class="stat-value">${duration.toFixed(2)}s</span></div>
+        <div class="stat-item"><span class="stat-label">Total Damage</span><span class="stat-value">${totalDamage.toFixed(0)}</span></div>
+        <div class="stat-item"><span class="stat-label">DPS</span><span class="stat-value">${(totalDamage / duration).toFixed(1)}</span></div>
+        <div class="stat-item"><span class="stat-label">Total Casts</span><span class="stat-value">${casts.length}</span></div>
+    `;
+
+    // Timeline Rendering
+    const timelineContent = document.getElementById('timelineContent');
+    const timeAxis = document.getElementById('timeAxis');
+    const scrollWrapper = document.getElementById('scrollWrapper');
+    const scrubber = document.getElementById('scrubber');
+    const svgGraph = document.getElementById('svgGraph');
+    const tooltip = document.getElementById('tooltip');
+    
+    let PX_PER_SEC = 80;
+    const OFFSET_X = 20;
+    let totalWidth = 0;
+
+    const uniqueAbilities = [...new Set(casts.map(c => c.ability))].sort();
+    const TRACK_HEIGHT = 48;
+    const PADDING_TOP = 20;
+
+    function renderTimeline() {
+        timelineContent.innerHTML = '';
+        timeAxis.innerHTML = '';
+        svgGraph.innerHTML = '';
+        
+        totalWidth = Math.ceil(duration + 5) * PX_PER_SEC + OFFSET_X * 2;
+        timelineContent.style.width = totalWidth + 'px';
+        timeAxis.style.width = totalWidth + 'px';
+        svgGraph.style.width = totalWidth + 'px';
+        
+        timelineContent.style.height = (uniqueAbilities.length * TRACK_HEIGHT + PADDING_TOP * 2) + 'px';
+
+        // Draw Ticks
+        for (let s = 0; s <= duration + 5; s += 1) {
+            const tick = document.createElement('div');
+            tick.className = 'tick';
+            tick.style.left = (s * PX_PER_SEC + OFFSET_X) + 'px';
+            
+            if (s % 2 === 0) {
+                const label = document.createElement('div');
+                label.className = 'tick-label';
+                label.innerText = s + 's';
+                tick.appendChild(label);
+            }
+            timeAxis.appendChild(tick);
+        }
+
+        // Draw Tracks
+        uniqueAbilities.forEach((ability, index) => {
+            const topPx = PADDING_TOP + index * TRACK_HEIGHT;
+            
+            const line = document.createElement('div');
+            line.style.position = 'absolute';
+            line.style.top = (topPx + 18) + 'px';
+            line.style.left = OFFSET_X + 'px';
+            line.style.width = (totalWidth - OFFSET_X) + 'px';
+            line.style.height = '1px';
+            line.style.backgroundColor = 'rgba(255,255,255,0.05)';
+            timelineContent.appendChild(line);
+
+            const label = document.createElement('div');
+            label.className = 'track-label';
+            label.innerText = ability;
+            label.style.top = topPx + 'px'; 
+            label.style.position = 'absolute';
+            label.style.left = '10px';
+            timelineContent.appendChild(label);
+        });
+
+        // Draw Buffs
+        buffApplies.forEach(buff => {
+            const trackIndex = uniqueAbilities.indexOf(buff.buff_name === "Judgment" ? "E" : (buff.buff_name === "Courage" ? "W" : "")); 
+            if (trackIndex === -1) return;
+            
+            const b = document.createElement('div');
+            b.className = 'buff-block';
+            if (buff.buff_name === "Courage") b.style.backgroundColor = 'rgba(255, 165, 0, 0.4)'; // Orange for Courage
+            b.style.left = (buff.time * PX_PER_SEC + OFFSET_X) + 'px';
+            b.style.width = ((buff.duration || 3) * PX_PER_SEC) + 'px'; // Using mocked duration
+            b.style.top = (PADDING_TOP + trackIndex * TRACK_HEIGHT + 24) + 'px';
+            timelineContent.appendChild(b);
+        });
+
+        // Draw Cast Icons
+        casts.forEach(cast => {
+            const node = document.createElement('div');
+            node.className = 'event-node ' + cast.ability;
+            
+            const leftPx = cast.time * PX_PER_SEC + OFFSET_X;
+            const trackIndex = uniqueAbilities.indexOf(cast.ability);
+            const topPx = PADDING_TOP + trackIndex * TRACK_HEIGHT + 18;
+
+            node.style.left = leftPx + 'px';
+            node.style.top = topPx + 'px';
+
+            if (cast.ability === "AutoAttack") {
+                node.style.backgroundImage = `url('https://opgg-static.akamaized.net/meta/images/lol/16.12.1/item/1036.png?image=q_auto:good,f_webp,w_64,h_64&v=1612')`;
+            } else {
+                node.style.backgroundImage = `url('https://opgg-static.akamaized.net/meta/images/lol/16.12.1/spell/${cast.source}${cast.ability}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612')`;
+            }
+
+            node.addEventListener('mouseenter', (e) => {
+                tooltip.innerHTML = `<strong>${cast.ability}</strong><span class="time">${cast.time.toFixed(3)}s</span>`;
+                tooltip.style.opacity = 1;
+                tooltip.style.left = (e.clientX + 15) + 'px';
+                tooltip.style.top = (e.clientY + 15) + 'px';
+            });
+            node.addEventListener('mousemove', (e) => {
+                tooltip.style.left = (e.clientX + 15) + 'px';
+                tooltip.style.top = (e.clientY + 15) + 'px';
+            });
+            node.addEventListener('mouseleave', () => tooltip.style.opacity = 0);
+
+            timelineContent.appendChild(node);
+        });
+
+        // Draw SVG Resource Graph
+        if (resourceUpdates.length > 0) {
+            let pathD = `M ${OFFSET_X} 80 `; // start at bottom left
+            resourceUpdates.forEach(r => {
+                let x = r.time * PX_PER_SEC + OFFSET_X;
+                let y = 80 - (r.amount / r.max) * 80;
+                pathD += `L ${x} ${y} `;
+            });
+            pathD += `L ${totalWidth - OFFSET_X} 80 Z`;
+
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute("d", pathD);
+            path.setAttribute("fill", "var(--resource-color)");
+            path.setAttribute("stroke", "var(--resource-stroke)");
+            path.setAttribute("stroke-width", "1.5");
+            svgGraph.appendChild(path);
+        }
+    }
+
+    renderTimeline();
+
+    // Zoom Logic
+    const zoomSlider = document.getElementById('zoomSlider');
+    zoomSlider.addEventListener('input', (e) => {
+        PX_PER_SEC = parseInt(e.target.value);
+        renderTimeline();
+        updateScrubberPosition();
+    });
+
+    // Playback Logic
+    let isPlaying = false;
+    let playTime = 0;
+    let lastAnimTime = 0;
+    const playBtn = document.getElementById('playBtn');
+    const timeDisplay = document.getElementById('timeDisplay');
+
+    function updateScrubberPosition() {
+        scrubber.style.left = (playTime * PX_PER_SEC + OFFSET_X) + 'px';
+        timeDisplay.innerText = playTime.toFixed(2) + 's';
+        
+        // Auto scroll
+        const scrollLeft = playTime * PX_PER_SEC + OFFSET_X - (scrollWrapper.clientWidth / 2);
+        if (scrollLeft > 0 && isPlaying) {
+            scrollWrapper.scrollLeft = scrollLeft;
+        }
+    }
+
+    function animLoop(timestamp) {
+        if (!isPlaying) return;
+        const delta = (timestamp - lastAnimTime) / 1000;
+        lastAnimTime = timestamp;
+        
+        playTime += delta;
+        if (playTime > duration + 5) {
+            isPlaying = false;
+            playBtn.innerText = '▶';
+            playTime = 0;
+        }
+        
+        updateScrubberPosition();
+        requestAnimationFrame(animLoop);
+    }
+
+    playBtn.addEventListener('click', () => {
+        isPlaying = !isPlaying;
+        if (isPlaying) {
+            playBtn.innerText = '⏸';
+            lastAnimTime = performance.now();
+            requestAnimationFrame(animLoop);
+        } else {
+            playBtn.innerText = '▶';
+        }
+    });
+
+    // Click to seek
+    scrollWrapper.addEventListener('click', (e) => {
+        if (e.target.closest('.event-node') || e.target.closest('.zoom-slider') || e.target.closest('.play-btn')) return;
+        const rect = scrollWrapper.getBoundingClientRect();
+        const clickX = e.clientX - rect.left + scrollWrapper.scrollLeft;
+        playTime = (clickX - OFFSET_X) / PX_PER_SEC;
+        if (playTime < 0) playTime = 0;
+        updateScrubberPosition();
+    });
+
+</script>
+</body>
+</html>

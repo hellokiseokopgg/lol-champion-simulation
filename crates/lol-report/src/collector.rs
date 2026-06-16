@@ -19,6 +19,23 @@ pub enum CombatEvent {
         time: SimTime,
         champion: ChampionId,
     },
+    BuffApply {
+        time: SimTime,
+        target: ChampionId,
+        buff_name: String,
+    },
+    BuffExpire {
+        time: SimTime,
+        target: ChampionId,
+        buff_name: String,
+    },
+    ResourceUpdate {
+        time: SimTime,
+        target: ChampionId,
+        resource_type: String,
+        amount: f64,
+        max: f64,
+    },
 }
 
 #[derive(Debug, Default)]
@@ -61,6 +78,18 @@ impl DataCollector {
     pub fn record_death(&mut self, time: SimTime, champion: ChampionId) {
         self.events.push(CombatEvent::Death { time, champion });
     }
+
+    pub fn record_buff_apply(&mut self, time: SimTime, target: ChampionId, buff_name: String) {
+        self.events.push(CombatEvent::BuffApply { time, target, buff_name });
+    }
+
+    pub fn record_buff_expire(&mut self, time: SimTime, target: ChampionId, buff_name: String) {
+        self.events.push(CombatEvent::BuffExpire { time, target, buff_name });
+    }
+
+    pub fn record_resource_update(&mut self, time: SimTime, target: ChampionId, resource_type: String, amount: f64, max: f64) {
+        self.events.push(CombatEvent::ResourceUpdate { time, target, resource_type, amount, max });
+    }
 }
 
 impl lol_core::event::EventRecorder for DataCollector {
@@ -74,5 +103,17 @@ impl lol_core::event::EventRecorder for DataCollector {
     
     fn record_death(&mut self, time: SimTime, champion: ChampionId) {
         self.record_death(time, champion);
+    }
+    
+    fn record_buff_apply(&mut self, time: SimTime, target: ChampionId, buff_name: String) {
+        self.record_buff_apply(time, target, buff_name);
+    }
+    
+    fn record_buff_expire(&mut self, time: SimTime, target: ChampionId, buff_name: String) {
+        self.record_buff_expire(time, target, buff_name);
+    }
+    
+    fn record_resource_update(&mut self, time: SimTime, target: ChampionId, resource_type: String, amount: f64, max: f64) {
+        self.record_resource_update(time, target, resource_type, amount, max);
     }
 }

@@ -123,3 +123,26 @@ EventManager::run()
 | thiserror | 에러 타입 |
 | tracing | 로깅 |
 | ordered-float | 이벤트 큐 정렬 |
+
+## CLI Usage
+
+이 시뮬레이션 프로젝트는 `clap` 기반의 터미널 인터페이스를 제공합니다. 메인 명령어는 `simulate`입니다.
+
+### 시뮬레이션 실행 (텍스트 & 간트 차트 출력)
+```bash
+cargo run -- simulate -a Garen -b Darius
+```
+- `-a`, `--champion-a <NAME>`: 조종할 챔피언 이름 (예: Garen, Jinx 등). 대소문자를 구분할 수 있으므로 가급적 첫 글자를 대문자로 입력하세요.
+- `-b`, `--champion-b <NAME>`: 샌드백용 혹은 적 챔피언 이름 (예: Darius).
+
+### 타임라인 웹 리포트 출력 (HTML)
+```bash
+cargo run -- simulate -a Garen -b Darius --html-out report.html
+```
+- `--html-out <FILE_PATH>`: 텍스트 및 간트 차트 외에 OP.GG 아이콘이 연동된 다크 테마 기반의 "웹 브라우저용 인터랙티브 타임라인 리포트" 파일을 생성합니다. 생성된 `report.html` 파일을 브라우저로 열면 됩니다.
+
+### 반복 횟수 지정 (통계용)
+```bash
+cargo run -- simulate -a Garen -b Darius --iterations 1000
+```
+- `-i`, `--iterations <NUM>`: 시뮬레이션을 몇 회 반복할지 설정합니다. 치명타, 회피, 발동 확률 등의 난수 효과에 대한 정밀한 평균 DPS를 구하기 위해 사용됩니다. (기본값: 100)

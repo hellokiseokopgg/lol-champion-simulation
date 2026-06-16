@@ -11,6 +11,9 @@ pub trait EventRecorder {
     fn record_damage(&mut self, time: SimTime, source: crate::types::ChampionId, target: crate::types::ChampionId, ability: crate::types::AbilitySlot, amount: f64, is_crit: bool);
     fn record_cast(&mut self, time: SimTime, source: crate::types::ChampionId, ability: crate::types::AbilitySlot);
     fn record_death(&mut self, time: SimTime, champion: crate::types::ChampionId);
+    fn record_buff_apply(&mut self, time: SimTime, target: crate::types::ChampionId, buff_name: String);
+    fn record_buff_expire(&mut self, time: SimTime, target: crate::types::ChampionId, buff_name: String);
+    fn record_resource_update(&mut self, time: SimTime, target: crate::types::ChampionId, resource_type: String, amount: f64, max: f64);
 }
 
 /// Context provided to events when they are executed.
