@@ -1059,8 +1059,8 @@ actions+=/AutoAttack
   { "type": "damage", "time": 59.60000000000028, "source": "Garen", "ability": "AutoAttack", "amount": 154.4262304135594 }
 ];
     const itemsData = {
-  "Dummy": [],
-  "Garen": [{"id": "6631", "name": "발걸음 분쇄기"}, {"id": "3033", "name": "필멸자의 운명"}, {"id": "3046", "name": "유령 무희"}]
+  "Garen": [{"id": "6631", "name": "발걸음 분쇄기"}, {"id": "3033", "name": "필멸자의 운명"}, {"id": "3046", "name": "유령 무희"}],
+  "Dummy": []
 };
     
     // UI Elements
@@ -1191,7 +1191,12 @@ actions+=/AutoAttack
             if (cast.ability === "AutoAttack") {
                 node.style.backgroundImage = `url('https://opgg-static.akamaized.net/meta/images/lol/16.12.1/item/1036.png?image=q_auto:good,f_webp,w_64,h_64&v=1612')`;
             } else {
-                node.style.backgroundImage = `url('https://opgg-static.akamaized.net/meta/images/lol/16.12.1/spell/${cast.source}${cast.ability}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612')`;
+                const itemId = getItemId(cast.source, cast.ability);
+                if (itemId) {
+                    node.style.backgroundImage = `url('https://opgg-static.akamaized.net/meta/images/lol/16.12.1/item/${itemId}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612')`;
+                } else {
+                    node.style.backgroundImage = `url('https://opgg-static.akamaized.net/meta/images/lol/16.12.1/spell/${cast.source}${cast.ability}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612')`;
+                }
             }
 
             // Display resource delta if the champion uses resources
@@ -1482,10 +1487,22 @@ actions+=/AutoAttack
 
             if (e.type === 'cast') {
                 eventType = 'Cast';
-                details = `Used <strong style="color:var(--color-green);">${e.ability}</strong>`;
+                const itemId = getItemIdLocal(e.source, e.ability);
+                if (itemId) {
+                    const iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/item/${itemId}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
+                    details = `Used <img src="${iconUrl}" style="width:16px; height:16px; vertical-align:middle; border-radius:3px; margin-right:4px;" onerror="this.style.display='none';"> <strong style="color:var(--color-green);">${e.ability}</strong>`;
+                } else {
+                    details = `Used <strong style="color:var(--color-green);">${e.ability}</strong>`;
+                }
             } else if (e.type === 'damage') {
                 eventType = 'Damage';
-                details = `<strong style="color:var(--color-cyan);">${e.ability}</strong> hit for <strong style="color:#f87171;">${e.amount.toFixed(1)}</strong>`;
+                const itemId = getItemIdLocal(e.source, e.ability);
+                if (itemId) {
+                    const iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/item/${itemId}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
+                    details = `<img src="${iconUrl}" style="width:16px; height:16px; vertical-align:middle; border-radius:3px; margin-right:4px;" onerror="this.style.display='none';"> <strong style="color:var(--color-cyan);">${e.ability}</strong> hit for <strong style="color:#f87171;">${e.amount.toFixed(1)}</strong>`;
+                } else {
+                    details = `<strong style="color:var(--color-cyan);">${e.ability}</strong> hit for <strong style="color:#f87171;">${e.amount.toFixed(1)}</strong>`;
+                }
             } else if (e.type === 'death') {
                 eventType = 'Death';
                 details = `Died`;
