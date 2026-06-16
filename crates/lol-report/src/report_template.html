@@ -496,6 +496,22 @@
         </div>
     </div>
 
+    <!-- Items Card -->
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-header-left">
+                <span style="font-weight:600; font-size:15px; display:flex; align-items:center; gap:8px;">
+                    Champions & Items
+                </span>
+            </div>
+        </div>
+        <div class="panel-body">
+            <div id="itemsContainer" style="display: flex; gap: 40px; width: 100%;">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+
     <!-- Simulation Options -->
     <div class="panel">
         <div class="panel-header" style="cursor: pointer;" onclick="const b=this.nextElementSibling; const i=this.querySelector('.toggle-icon'); if(b.style.display==='none'){b.style.display='flex'; i.innerHTML='&#9660;';}else{b.style.display='none'; i.innerHTML='&#9654;';}">
@@ -643,20 +659,6 @@
         </div>
     </div>
 
-    </div>
-
-    <!-- Items Card -->
-    <div class="panel">
-        <div class="timeline-header">
-            <div class="timeline-title">Champions & Items</div>
-        </div>
-        <div class="panel-body">
-            <div id="itemsContainer" style="display: flex; gap: 40px; width: 100%;">
-                <!-- Populated by JS -->
-            </div>
-        </div>
-    </div>
-
 </div>
 
 <div class="tooltip" id="tooltip"></div>
@@ -685,13 +687,16 @@
             col.className = 'col';
             let html = `<h4>${champ}</h4>`;
             if (items.length === 0) {
-                html += `<p>No items equipped.</p>`;
+                html += `<p style="font-size: 12px; color: var(--text-muted);">No items equipped.</p>`;
             } else {
-                html += `<ul style="list-style: none; padding: 0;">`;
+                html += `<div style="display: flex; gap: 8px; flex-wrap: wrap;">`;
                 items.forEach(item => {
-                    html += `<li style="padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px; margin-bottom: 4px; border: 1px solid #303240;">${item}</li>`;
+                    const initials = item.split(' ').map(w => w[0]).join('').substring(0, 3);
+                    html += `<div style="width: 44px; height: 44px; background: linear-gradient(135deg, #2a2b36 0%, #1a1b23 100%); border: 1px solid #4b5563; border-radius: 6px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.3); cursor: pointer; transition: all 0.2s;" title="${item}" onmouseover="this.style.borderColor='var(--color-purple)'; this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='#4b5563'; this.style.transform='translateY(0)';">
+                        <span style="font-size: 12px; font-weight: bold; color: #e5e7eb; text-shadow: 1px 1px 2px #000;">${initials}</span>
+                    </div>`;
                 });
-                html += `</ul>`;
+                html += `</div>`;
             }
             col.innerHTML = html;
             itemsContainer.appendChild(col);
