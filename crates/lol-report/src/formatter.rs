@@ -45,6 +45,14 @@ impl Formatter {
         output
     }
 
+    fn get_localized_buff_name(english_name: &str) -> String {
+        match english_name {
+            "Black Cleaver Shred" => "깍아내리기".to_string(),
+            "Black Cleaver Fervor" => "열정".to_string(),
+            _ => english_name.to_string(),
+        }
+    }
+
     pub fn format_gantt(collector: &DataCollector) -> String {
         let mut out = String::new();
         out.push_str("```mermaid\ngantt\n    title Combat Skill Timeline\n    dateFormat x\n    axisFormat %S.%L\n\n");
@@ -68,6 +76,9 @@ impl Formatter {
 
         for (actor, events) in actor_events {
             out.push_str(&format!("    section {}\n", actor.0));
+            
+            let mut last_buff_times: std::collections::HashMap<String, f64> = std::collections::HashMap::new();
+
             for event in events {
                 match event {
                     CombatEvent::Cast { time, ability, .. } => {
@@ -82,7 +93,18 @@ impl Formatter {
                     }
                     CombatEvent::BuffApply { time, buff_name, .. } => {
                         let ms = (time.as_f64() * 1000.0) as u64;
-                        out.push_str(&format!("    Effect {} : {}, {}\n", buff_name, ms, ms + 150));
+                        let localized = Self::get_localized_buff_name(&buff_name);
+                        
+                        let should_print = if let Some(&last_time) = last_buff_times.get(&localized) {
+                            time.as_f64() - last_time >= 1.0 // Only print if 1s has passed since last effect
+                        } else {
+                            true
+                        };
+
+                        if should_print {
+                            last_buff_times.insert(localized.clone(), time.as_f64());
+                            out.push_str(&format!("    Effect {} : {}, {}\n", localized, ms, ms + 150));
+                        }
                     }
                     _ => {}
                 }
@@ -94,52 +116,69 @@ impl Formatter {
 
     pub fn format_html(collector: &DataCollector, apl_script: &str) -> String {
         let mut json_events = String::from("[\n");
-        for (i, event) in collector.events.iter().enumerate() {
+        let mut filtered_json_strs = Vec::new();
+        let mut last_buff_times_html: std::collections::HashMap<String, f64> = std::collections::HashMap::new();
+
+        for event in &collector.events {
             let json_str = match event {
                 CombatEvent::Cast { time, source, ability } => {
-                    format!(
+                    Some(format!(
                         r#"  {{ "type": "cast", "time": {}, "source": "{}", "ability": "{:?}" }}"#,
                         time.as_f64(), source.0, ability
-                    )
+                    ))
                 }
                 CombatEvent::Damage { time, source, ability, amount, .. } => {
-                    format!(
+                    Some(format!(
                         r#"  {{ "type": "damage", "time": {}, "source": "{}", "ability": "{:?}", "amount": {} }}"#,
                         time.as_f64(), source.0, ability, amount
-                    )
+                    ))
                 }
                 CombatEvent::Death { time, champion } => {
-                    format!(
+                    Some(format!(
                         r#"  {{ "type": "death", "time": {}, "source": "{}" }}"#,
                         time.as_f64(), champion.0
-                    )
+                    ))
                 }
                 CombatEvent::BuffApply { time, target, buff_name } => {
-                    format!(
-                        r#"  {{ "type": "buff_apply", "time": {}, "target": "{}", "buff_name": "{}" }}"#,
-                        time.as_f64(), target.0, buff_name
-                    )
+                    let localized = Self::get_localized_buff_name(&buff_name);
+                    let key = format!("{}_{}", target.0, localized);
+                    let should_print = if let Some(&last_time) = last_buff_times_html.get(&key) {
+                        time.as_f64() - last_time >= 1.0
+                    } else {
+                        true
+                    };
+
+                    if should_print {
+                        last_buff_times_html.insert(key, time.as_f64());
+                        Some(format!(
+                            r#"  {{ "type": "buff_apply", "time": {}, "target": "{}", "buff_name": "{}" }}"#,
+                            time.as_f64(), target.0, localized
+                        ))
+                    } else {
+                        None
+                    }
                 }
                 CombatEvent::BuffExpire { time, target, buff_name } => {
-                    format!(
+                    let localized = Self::get_localized_buff_name(&buff_name);
+                    Some(format!(
                         r#"  {{ "type": "buff_expire", "time": {}, "target": "{}", "buff_name": "{}" }}"#,
-                        time.as_f64(), target.0, buff_name
-                    )
+                        time.as_f64(), target.0, localized
+                    ))
                 }
                 CombatEvent::ResourceUpdate { time, target, resource_type, amount, max } => {
-                    format!(
+                    Some(format!(
                         r#"  {{ "type": "resource_update", "time": {}, "target": "{}", "resource_type": "{}", "amount": {}, "max": {} }}"#,
                         time.as_f64(), target.0, resource_type, amount, max
-                    )
+                    ))
                 }
             };
-            json_events.push_str(&json_str);
-            if i < collector.events.len() - 1 {
-                json_events.push_str(",\n");
-            } else {
-                json_events.push('\n');
+            if let Some(s) = json_str {
+                filtered_json_strs.push(s);
             }
         }
+
+        json_events.push_str(&filtered_json_strs.join(",\n"));
+        json_events.push('\n');
         json_events.push(']');
 
         let mut json_items = String::from("{\n");

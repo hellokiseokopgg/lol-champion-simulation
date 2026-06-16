@@ -1025,6 +1025,7 @@
     // Process Data
     const casts = events.filter(e => e.type === "cast");
     const damages = events.filter(e => e.type === "damage");
+    const buffs = events.filter(e => e.type === "buff_apply");
     let resourceUpdates = events.filter(e => e.type === "resource_update");
     
     let maxTime = 0;
@@ -1125,6 +1126,49 @@
 
             node.addEventListener('mouseenter', (e) => {
                 tooltip.innerHTML = `<strong>${cast.ability}</strong>Cast: <span class="time">${cast.time.toFixed(3)}s</span>`;
+                tooltip.style.opacity = 1;
+                tooltip.style.left = (e.clientX + 15) + 'px';
+                tooltip.style.top = (e.clientY + 15) + 'px';
+            });
+            node.addEventListener('mousemove', (e) => {
+                tooltip.style.left = (e.clientX + 15) + 'px';
+                tooltip.style.top = (e.clientY + 15) + 'px';
+            });
+            node.addEventListener('mouseleave', () => tooltip.style.opacity = 0);
+
+            timelineContent.appendChild(node);
+        });
+
+        // 2.5 Item/Buff Effects
+        let buffLastX = -999;
+        let buffCurrentY = 120;
+        buffs.forEach(buff => {
+            const node = document.createElement('div');
+            node.className = 'event-icon';
+            node.style.width = '24px';
+            node.style.height = '24px';
+            node.style.borderRadius = '50%';
+            node.style.border = '2px solid #a855f7';
+            node.style.backgroundColor = '#3b0764';
+            node.style.display = 'flex';
+            node.style.alignItems = 'center';
+            node.style.justifyContent = 'center';
+            node.innerHTML = '<span style="color: #d8b4fe; font-size: 12px; font-weight: bold;">E</span>';
+            
+            const x = buff.time * PX_PER_SEC + OFFSET_X - 12; // center 24px icon
+            
+            if (x - buffLastX < 16) {
+                buffCurrentY = (buffCurrentY === 120) ? 148 : 120;
+            } else {
+                buffCurrentY = 120;
+            }
+            buffLastX = x;
+
+            node.style.left = x + 'px';
+            node.style.top = buffCurrentY + 'px';
+            
+            node.addEventListener('mouseenter', (e) => {
+                tooltip.innerHTML = `<strong>Item/Buff: ${buff.buff_name}</strong><br>Time: <span class="time">${buff.time.toFixed(3)}s</span><br>Target: ${buff.target}`;
                 tooltip.style.opacity = 1;
                 tooltip.style.left = (e.clientX + 15) + 'px';
                 tooltip.style.top = (e.clientY + 15) + 'px';

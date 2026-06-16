@@ -70,6 +70,36 @@ impl crate::buff::StatusEffect for BlackCleaverShred {
     }
 }
 
+pub struct BlackCleaverFervor;
+
+impl crate::buff::StatusEffect for BlackCleaverFervor {
+    fn id(&self) -> crate::types::EffectId {
+        crate::types::EffectId("BlackCleaverFervor".into())
+    }
+
+    fn name(&self) -> &str {
+        "Black Cleaver Fervor"
+    }
+
+    fn duration(&self) -> f64 {
+        2.0
+    }
+
+    fn refresh_behavior(&self) -> crate::buff::RefreshBehavior {
+        crate::buff::RefreshBehavior::RefreshDuration
+    }
+
+    fn max_stacks(&self) -> u32 {
+        1
+    }
+
+    fn stat_modifiers(&self, _stacks: u32) -> StatBlock {
+        let mut stats = StatBlock::new();
+        stats.movement_speed = 20.0;
+        stats
+    }
+}
+
 pub struct BlackCleaverEffect;
 
 impl ItemEffect for BlackCleaverEffect {
@@ -77,8 +107,9 @@ impl ItemEffect for BlackCleaverEffect {
         "Black Cleaver"
     }
 
-    fn on_physical_damage(&self, ctx: &mut SimContext, _actor: &ChampionId, target: &ChampionId, _damage: &DamageResult) {
+    fn on_physical_damage(&self, ctx: &mut SimContext, actor: &ChampionId, target: &ChampionId, _damage: &DamageResult) {
         ctx.apply_buff(target, Box::new(BlackCleaverShred));
+        ctx.apply_buff(actor, Box::new(BlackCleaverFervor));
     }
 }
 
