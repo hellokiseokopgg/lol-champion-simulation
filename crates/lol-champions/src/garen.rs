@@ -114,6 +114,18 @@ impl StatusEffect for GarenEArmorShred {
     }
 }
 
+pub struct GarenEBuff;
+impl StatusEffect for GarenEBuff {
+    fn id(&self) -> EffectId { EffectId("GarenEBuff".into()) }
+    fn name(&self) -> &str { "Judgment" }
+    fn duration(&self) -> f64 { 3.0 }
+    fn refresh_behavior(&self) -> RefreshBehavior { RefreshBehavior::RefreshDuration }
+    fn max_stacks(&self) -> u32 { 1 }
+    fn stat_modifiers(&self, _stacks: u32) -> StatBlock {
+        StatBlock::new()
+    }
+}
+
 // -----------------------------------------------------------------------------
 // Abilities
 // -----------------------------------------------------------------------------
@@ -127,8 +139,10 @@ impl Ability for GarenQ {
     fn cost(&self, _level: u32) -> f64 { 0.0 }
     fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, _target: &ChampionId) {
         if let Some(champ_ref) = ctx.champions.get(actor) {
-            champ_ref.borrow_mut().state_mut().buffs.apply_effect(Box::new(GarenQBuff), ctx.current_time);
-            champ_ref.borrow_mut().update_stats();
+            let mut champ = champ_ref.borrow_mut();
+            champ.state_mut().buffs.apply_effect(Box::new(GarenQBuff), ctx.current_time);
+            champ.state_mut().abilities.reset_cooldown(AbilitySlot::AutoAttack);
+            champ.update_stats();
         }
     }
     fn clone_box(&self) -> Box<dyn Ability> { Box::new(self.clone()) }
@@ -163,6 +177,9 @@ impl Ability for GarenE {
     fn base_cooldown(&self, _level: u32) -> f64 { 9.0 }
     fn cost(&self, _level: u32) -> f64 { 0.0 }
     fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, target: &ChampionId) {
+        if let Some(champ_ref) = ctx.champions.get(actor) {
+            champ_ref.borrow_mut().state_mut().buffs.apply_effect(Box::new(GarenEBuff), ctx.current_time);
+        }
         let e_event = JudgmentTickEvent {
             attacker: actor.clone(),
             defender: target.clone(),
@@ -210,9 +227,15 @@ impl Ability for GarenAutoAttack {
     fn base_cooldown(&self, _level: u32) -> f64 { 1.0 }
     fn cost(&self, _level: u32) -> f64 { 0.0 }
     fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, target: &ChampionId) {
+        let mut has_q_buff = false;
         let attacker_stats = {
             if let Some(a) = ctx.champions.get(actor) {
-                a.borrow().as_ref().state().stats.current.clone()
+                let mut champ = a.borrow_mut();
+                if champ.state().buffs.has_buff_by_name("Decisive Strike", ctx.current_time) {
+                    has_q_buff = true;
+                    champ.state_mut().buffs.remove_effect(&EffectId("GarenQ".into()));
+                }
+                champ.state().stats.current.clone()
             } else {
                 return;
             }
@@ -226,8 +249,16 @@ impl Ability for GarenAutoAttack {
             }
         };
 
+        let mut raw_damage = attacker_stats.attack_damage;
+        let mut slot_to_record = AbilitySlot::AutoAttack;
+        if has_q_buff {
+            // Rank 5 Q bonus: 150 + 0.5 AD
+            raw_damage += 150.0 + 0.5 * attacker_stats.attack_damage;
+            slot_to_record = AbilitySlot::Q;
+        }
+
         let damage_result = DamagePipeline::process(
-            attacker_stats.attack_damage,
+            raw_damage,
             DamageType::Physical,
             false,
             &attacker_stats,
@@ -239,10 +270,14 @@ impl Ability for GarenAutoAttack {
                 ctx.current_time,
                 actor.clone(),
                 target.clone(),
-                AbilitySlot::AutoAttack,
+                slot_to_record,
                 damage_result.final_damage,
                 false,
             );
+        }
+
+        if let Some(d) = ctx.champions.get(target) {
+            d.borrow_mut().as_mut().state_mut().health.consume(damage_result.final_damage);
         }
     }
     fn clone_box(&self) -> Box<dyn Ability> { Box::new(self.clone()) }
@@ -303,6 +338,10 @@ impl SimEvent for JudgmentTickEvent {
             );
         }
 
+        if let Some(d) = ctx.champions.get(&self.defender) {
+            d.borrow_mut().as_mut().state_mut().health.consume(damage_result.final_damage);
+        }
+
         let new_hits = self.hits_landed + 1;
         
         // Apply shred if 6 hits landed
@@ -342,13 +381,9 @@ impl SimEvent for DemacianJusticeEvent {
     fn execute(&self, ctx: &mut SimContext, _event_manager: &mut lol_core::event::EventManager) {
         let defender_health = {
             if let Some(d) = ctx.champions.get(&self.defender) {
-                // In a real sim, we need current HP tracking.
-                // For MVP, we assume current HP is tracked in `state.health.current` (if we implement resource)
-                // We'll use 50% missing health as a mock test for now since Resource tracking is basic.
-                let max_hp = d.borrow().as_ref().state().stats.current.health;
-                // mock 50% missing
-                let missing_hp = max_hp * 0.5; 
-                missing_hp
+                let max_hp = d.borrow().as_ref().state().health.max;
+                let current_hp = d.borrow().as_ref().state().health.current;
+                max_hp - current_hp
             } else {
                 0.0
             }
@@ -373,6 +408,10 @@ impl SimEvent for DemacianJusticeEvent {
                 damage_result.final_damage,
                 false,
             );
+        }
+
+        if let Some(d) = ctx.champions.get(&self.defender) {
+            d.borrow_mut().as_mut().state_mut().health.consume(damage_result.final_damage);
         }
     }
     fn name(&self) -> &str { "DemacianJustice" }

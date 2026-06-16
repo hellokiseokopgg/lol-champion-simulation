@@ -7,6 +7,8 @@ pub enum Expression {
     CooldownReady(AbilitySlot),
     HealthPctLessThan(f64),
     TargetHealthPctLessThan(f64),
+    HasBuff(String),
+    NotHasBuff(String),
     And(Box<Expression>, Box<Expression>),
     Or(Box<Expression>, Box<Expression>),
 }
@@ -53,6 +55,16 @@ impl Expression {
             return Ok(Expression::TargetHealthPctLessThan(val));
         }
 
+        if input.starts_with("buff.") && input.ends_with(".up") {
+            let buff_name = &input["buff.".len()..input.len() - ".up".len()];
+            return Ok(Expression::HasBuff(buff_name.to_string()));
+        }
+
+        if input.starts_with("buff.") && input.ends_with(".down") {
+            let buff_name = &input["buff.".len()..input.len() - ".down".len()];
+            return Ok(Expression::NotHasBuff(buff_name.to_string()));
+        }
+
         Err(format!("Unknown expression: {}", input))
     }
 
@@ -76,6 +88,12 @@ impl Expression {
                 } else {
                     false
                 }
+            }
+            Expression::HasBuff(name) => {
+                champion.state().buffs.has_buff_by_name(name, ctx.current_time)
+            }
+            Expression::NotHasBuff(name) => {
+                !champion.state().buffs.has_buff_by_name(name, ctx.current_time)
             }
             Expression::And(left, right) => {
                 left.evaluate(ctx, champion, target) && right.evaluate(ctx, champion, target)

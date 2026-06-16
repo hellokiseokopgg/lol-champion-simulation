@@ -95,6 +95,13 @@ impl AbilitySlotManager {
             state.level += 1;
         }
     }
+
+    /// Resets the cooldown of the specified ability to ready.
+    pub fn reset_cooldown(&mut self, slot: AbilitySlot) {
+        if let Some(state) = self.states.get_mut(&slot) {
+            state.cooldown.ready_at = crate::types::SimTime::new(0.0);
+        }
+    }
     
     /// Checks if an ability is learned (level > 0) and off cooldown.
     pub fn is_ready(&self, slot: AbilitySlot, current_time: SimTime) -> bool {

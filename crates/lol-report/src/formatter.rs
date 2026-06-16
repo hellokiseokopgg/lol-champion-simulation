@@ -75,7 +75,7 @@ impl Formatter {
         out
     }
 
-    pub fn format_html(collector: &DataCollector) -> String {
+    pub fn format_html(collector: &DataCollector, apl_script: &str) -> String {
         let mut json_events = String::from("[\n");
         for (i, event) in collector.events.iter().enumerate() {
             let json_str = match event {
@@ -127,5 +127,6 @@ impl Formatter {
 
         let html_template = include_str!("report_template.html");
         html_template.replace("/* __EVENTS_JSON__ */", &json_events)
+                     .replace("<!-- __APL_SCRIPT__ -->", &apl_script.replace('\n', "<br>"))
     }
 }

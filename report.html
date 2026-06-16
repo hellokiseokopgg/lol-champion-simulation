@@ -6,646 +6,901 @@
     <title>Combat Simulation Report</title>
     <style>
         :root {
-            --bg-color: #1a1b26;
-            --panel-bg: #24283b;
-            --panel-header-bg: #1f2335;
-            --text-color: #a9b1d6;
-            --text-muted: #565f89;
-            --text-highlight: #c0caf5;
-            --border-color: #414868;
-            --accent-color: #7aa2f7;
-            --accent-hover: #8caaee;
-            --dmg-color: #f7768e;
-            --buff-color: rgba(65, 166, 181, 0.4);
-            --scrubber-color: #ff9e64;
-            --resource-color: rgba(122, 162, 247, 0.2);
-            --resource-stroke: #7aa2f7;
-            --icon-size: 36px;
-            --px-per-sec: 80px; 
-            --track-height: 48px;
+            --bg-page: #1a1b23;
+            --bg-panel: #21222d;
+            --bg-input: #1a1b23;
+            --border-color: #303240;
+            --text-main: #d1d5db;
+            --text-muted: #9ca3af;
+            --text-warning: #fbbf24;
+            --text-success: #4ade80;
+            --color-purple: #a855f7;
+            --color-orange: #f97316;
+            --color-cyan: rgba(34, 211, 238, 0.85);
+            --color-green: #84cc16;
+            --radius-md: 6px;
+            --radius-sm: 4px;
+            --font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --icon-size: 28px;
         }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         
         body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            margin: 0;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            font-family: var(--font-family);
+            font-size: 13px;
             padding: 20px;
+            line-height: 1.5;
         }
 
         .container {
             max-width: 1400px;
             margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
         }
 
-        /* Mock Header Panel */
-        .mock-panel {
-            background-color: var(--panel-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            margin-bottom: 20px;
-            overflow: hidden;
+        /* Top Nav & Alert */
+        .top-nav {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
         }
-        .mock-header {
-            background-color: var(--panel-header-bg);
-            padding: 10px 15px;
-            border-bottom: 1px solid var(--border-color);
-            font-weight: bold;
+        .nav-title { font-weight: 600; font-size: 15px; }
+        .badge {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .badge.blue { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .badge.green { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+        .badge.purple { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+
+        .alert-box {
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid rgba(251, 191, 36, 0.2);
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            color: var(--text-warning);
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-        .mock-body {
-            padding: 15px;
+        .alert-link { color: #60a5fa; text-decoration: none; font-weight: 500; }
+        .alert-link:hover { text-decoration: underline; }
+
+        /* Inputs Grid */
+        .input-row {
             display: flex;
-            gap: 15px;
+            gap: 16px;
+            flex-wrap: wrap;
         }
-        .mock-btn {
-            background: var(--bg-color);
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex: 1;
+            min-width: 150px;
+        }
+        .input-group label {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        .form-control {
+            background: var(--bg-input);
             border: 1px solid var(--border-color);
-            color: var(--text-color);
-            padding: 6px 12px;
-            border-radius: 4px;
+            color: var(--text-main);
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
             font-size: 13px;
+            outline: none;
+            width: 100%;
         }
-
-        /* Toolbar */
-        .toolbar {
+        .form-control:focus { border-color: #60a5fa; }
+        .input-with-suffix {
             display: flex;
             align-items: center;
-            gap: 15px;
-            background-color: var(--panel-bg);
-            padding: 10px 15px;
+            background: var(--bg-input);
             border: 1px solid var(--border-color);
-            border-bottom: none;
-            border-radius: 6px 6px 0 0;
+            border-radius: var(--radius-sm);
+            padding-right: 12px;
         }
-
-        .play-btn {
-            background: var(--accent-color);
-            color: #15161e;
+        .input-with-suffix input {
+            background: transparent;
             border: none;
-            border-radius: 4px;
-            width: 32px;
-            height: 32px;
-            cursor: pointer;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            color: var(--text-main);
+            padding: 8px 12px;
+            outline: none;
+            width: 100%;
         }
-        .play-btn:hover { background: var(--accent-hover); }
+        .input-with-suffix span { color: var(--text-muted); font-size: 12px; }
 
-        .time-display {
-            font-family: monospace;
-            font-size: 16px;
-            color: var(--text-highlight);
-            width: 80px;
-        }
-
-        .zoom-slider {
-            width: 100px;
-            cursor: pointer;
-        }
-
-        /* Timeline Container */
-        .timeline-container {
-            background-color: var(--panel-bg);
+        /* Simulation Options Panel */
+        .panel {
+            background: var(--bg-panel);
             border: 1px solid var(--border-color);
-            border-radius: 0 0 6px 6px;
-            position: relative;
+            border-radius: var(--radius-md);
             overflow: hidden;
         }
+        .panel-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255,255,255,0.02);
+            cursor: pointer;
+        }
+        .panel-header-left { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px;}
+        .panel-header-right { display: flex; gap: 8px; }
+        
+        .panel-body {
+            padding: 20px;
+            display: flex;
+            gap: 40px;
+        }
+        .col { flex: 1; display: flex; flex-direction: column; gap: 12px; }
+        .col h4 { font-size: 14px; font-weight: 600; margin-bottom: 4px; color: #fff;}
+        .col p { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
+        
+        .purple-btn {
+            background: var(--color-purple);
+            color: #fff;
+            border: none;
+            padding: 12px;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: auto;
+        }
+        .purple-btn:hover { background: #b065f8; }
 
-        .timeline-scroll-wrapper {
+        /* Sliders in Options */
+        .slider-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12px;
+        }
+        .slider-row .val { font-weight: 600; }
+        .slider-row .val.green { color: var(--text-success); }
+        .slider-row .val.orange { color: var(--text-warning); }
+        .slider-row .val.purple { color: #c084fc; }
+        .slider-row .val.red { color: #f87171; }
+        
+        /* Timeline Card */
+        .timeline-header {
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .timeline-title { font-size: 15px; font-weight: 600; color: #fff; }
+        .timeline-controls {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        .checkbox-group { display: flex; align-items: center; gap: 6px; cursor: pointer;}
+        .checkbox-group input { accent-color: var(--color-green); cursor: pointer; }
+        
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .btn-outline:hover { background: rgba(255,255,255,0.05); }
+
+        /* The Timeline Area */
+        .timeline-body {
             position: relative;
+            background: var(--bg-page);
             overflow-x: auto;
             overflow-y: hidden;
             padding-bottom: 10px;
         }
-
-        .timeline-content {
+        .timeline-inner {
             position: relative;
-            margin-top: 30px; /* space for axis */
+            height: 220px;
+            min-width: 100%;
         }
 
-        /* Axis markers */
-        .time-axis {
+        /* Axis */
+        .axis {
             position: absolute;
-            top: 0;
+            top: 20px;
             left: 0;
             right: 0;
-            height: 25px;
-            border-bottom: 1px solid var(--border-color);
-            background: var(--panel-header-bg);
-            z-index: 20;
+            height: 1px;
+            background: var(--border-color);
+            z-index: 5;
         }
-
         .tick {
             position: absolute;
-            top: 0;
-            bottom: -5px;
+            top: -15px;
             width: 1px;
-            background-color: var(--border-color);
+            height: 35px;
+            background: var(--border-color);
         }
-
         .tick-label {
             position: absolute;
-            top: 5px;
+            top: -20px;
             transform: translateX(-50%);
-            font-size: 11px;
+            font-size: 10px;
             color: var(--text-muted);
         }
 
-        .track-label {
-            position: sticky;
-            left: 10px;
-            display: inline-block;
-            background: var(--bg-color);
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            color: var(--accent-color);
-            z-index: 15;
-            border: 1px solid var(--border-color);
-            font-weight: bold;
-        }
-
-        /* Buff blocks */
-        .buff-block {
+        /* Grid lines */
+        .grid-lines {
             position: absolute;
-            height: 14px;
-            background-color: var(--buff-color);
-            border-radius: 2px;
-            z-index: 2;
+            top: 20px;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 1;
+            pointer-events: none;
         }
-
-        /* Event Icons */
-        .event-node {
-            position: absolute;
-            width: var(--icon-size);
-            height: var(--icon-size);
-            border: 2px solid #292e42;
-            border-radius: 4px;
-            background-color: var(--bg-color);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 10px;
-            font-weight: bold;
-            color: white;
-            cursor: pointer;
-            transition: transform 0.1s, border-color 0.1s;
-            transform: translate(-50%, -50%);
-            background-size: cover;
-            z-index: 10;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-        }
-
-        .event-node:hover {
-            transform: translate(-50%, -50%) scale(1.15);
-            border-color: var(--accent-color);
-            z-index: 100;
-        }
-
-        /* Scrubber */
-        .scrubber-line {
+        .grid-line {
             position: absolute;
             top: 0;
             bottom: 0;
+            width: 1px;
+            border-left: 1px dashed rgba(255,255,255,0.05);
+        }
+
+        /* SVG Graph */
+        .resource-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        /* Icons */
+        .event-icon {
+            position: absolute;
+            width: var(--icon-size);
+            height: var(--icon-size);
+            border-radius: 4px;
+            background-size: cover;
+            border: 2px solid transparent;
+            z-index: 10;
+            transform: translateX(-50%);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            cursor: pointer;
+        }
+        .event-icon:hover {
+            z-index: 100;
+            filter: brightness(1.2);
+            box-shadow: 0 0 8px rgba(255,255,255,0.3);
+        }
+        /* Border colors based on type */
+        .event-icon.primary { border-color: var(--color-green); }
+        .event-icon.fallback { border-color: var(--text-warning); }
+        .event-icon.instant { border-color: #3b82f6; }
+        
+        .resource-delta {
+            position: absolute;
+            bottom: -16px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 9px;
+            font-weight: bold;
+            color: #fff;
+            background: rgba(0,0,0,0.6);
+            padding: 1px 4px;
+            border-radius: 2px;
+            white-space: nowrap;
+            z-index: 11;
+        }
+        .resource-delta.positive { color: var(--color-cyan); }
+        .resource-delta.negative { color: #f87171; }
+
+        /* Scrubber */
+        .scrubber {
+            position: absolute;
+            top: 20px;
+            bottom: 0;
             width: 2px;
-            background-color: var(--scrubber-color);
+            background: var(--color-orange);
             z-index: 50;
             pointer-events: none;
         }
-        .scrubber-handle {
+        .scrubber-head {
             position: absolute;
-            top: 0;
-            width: 10px;
-            height: 10px;
-            background: var(--scrubber-color);
-            transform: translate(-4px, 15px) rotate(45deg);
+            top: -6px;
+            left: -5px;
+            width: 12px;
+            height: 12px;
+            background: var(--color-orange);
+            border-radius: 50%;
+        }
+        .scrubber-label {
+            position: absolute;
+            bottom: 0;
+            left: 5px;
+            font-size: 11px;
+            color: var(--text-muted);
+            white-space: nowrap;
         }
 
-        /* Resource Area Graph */
-        .resource-graph {
-            position: relative;
-            height: 80px;
+        /* Legend */
+        .legend-bar {
+            padding: 12px 16px;
             border-top: 1px solid var(--border-color);
-            margin-top: 20px;
-            background: rgba(0,0,0,0.1);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
         }
-        .resource-graph svg {
-            width: 100%;
-            height: 100%;
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+        .l-circle { width: 10px; height: 10px; border-radius: 50%; }
+        .l-square { width: 10px; height: 10px; border-radius: 2px; }
+
+        /* Playback Controls */
+        .playback-bar {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .play-controls { display: flex; gap: 12px; align-items: center; }
+        .play-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px; }
+        .play-btn:hover { color: #fff; }
+        .time-slider {
+            flex: 1;
+            height: 4px;
+            appearance: none;
+            background: var(--border-color);
+            border-radius: 2px;
+            outline: none;
+        }
+        .time-slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--color-green);
+            cursor: pointer;
         }
 
-        /* Tooltip */
+        /* Footer Stats */
+        .card-footer {
+            padding: 16px;
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-panel);
+            font-size: 14px;
+        }
+        .card-footer strong { font-weight: 600; color: #fff; }
+        .f-green { color: var(--text-success) !important; }
+        .f-orange { color: var(--color-orange) !important; }
+
+        /* Custom Range Slider for Zoom */
+        input[type=range].zoom-slider {
+            -webkit-appearance: none;
+            width: 100px;
+            height: 4px;
+            background: var(--border-color);
+            border-radius: 2px;
+            outline: none;
+        }
+        input[type=range].zoom-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--color-green);
+            cursor: pointer;
+        }
+
+        /* Combat Log Active Row */
+        .active-log {
+            background: rgba(255, 255, 255, 0.05) !important;
+            border-left: 2px solid var(--color-orange);
+        }
+
         .tooltip {
             position: fixed;
-            background: #1f2335;
+            background: #111;
             border: 1px solid var(--border-color);
-            padding: 10px;
-            border-radius: 6px;
-            font-size: 12px;
-            color: var(--text-color);
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 11px;
+            color: #ccc;
             pointer-events: none;
             opacity: 0;
-            transition: opacity 0.15s;
             z-index: 9999;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+            transition: opacity 0.1s;
         }
-        .tooltip strong { color: var(--text-highlight); font-size: 14px; }
-        .tooltip .time { color: var(--accent-color); margin-top: 4px; display: block; }
+        .tooltip strong { color: #fff; font-size: 13px; display: block; margin-bottom: 4px; }
 
-        /* Summary Stats */
-        .stats-bar {
-            display: flex;
-            gap: 20px;
-            padding: 15px;
-            background: var(--bg-color);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            margin-top: 20px;
-        }
-        .stat-item {
-            display: flex;
-            flex-direction: column;
-        }
-        .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; }
-        .stat-value { font-size: 16px; color: var(--text-highlight); font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    
-    <!-- Mock Options Panel -->
-    <div class="mock-panel">
-        <div class="mock-header">
-            <span>⚙️ Simulation Options</span>
+
+    <!-- Top Nav -->
+    <div class="top-nav">
+        <span class="nav-title">Rotation Preview</span>
+        <span class="badge blue">EXPERIMENTAL</span>
+    </div>
+
+    <!-- Alert -->
+    <div class="alert-box">
+        <div>
+            <span style="margin-right: 6px;">⚠️</span> 
+            <strong>Sequence flow simulator, not a DPS sim.</strong> Midnight expansion only, Classic support coming soon. Resource tracking may not be fully accurate.
         </div>
-        <div class="mock-body">
-            <button class="mock-btn">Target: Darius</button>
-            <button class="mock-btn">Iterations: 100</button>
-            <button class="mock-btn">Network Latency: 0ms</button>
+        <a href="#" class="alert-link">Got feedback? Help us improve &rarr;</a>
+    </div>
+
+    <!-- Inputs Row 1 -->
+    <div class="input-row">
+        <div class="input-group">
+            <label>Duration</label>
+            <div class="input-with-suffix"><input type="text" value="60" disabled><span>s</span></div>
+        </div>
+        <div class="input-group">
+            <label>Haste %</label>
+            <input type="text" class="form-control" value="0" disabled>
+        </div>
+        <div class="input-group">
+            <label>MS Rate</label>
+            <div class="input-with-suffix"><input type="text" value="250" disabled><span>ms</span></div>
+        </div>
+        <div class="input-group">
+            <label>Trinket 1</label>
+            <select class="form-control" disabled><option>2 min</option></select>
+        </div>
+        <div class="input-group">
+            <label>Trinket 2</label>
+            <select class="form-control" disabled><option>2 min</option></select>
+        </div>
+        <div class="input-group">
+            <label>Form</label>
+            <select class="form-control" disabled><option>N/A</option></select>
         </div>
     </div>
 
-    <!-- Timeline Toolbar -->
-    <div class="toolbar">
-        <button class="play-btn" id="playBtn">▶</button>
-        <div class="time-display" id="timeDisplay">0.00s</div>
-        <div style="flex: 1"></div>
-        <span style="font-size: 12px; color: var(--text-muted)">ZOOM</span>
-        <input type="range" class="zoom-slider" id="zoomSlider" min="20" max="200" value="80">
+    <!-- Inputs Row 2 (APL Script) -->
+    <div class="input-group" style="width: 100%;">
+        <label>Action Priority List (APL)</label>
+        <div class="input-row">
+            <div class="form-control" style="flex: 1; min-height: 40px; font-family: monospace; font-size: 13px; color: var(--text-success); background: rgba(0,0,0,0.3); line-height: 1.4;"><br>actions+=/R,if=target.health.pct<30<br>actions+=/AutoAttack,if=buff.Judgment.down<br>actions+=/Q,if=buff.Judgment.down<br>actions+=/E<br>actions+=/W<br></div>
+        </div>
     </div>
 
-    <!-- Timeline Container -->
-    <div class="timeline-container">
-        <div class="timeline-scroll-wrapper" id="scrollWrapper">
-            <div class="time-axis" id="timeAxis"></div>
+    <!-- Simulation Options -->
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-header-left">
+                <span>&#11167;</span> Simulation Options <span class="badge purple" style="margin-left: 8px;">BETA</span>
+            </div>
+            <div class="panel-header-right">
+                <span class="badge blue">Monte Carlo (1000)</span>
+                <span class="badge green">Realistic</span>
+            </div>
+        </div>
+        <div class="panel-body">
+            <div class="col">
+                <h4>Proc Effects</h4>
+                <p>Simulate trinket procs using expected value calculation.</p>
+                <div class="input-group">
+                    <label>Trinket 1</label>
+                    <input type="text" class="form-control" placeholder="Search trinkets..." disabled>
+                </div>
+                <div class="input-group">
+                    <label>Trinket 2</label>
+                    <input type="text" class="form-control" placeholder="Search trinkets..." disabled>
+                </div>
+            </div>
+            <div class="col">
+                <h4>Variance Analysis</h4>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <label class="checkbox-group" style="opacity:0.5;"><input type="checkbox" checked disabled> <span style="font-size:13px; color:#fff;">Realistic Mode</span></label>
+                    <div class="input-with-suffix" style="width: 120px; background: transparent; opacity:0.5;"><span style="margin-right:8px; padding-left:12px;">Iterations:</span><input type="text" value="1000" style="text-align:right;" disabled></div>
+                </div>
+                
+                <div class="slider-row" style="margin-top: 10px;">
+                    <span>Jitter</span>
+                    <span class="val green">±75ms</span>
+                </div>
+                <input type="range" style="width:100%; accent-color: var(--color-green);" value="30" disabled>
+                
+                <div style="display:flex; gap: 40px; margin-top: 10px;">
+                    <div style="flex:1;">
+                        <div class="slider-row"><span>Reaction</span><span class="val purple">50ms</span></div>
+                        <input type="range" style="width:100%; accent-color: var(--color-purple);" value="20" disabled>
+                    </div>
+                    <div style="flex:1;">
+                        <div class="slider-row"><span>Ping</span><span class="val orange">100ms</span></div>
+                        <input type="range" style="width:100%; accent-color: var(--color-orange);" value="50" disabled>
+                    </div>
+                </div>
+
+                <div class="slider-row" style="margin-top: 10px;">
+                    <span>Miss Rate</span>
+                    <span class="val red">2%</span>
+                </div>
+                <input type="range" style="width:100%; accent-color: #f87171;" value="10" disabled>
+
+                <button class="purple-btn" disabled style="opacity:0.5;">Run Simulation</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rotation Timeline Card -->
+    <div class="panel">
+        <div class="timeline-header">
+            <div class="timeline-title">Rotation Timeline</div>
+            <div class="timeline-controls">
+                <label class="checkbox-group" style="opacity:0.5;"><input type="checkbox" id="cbCasts" checked disabled> Casts</label>
+                <label class="checkbox-group" style="opacity:0.5;"><input type="checkbox" id="cbResource" checked disabled> Resource</label>
+                <span style="margin-left: 10px;">Zoom</span>
+                <input type="range" class="zoom-slider" id="zoomSlider" min="20" max="200" value="80">
+                <span id="headerStats" style="margin-left: 10px;">45 casts | 60s | 1500ms GCD</span>
+                <div style="width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--border-color); display:flex; align-items:center; justify-content:center; margin-left: 10px; opacity: 0.5;"></div>
+                <button class="btn-outline" disabled style="opacity:0.5; cursor:not-allowed;">&#10515; PNG</button>
+            </div>
+        </div>
+        
+        <div class="timeline-body" id="scrollWrapper">
+            <div class="timeline-inner" id="timelineInner">
+                <div class="axis" id="timeAxis"></div>
+                <div class="grid-lines" id="gridLines"></div>
+                
+                <svg class="resource-bg" id="svgGraph"></svg>
+                
+                <div id="timelineContent"></div>
+                
+                <div class="scrubber" id="scrubber">
+                    <div class="scrubber-head"></div>
+                    <div class="scrubber-label" id="scrubberLabel">100/100 (100%)</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="legend-bar">
+            <div class="legend-item"><div class="l-circle" style="background: var(--color-green);"></div> Instant</div>
+            <div class="legend-item"><div class="l-circle" style="background: var(--text-warning); border: 2px solid var(--text-warning); background: transparent;"></div> Cast</div>
+            <div class="legend-item"><div class="l-circle" style="background: var(--color-green); display:flex; align-items:center; justify-content:center; font-size:6px; color:#000;">★</div> Primary</div>
+            <div class="legend-item"><div class="l-circle" style="background: var(--text-warning); border: 1px dashed var(--text-warning); background: transparent;"></div> Fallback</div>
+            <div class="legend-item"><div class="l-circle" style="background: var(--color-purple); display:flex; align-items:center; justify-content:center; font-size:6px; color:#fff;">⚡</div> Off-GCD</div>
+            <div class="legend-item"><div class="l-circle" style="background: #3f3f46;"></div> Gap</div>
             
-            <div class="timeline-content" id="timelineContent">
-                <!-- Tracks and Icons will be injected here -->
-            </div>
-            
-            <!-- Scrubber -->
-            <div class="scrubber-line" id="scrubber">
-                <div class="scrubber-handle"></div>
-            </div>
+            <div style="width: 1px; height: 16px; background: var(--border-color); margin: 0 10px;"></div>
 
-            <!-- Resource Graph -->
-            <div class="resource-graph" id="resourceGraph">
-                <div class="track-label" style="position: absolute; left: 10px; top: 10px;">HP (Mock)</div>
-                <svg id="svgGraph"></svg>
+            <div class="legend-item"><div class="l-square" style="background: #166534;"></div> >50%</div>
+            <div class="legend-item"><div class="l-square" style="background: #854d0e;"></div> 25-50%</div>
+            <div class="legend-item"><div class="l-square" style="background: #7f1d1d;"></div> <25%</div>
+            <div class="legend-item"><div class="l-square" style="background: #f87171;"></div> Starved</div>
+            
+            <div style="width: 1px; height: 16px; background: var(--border-color); margin: 0 10px;"></div>
+
+            <div class="legend-item"><div class="l-square" style="background: #a16207; height: 4px;"></div> Cast Time</div>
+            <div class="legend-item"><div class="l-square" style="background: #0e7490; height: 4px;"></div> Channel</div>
+            <div class="legend-item"><div class="l-circle" style="background: #d946ef; width: 6px; height:6px;"></div><div class="l-circle" style="background: #d946ef; width: 6px; height:6px;"></div> Proc Chain</div>
+            <div class="legend-item"><span style="color:#f87171; font-weight:bold;">-35</span> <span style="color:var(--text-success); font-weight:bold;">+20</span> Resource +/-</div>
+        </div>
+
+        <div class="playback-bar">
+            <div class="play-controls">
+                <button class="play-btn" disabled style="opacity:0.5; cursor:not-allowed;" title="Not implemented">&#128065;</button>
+                <button class="play-btn" id="playBtn">&#9654;</button>
+                <span style="font-size: 12px; color: var(--text-muted); opacity: 0.5;" title="Not implemented">1x</span>
+                <button class="play-btn" id="prevBtn">&lt;</button>
+            </div>
+            <input type="range" class="time-slider" id="mainScrubber" value="0" min="0" max="100" step="0.1">
+            <button class="play-btn" id="nextBtn">&gt;</button>
+        </div>
+
+        <div class="card-footer" id="cardFooter">
+            <strong>45</strong> casts &nbsp;*&nbsp; <strong class="f-green">100%</strong> GCD uptime &nbsp;*&nbsp; <strong class="f-orange">195</strong> wasted &nbsp;*&nbsp; <strong>1.50s</strong> GCD
+        </div>
+    </div>
+
+    <!-- Combat Log Card -->
+    <div class="panel">
+        <div class="timeline-header">
+            <div class="timeline-title">Combat Log</div>
+        </div>
+        <div class="panel-body" style="padding: 0;">
+            <div id="combatLogContainer" style="max-height: 400px; overflow-y: auto; width: 100%; background: var(--bg-panel);">
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid var(--border-color); background: rgba(255,255,255,0.02);">
+                            <th style="padding: 10px 16px; width: 80px; color: var(--text-muted);">Time</th>
+                            <th style="padding: 10px 16px; width: 100px; color: var(--text-muted);">Event</th>
+                            <th style="padding: 10px 16px; width: 150px; color: var(--text-muted);">Source</th>
+                            <th style="padding: 10px 16px; color: var(--text-muted);">Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="combatLogBody">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 
-    <!-- Stats Bar -->
-    <div class="stats-bar" id="statsBar">
-        <!-- Injected via JS -->
-    </div>
 </div>
 
 <div class="tooltip" id="tooltip"></div>
 
 <script>
     const events = [
-  { "type": "cast", "time": 0, "source": "Garen", "ability": "Q" },
-  { "type": "cast", "time": 0.25, "source": "Garen", "ability": "E" },
-  { "type": "damage", "time": 0.25, "source": "Garen", "ability": "E", "amount": 34.24460431654676 },
-  { "type": "cast", "time": 0.5, "source": "Garen", "ability": "W" },
+  { "type": "cast", "time": 0, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 0, "source": "Garen", "ability": "AutoAttack", "amount": 49.64028776978417 },
+  { "type": "cast", "time": 0.25, "source": "Garen", "ability": "Q" },
+  { "type": "cast", "time": 0.5, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 0.5, "source": "Garen", "ability": "Q", "amount": 182.37410071942446 },
+  { "type": "cast", "time": 0.75, "source": "Garen", "ability": "E" },
   { "type": "damage", "time": 0.75, "source": "Garen", "ability": "E", "amount": 34.24460431654676 },
-  { "type": "cast", "time": 0.75, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 0.75, "source": "Garen", "ability": "AutoAttack", "amount": 49.64028776978417 },
+  { "type": "cast", "time": 1, "source": "Garen", "ability": "W" },
   { "type": "damage", "time": 1.25, "source": "Garen", "ability": "E", "amount": 34.24460431654676 },
   { "type": "damage", "time": 1.75, "source": "Garen", "ability": "E", "amount": 34.24460431654676 },
-  { "type": "cast", "time": 1.8000000000000007, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 1.8000000000000007, "source": "Garen", "ability": "AutoAttack", "amount": 49.64028776978417 },
   { "type": "damage", "time": 2.25, "source": "Garen", "ability": "E", "amount": 34.24460431654676 },
   { "type": "damage", "time": 2.75, "source": "Garen", "ability": "E", "amount": 34.24460431654676 },
-  { "type": "cast", "time": 2.8500000000000014, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 2.8500000000000014, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "damage", "time": 3.25, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "cast", "time": 3.900000000000002, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 3.900000000000002, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "cast", "time": 4.949999999999999, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 4.949999999999999, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "cast", "time": 5.9999999999999964, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 5.9999999999999964, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "cast", "time": 7.049999999999994, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 7.049999999999994, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "cast", "time": 8.09999999999999, "source": "Garen", "ability": "Q" },
-  { "type": "cast", "time": 8.34999999999999, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 8.34999999999999, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "cast", "time": 9.299999999999988, "source": "Garen", "ability": "E" },
-  { "type": "damage", "time": 9.299999999999988, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "cast", "time": 9.549999999999988, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 9.549999999999988, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "damage", "time": 9.799999999999988, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "damage", "time": 10.299999999999988, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "cast", "time": 10.599999999999985, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 10.599999999999985, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "damage", "time": 10.799999999999988, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "damage", "time": 11.299999999999988, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "cast", "time": 11.649999999999983, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 11.649999999999983, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "damage", "time": 11.799999999999988, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "damage", "time": 12.299999999999988, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "cast", "time": 12.69999999999998, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 12.69999999999998, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "cast", "time": 13.749999999999977, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 13.749999999999977, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "cast", "time": 14.799999999999974, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 14.799999999999974, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "cast", "time": 15.549999999999972, "source": "Garen", "ability": "W" },
-  { "type": "cast", "time": 15.899999999999972, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 15.899999999999972, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "cast", "time": 16.14999999999997, "source": "Garen", "ability": "Q" },
-  { "type": "cast", "time": 16.899999999999977, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 16.899999999999977, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "cast", "time": 17.94999999999999, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 17.94999999999999, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "cast", "time": 18.29999999999999, "source": "Garen", "ability": "E" },
-  { "type": "damage", "time": 18.29999999999999, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "damage", "time": 18.79999999999999, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "cast", "time": 18.949999999999996, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 18.949999999999996, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "damage", "time": 19.29999999999999, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "damage", "time": 19.79999999999999, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "cast", "time": 20.000000000000007, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 20.000000000000007, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "damage", "time": 20.29999999999999, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "damage", "time": 20.79999999999999, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "cast", "time": 21.05000000000002, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 21.05000000000002, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "damage", "time": 21.29999999999999, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "cast", "time": 22.10000000000003, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 22.10000000000003, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "cast", "time": 23.15000000000004, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 23.15000000000004, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "cast", "time": 24.200000000000053, "source": "Garen", "ability": "Q" },
-  { "type": "cast", "time": 24.450000000000053, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 24.450000000000053, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "cast", "time": 25.500000000000064, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 25.500000000000064, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "cast", "time": 26.550000000000075, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 26.550000000000075, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "cast", "time": 27.300000000000082, "source": "Garen", "ability": "E" },
-  { "type": "damage", "time": 27.300000000000082, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "cast", "time": 27.550000000000082, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 27.550000000000082, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "damage", "time": 27.800000000000082, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "damage", "time": 28.300000000000082, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "cast", "time": 28.600000000000094, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 28.600000000000094, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "damage", "time": 28.800000000000082, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "damage", "time": 29.300000000000082, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "cast", "time": 29.650000000000105, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 29.650000000000105, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "damage", "time": 29.800000000000082, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "damage", "time": 30.300000000000082, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "cast", "time": 30.600000000000115, "source": "Garen", "ability": "W" },
-  { "type": "cast", "time": 30.850000000000115, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 30.850000000000115, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "cast", "time": 31.900000000000126, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 31.900000000000126, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "cast", "time": 32.25000000000013, "source": "Garen", "ability": "Q" },
+  { "type": "damage", "time": 3.25, "source": "Garen", "ability": "E", "amount": 34.24460431654676 },
+  { "type": "damage", "time": 3.75, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "cast", "time": 3.750000000000002, "source": "Garen", "ability": "R" },
+  { "type": "damage", "time": 4.250000000000002, "source": "Garen", "ability": "R", "amount": 268.5774668466388 },
+  { "type": "cast", "time": 4.250000000000002, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 4.250000000000002, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
+  { "type": "cast", "time": 5.299999999999999, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 5.299999999999999, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
+  { "type": "cast", "time": 6.349999999999996, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 6.349999999999996, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
+  { "type": "cast", "time": 7.399999999999993, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 7.399999999999993, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
+  { "type": "cast", "time": 8.34999999999999, "source": "Garen", "ability": "Q" },
+  { "type": "cast", "time": 8.59999999999999, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 8.59999999999999, "source": "Garen", "ability": "Q", "amount": 196.13152804642164 },
+  { "type": "cast", "time": 9.649999999999988, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 9.649999999999988, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
+  { "type": "cast", "time": 9.899999999999988, "source": "Garen", "ability": "E" },
+  { "type": "damage", "time": 9.899999999999988, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "damage", "time": 10.399999999999988, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "damage", "time": 10.899999999999988, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "damage", "time": 11.399999999999988, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "damage", "time": 11.899999999999988, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "damage", "time": 12.399999999999988, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "damage", "time": 12.899999999999988, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "cast", "time": 12.949999999999978, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 12.949999999999978, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
+  { "type": "cast", "time": 13.999999999999975, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 13.999999999999975, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
+  { "type": "cast", "time": 15.049999999999972, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 15.049999999999972, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
+  { "type": "cast", "time": 16.09999999999997, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 16.09999999999997, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
+  { "type": "cast", "time": 16.34999999999997, "source": "Garen", "ability": "W" },
+  { "type": "cast", "time": 16.59999999999997, "source": "Garen", "ability": "Q" },
+  { "type": "cast", "time": 16.84999999999997, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 16.84999999999997, "source": "Garen", "ability": "Q", "amount": 196.13152804642164 },
+  { "type": "cast", "time": 17.89999999999998, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 17.89999999999998, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
+  { "type": "cast", "time": 18.949999999999992, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 18.949999999999992, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
+  { "type": "cast", "time": 19.199999999999992, "source": "Garen", "ability": "E" },
+  { "type": "damage", "time": 19.199999999999992, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "damage", "time": 19.699999999999992, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "damage", "time": 20.199999999999992, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "damage", "time": 20.699999999999992, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "damage", "time": 21.199999999999992, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "damage", "time": 21.699999999999992, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "damage", "time": 22.199999999999992, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "cast", "time": 22.250000000000032, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 22.250000000000032, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
+  { "type": "cast", "time": 23.300000000000043, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 23.300000000000043, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
+  { "type": "cast", "time": 24.350000000000055, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 24.350000000000055, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
+  { "type": "cast", "time": 24.600000000000055, "source": "Garen", "ability": "Q" },
+  { "type": "cast", "time": 24.850000000000055, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 24.850000000000055, "source": "Garen", "ability": "Q", "amount": 196.13152804642164 },
+  { "type": "cast", "time": 25.900000000000066, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 25.900000000000066, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
+  { "type": "cast", "time": 26.950000000000077, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 26.950000000000077, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
+  { "type": "cast", "time": 28.00000000000009, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 28.00000000000009, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
+  { "type": "cast", "time": 28.25000000000009, "source": "Garen", "ability": "E" },
+  { "type": "damage", "time": 28.25000000000009, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "damage", "time": 28.75000000000009, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "damage", "time": 29.25000000000009, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "damage", "time": 29.75000000000009, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "damage", "time": 30.25000000000009, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "damage", "time": 30.75000000000009, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "damage", "time": 31.25000000000009, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "cast", "time": 31.30000000000013, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 31.30000000000013, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
+  { "type": "cast", "time": 31.55000000000013, "source": "Garen", "ability": "W" },
+  { "type": "cast", "time": 32.30000000000013, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 32.30000000000013, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
+  { "type": "cast", "time": 32.650000000000134, "source": "Garen", "ability": "Q" },
   { "type": "cast", "time": 32.900000000000134, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 32.900000000000134, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
+  { "type": "damage", "time": 32.900000000000134, "source": "Garen", "ability": "Q", "amount": 196.13152804642164 },
   { "type": "cast", "time": 33.950000000000145, "source": "Garen", "ability": "AutoAttack" },
   { "type": "damage", "time": 33.950000000000145, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
   { "type": "cast", "time": 35.000000000000156, "source": "Garen", "ability": "AutoAttack" },
   { "type": "damage", "time": 35.000000000000156, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
   { "type": "cast", "time": 36.05000000000017, "source": "Garen", "ability": "AutoAttack" },
   { "type": "damage", "time": 36.05000000000017, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "cast", "time": 36.30000000000017, "source": "Garen", "ability": "E" },
-  { "type": "damage", "time": 36.30000000000017, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "damage", "time": 36.80000000000017, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "cast", "time": 37.050000000000175, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 37.050000000000175, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "damage", "time": 37.30000000000017, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "damage", "time": 37.80000000000017, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "cast", "time": 38.100000000000186, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 38.100000000000186, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "damage", "time": 38.30000000000017, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "damage", "time": 38.80000000000017, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "cast", "time": 39.1500000000002, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 39.1500000000002, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "damage", "time": 39.30000000000017, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "cast", "time": 40.20000000000021, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 40.20000000000021, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "cast", "time": 40.45000000000021, "source": "Garen", "ability": "Q" },
-  { "type": "cast", "time": 41.200000000000216, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 41.200000000000216, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "cast", "time": 42.25000000000023, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 42.25000000000023, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "cast", "time": 43.30000000000024, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 43.30000000000024, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "cast", "time": 44.35000000000025, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 44.35000000000025, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "cast", "time": 45.30000000000026, "source": "Garen", "ability": "E" },
-  { "type": "damage", "time": 45.30000000000026, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "cast", "time": 45.55000000000026, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 45.55000000000026, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "damage", "time": 45.80000000000026, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "cast", "time": 45.80000000000026, "source": "Garen", "ability": "W" },
-  { "type": "damage", "time": 46.30000000000026, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "cast", "time": 46.55000000000027, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 46.55000000000027, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "damage", "time": 46.80000000000026, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "damage", "time": 47.30000000000026, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "cast", "time": 47.60000000000028, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 47.60000000000028, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "damage", "time": 47.80000000000026, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "damage", "time": 48.30000000000026, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "cast", "time": 48.45000000000029, "source": "Garen", "ability": "Q" },
-  { "type": "cast", "time": 48.70000000000029, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 48.70000000000029, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "cast", "time": 49.7500000000003, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 49.7500000000003, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "cast", "time": 50.80000000000031, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 50.80000000000031, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "cast", "time": 51.85000000000032, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 51.85000000000032, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "cast", "time": 52.90000000000033, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 52.90000000000033, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "cast", "time": 53.950000000000344, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 53.950000000000344, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "cast", "time": 54.300000000000345, "source": "Garen", "ability": "E" },
-  { "type": "damage", "time": 54.300000000000345, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "damage", "time": 54.800000000000345, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "cast", "time": 54.95000000000035, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 54.95000000000035, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "damage", "time": 55.300000000000345, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "damage", "time": 55.800000000000345, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "cast", "time": 56.00000000000036, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 56.00000000000036, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "damage", "time": 56.300000000000345, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "cast", "time": 56.450000000000365, "source": "Garen", "ability": "Q" },
-  { "type": "damage", "time": 56.800000000000345, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "cast", "time": 57.00000000000037, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 57.00000000000037, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "damage", "time": 57.300000000000345, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
-  { "type": "cast", "time": 58.05000000000038, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 58.05000000000038, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
-  { "type": "cast", "time": 59.10000000000039, "source": "Garen", "ability": "AutoAttack" },
-  { "type": "damage", "time": 59.10000000000039, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 }
+  { "type": "cast", "time": 37.10000000000018, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 37.10000000000018, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
+  { "type": "cast", "time": 37.35000000000018, "source": "Garen", "ability": "E" },
+  { "type": "damage", "time": 37.35000000000018, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "damage", "time": 37.85000000000018, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "damage", "time": 38.35000000000018, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "damage", "time": 38.85000000000018, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "damage", "time": 39.35000000000018, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "damage", "time": 39.85000000000018, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "damage", "time": 40.35000000000018, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "cast", "time": 40.40000000000022, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 40.40000000000022, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
+  { "type": "cast", "time": 40.65000000000022, "source": "Garen", "ability": "Q" },
+  { "type": "cast", "time": 40.90000000000022, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 40.90000000000022, "source": "Garen", "ability": "Q", "amount": 196.13152804642164 },
+  { "type": "cast", "time": 41.95000000000023, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 41.95000000000023, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
+  { "type": "cast", "time": 43.00000000000024, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 43.00000000000024, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
+  { "type": "cast", "time": 44.05000000000025, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 44.05000000000025, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
+  { "type": "cast", "time": 45.100000000000264, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 45.100000000000264, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
+  { "type": "cast", "time": 46.150000000000276, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 46.150000000000276, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
+  { "type": "cast", "time": 46.400000000000276, "source": "Garen", "ability": "E" },
+  { "type": "damage", "time": 46.400000000000276, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "cast", "time": 46.650000000000276, "source": "Garen", "ability": "W" },
+  { "type": "damage", "time": 46.900000000000276, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "damage", "time": 47.400000000000276, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "damage", "time": 47.900000000000276, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "damage", "time": 48.400000000000276, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "damage", "time": 48.900000000000276, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "damage", "time": 49.400000000000276, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "cast", "time": 49.40000000000031, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 49.40000000000031, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
+  { "type": "cast", "time": 49.65000000000031, "source": "Garen", "ability": "Q" },
+  { "type": "cast", "time": 49.90000000000031, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 49.90000000000031, "source": "Garen", "ability": "Q", "amount": 196.13152804642164 },
+  { "type": "cast", "time": 50.95000000000032, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 50.95000000000032, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
+  { "type": "cast", "time": 52.000000000000334, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 52.000000000000334, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
+  { "type": "cast", "time": 53.050000000000345, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 53.050000000000345, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
+  { "type": "cast", "time": 54.10000000000036, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 54.10000000000036, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
+  { "type": "cast", "time": 55.15000000000037, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 55.15000000000037, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
+  { "type": "cast", "time": 55.40000000000037, "source": "Garen", "ability": "E" },
+  { "type": "damage", "time": 55.40000000000037, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "damage", "time": 55.90000000000037, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "damage", "time": 56.40000000000037, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "damage", "time": 56.90000000000037, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "damage", "time": 57.40000000000037, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "damage", "time": 57.90000000000037, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "damage", "time": 58.40000000000037, "source": "Garen", "ability": "E", "amount": 36.827852998065765 },
+  { "type": "cast", "time": 58.45000000000041, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 58.45000000000041, "source": "Garen", "ability": "AutoAttack", "amount": 53.38491295938104 },
+  { "type": "cast", "time": 58.70000000000041, "source": "Garen", "ability": "Q" },
+  { "type": "cast", "time": 58.95000000000041, "source": "Garen", "ability": "AutoAttack" },
+  { "type": "damage", "time": 58.95000000000041, "source": "Garen", "ability": "Q", "amount": 196.13152804642164 }
 ];
     
-    // Process events
+    // UI Elements
+    const timelineInner = document.getElementById('timelineInner');
+    const timelineContent = document.getElementById('timelineContent');
+    const timeAxis = document.getElementById('timeAxis');
+    const gridLines = document.getElementById('gridLines');
+    const scrollWrapper = document.getElementById('scrollWrapper');
+    const scrubber = document.getElementById('scrubber');
+    const scrubberLabel = document.getElementById('scrubberLabel');
+    const mainScrubber = document.getElementById('mainScrubber');
+    const svgGraph = document.getElementById('svgGraph');
+    const tooltip = document.getElementById('tooltip');
+    
+    // Process Data
     const casts = events.filter(e => e.type === "cast");
     const damages = events.filter(e => e.type === "damage");
-    let buffApplies = events.filter(e => e.type === "buff_apply");
     let resourceUpdates = events.filter(e => e.type === "resource_update");
     
-    // Summary calculation
-    let totalDamage = 0;
-    damages.forEach(d => totalDamage += d.amount);
     let maxTime = 0;
     events.forEach(e => { if (e.time > maxTime) maxTime = e.time; });
     const duration = maxTime > 0 ? maxTime : 60;
     
-    // Mock Buffs if none exist (for visual demonstration of high-fidelity)
-    if (buffApplies.length === 0) {
-        casts.forEach(c => {
-            if (c.ability === "E") {
-                buffApplies.push({ type: "mock_buff", time: c.time, target: c.source, buff_name: "Judgment", duration: 3.0 });
-            }
-            if (c.ability === "W") {
-                buffApplies.push({ type: "mock_buff", time: c.time, target: c.source, buff_name: "Courage", duration: 2.0 });
-            }
-        });
-    }
+    document.getElementById('headerStats').innerText = `${casts.length} casts | ${duration.toFixed(0)}s | 1.50s GCD`;
+    document.getElementById('cardFooter').innerHTML = `<strong>${casts.length}</strong> casts &nbsp;*&nbsp; <strong class="f-green">100%</strong> GCD uptime &nbsp;*&nbsp; <strong class="f-orange">0</strong> wasted &nbsp;*&nbsp; <strong>1.50s</strong> GCD`;
 
-    // Mock Resource Updates if none exist (Mock HP or Fury)
-    if (resourceUpdates.length === 0) {
-        let currentRes = 100;
-        for(let i=0; i<=duration; i+=1) {
-            currentRes = Math.max(0, currentRes - (Math.random() * 5));
-            resourceUpdates.push({ time: i, amount: currentRes, max: 100 });
-        }
-    }
+    mainScrubber.max = duration + 5;
 
-    document.getElementById('statsBar').innerHTML = `
-        <div class="stat-item"><span class="stat-label">Duration</span><span class="stat-value">${duration.toFixed(2)}s</span></div>
-        <div class="stat-item"><span class="stat-label">Total Damage</span><span class="stat-value">${totalDamage.toFixed(0)}</span></div>
-        <div class="stat-item"><span class="stat-label">DPS</span><span class="stat-value">${(totalDamage / duration).toFixed(1)}</span></div>
-        <div class="stat-item"><span class="stat-label">Total Casts</span><span class="stat-value">${casts.length}</span></div>
-    `;
-
-    // Timeline Rendering
-    const timelineContent = document.getElementById('timelineContent');
-    const timeAxis = document.getElementById('timeAxis');
-    const scrollWrapper = document.getElementById('scrollWrapper');
-    const scrubber = document.getElementById('scrubber');
-    const svgGraph = document.getElementById('svgGraph');
-    const tooltip = document.getElementById('tooltip');
-    
+    // Settings
     let PX_PER_SEC = 80;
-    const OFFSET_X = 20;
-    let totalWidth = 0;
-
-    const uniqueAbilities = [...new Set(casts.map(c => c.ability))].sort();
-    const TRACK_HEIGHT = 48;
-    const PADDING_TOP = 20;
-
+    const OFFSET_X = 30; 
+    
     function renderTimeline() {
         timelineContent.innerHTML = '';
         timeAxis.innerHTML = '';
+        gridLines.innerHTML = '';
         svgGraph.innerHTML = '';
         
-        totalWidth = Math.ceil(duration + 5) * PX_PER_SEC + OFFSET_X * 2;
-        timelineContent.style.width = totalWidth + 'px';
-        timeAxis.style.width = totalWidth + 'px';
-        svgGraph.style.width = totalWidth + 'px';
-        
-        timelineContent.style.height = (uniqueAbilities.length * TRACK_HEIGHT + PADDING_TOP * 2) + 'px';
+        const totalWidth = Math.ceil(duration + 5) * PX_PER_SEC + OFFSET_X * 2;
+        timelineInner.style.width = totalWidth + 'px';
 
-        // Draw Ticks
-        for (let s = 0; s <= duration + 5; s += 1) {
+        // 1. Ticks and Grid Lines
+        for (let s = 0; s <= duration + 5; s += 2) {
+            const leftPos = (s * PX_PER_SEC + OFFSET_X) + 'px';
+            
+            // Axis tick
             const tick = document.createElement('div');
             tick.className = 'tick';
-            tick.style.left = (s * PX_PER_SEC + OFFSET_X) + 'px';
-            
-            if (s % 2 === 0) {
-                const label = document.createElement('div');
-                label.className = 'tick-label';
-                label.innerText = s + 's';
-                tick.appendChild(label);
-            }
+            tick.style.left = leftPos;
+            const label = document.createElement('div');
+            label.className = 'tick-label';
+            label.innerText = s + 's';
+            tick.appendChild(label);
             timeAxis.appendChild(tick);
+            
+            // Grid Line
+            const gl = document.createElement('div');
+            gl.className = 'grid-line';
+            gl.style.left = leftPos;
+            gridLines.appendChild(gl);
         }
 
-        // Draw Tracks
-        uniqueAbilities.forEach((ability, index) => {
-            const topPx = PADDING_TOP + index * TRACK_HEIGHT;
-            
-            const line = document.createElement('div');
-            line.style.position = 'absolute';
-            line.style.top = (topPx + 18) + 'px';
-            line.style.left = OFFSET_X + 'px';
-            line.style.width = (totalWidth - OFFSET_X) + 'px';
-            line.style.height = '1px';
-            line.style.backgroundColor = 'rgba(255,255,255,0.05)';
-            timelineContent.appendChild(line);
-
-            const label = document.createElement('div');
-            label.className = 'track-label';
-            label.innerText = ability;
-            label.style.top = topPx + 'px'; 
-            label.style.position = 'absolute';
-            label.style.left = '10px';
-            timelineContent.appendChild(label);
-        });
-
-        // Draw Buffs
-        buffApplies.forEach(buff => {
-            const trackIndex = uniqueAbilities.indexOf(buff.buff_name === "Judgment" ? "E" : (buff.buff_name === "Courage" ? "W" : "")); 
-            if (trackIndex === -1) return;
-            
-            const b = document.createElement('div');
-            b.className = 'buff-block';
-            if (buff.buff_name === "Courage") b.style.backgroundColor = 'rgba(255, 165, 0, 0.4)'; // Orange for Courage
-            b.style.left = (buff.time * PX_PER_SEC + OFFSET_X) + 'px';
-            b.style.width = ((buff.duration || 3) * PX_PER_SEC) + 'px'; // Using mocked duration
-            b.style.top = (PADDING_TOP + trackIndex * TRACK_HEIGHT + 24) + 'px';
-            timelineContent.appendChild(b);
-        });
-
-        // Draw Cast Icons
+        // 2. Cast Icons (arranged horizontally with vertical stagger if overlapping)
+        let lastX = -999;
+        let currentY = 50;
+        
         casts.forEach(cast => {
             const node = document.createElement('div');
-            node.className = 'event-node ' + cast.ability;
-            
-            const leftPx = cast.time * PX_PER_SEC + OFFSET_X;
-            const trackIndex = uniqueAbilities.indexOf(cast.ability);
-            const topPx = PADDING_TOP + trackIndex * TRACK_HEIGHT + 18;
+            let typeClass = "instant";
+            if(cast.ability === "E") typeClass = "primary";
+            if(cast.ability === "AutoAttack") typeClass = "fallback";
 
-            node.style.left = leftPx + 'px';
-            node.style.top = topPx + 'px';
+            node.className = 'event-icon ' + typeClass;
+            
+            const x = cast.time * PX_PER_SEC + OFFSET_X;
+            
+            // Stagger Y to prevent overlap
+            if (x - lastX < 32) {
+                currentY = (currentY === 50) ? 90 : 50;
+            } else {
+                currentY = 50;
+            }
+            lastX = x;
+
+            node.style.left = x + 'px';
+            node.style.top = currentY + 'px';
 
             if (cast.ability === "AutoAttack") {
                 node.style.backgroundImage = `url('https://opgg-static.akamaized.net/meta/images/lol/16.12.1/item/1036.png?image=q_auto:good,f_webp,w_64,h_64&v=1612')`;
@@ -653,8 +908,16 @@
                 node.style.backgroundImage = `url('https://opgg-static.akamaized.net/meta/images/lol/16.12.1/spell/${cast.source}${cast.ability}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612')`;
             }
 
+            // Resource Delta Label (Mocked for visuals)
+            const isPos = Math.random() > 0.5;
+            const deltaVal = Math.floor(Math.random() * 20) + 5;
+            const deltaDiv = document.createElement('div');
+            deltaDiv.className = 'resource-delta ' + (isPos ? 'positive' : 'negative');
+            deltaDiv.innerText = (isPos ? '+' : '-') + deltaVal;
+            node.appendChild(deltaDiv);
+
             node.addEventListener('mouseenter', (e) => {
-                tooltip.innerHTML = `<strong>${cast.ability}</strong><span class="time">${cast.time.toFixed(3)}s</span>`;
+                tooltip.innerHTML = `<strong>${cast.ability}</strong>Cast: <span class="time">${cast.time.toFixed(3)}s</span>`;
                 tooltip.style.opacity = 1;
                 tooltip.style.left = (e.clientX + 15) + 'px';
                 tooltip.style.top = (e.clientY + 15) + 'px';
@@ -668,22 +931,24 @@
             timelineContent.appendChild(node);
         });
 
-        // Draw SVG Resource Graph
+        // 3. SVG Resource Graph Background
         if (resourceUpdates.length > 0) {
-            let pathD = `M ${OFFSET_X} 80 `; // start at bottom left
+            const h = 220; // height of inner
+            let fillPath = `M 0 ${h} `; 
+            
             resourceUpdates.forEach(r => {
                 let x = r.time * PX_PER_SEC + OFFSET_X;
-                let y = 80 - (r.amount / r.max) * 80;
-                pathD += `L ${x} ${y} `;
+                let y = h - (r.amount / r.max) * (h - 100); // map to bottom part
+                fillPath += `L ${x} ${y} `;
             });
-            pathD += `L ${totalWidth - OFFSET_X} 80 Z`;
+            
+            const endX = totalWidth;
+            fillPath += `L ${endX} ${h} Z`;
 
-            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            path.setAttribute("d", pathD);
-            path.setAttribute("fill", "var(--resource-color)");
-            path.setAttribute("stroke", "var(--resource-stroke)");
-            path.setAttribute("stroke-width", "1.5");
-            svgGraph.appendChild(path);
+            const pathFill = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            pathFill.setAttribute("d", fillPath);
+            pathFill.setAttribute("fill", "var(--color-cyan)");
+            svgGraph.appendChild(pathFill);
         }
     }
 
@@ -702,16 +967,57 @@
     let playTime = 0;
     let lastAnimTime = 0;
     const playBtn = document.getElementById('playBtn');
-    const timeDisplay = document.getElementById('timeDisplay');
 
     function updateScrubberPosition() {
         scrubber.style.left = (playTime * PX_PER_SEC + OFFSET_X) + 'px';
-        timeDisplay.innerText = playTime.toFixed(2) + 's';
+        mainScrubber.value = playTime;
         
-        // Auto scroll
+        // Find current resource
+        if (resourceUpdates.length > 0) {
+            let res = 100;
+            for(let r of resourceUpdates) {
+                if(r.time <= playTime) res = r.amount;
+            }
+            scrubberLabel.innerText = `${Math.floor(res)}/100 (${Math.floor(res)}%)`;
+        } else {
+            scrubberLabel.innerText = `소모값 없음`;
+        }
+        
+        // Auto scroll timeline
         const scrollLeft = playTime * PX_PER_SEC + OFFSET_X - (scrollWrapper.clientWidth / 2);
         if (scrollLeft > 0 && isPlaying) {
             scrollWrapper.scrollLeft = scrollLeft;
+        }
+
+        // Highlight Combat Log
+        if (window.sortedLogEvents) {
+            let activeIdx = -1;
+            for(let i=0; i<window.sortedLogEvents.length; i++) {
+                if (window.sortedLogEvents[i].time <= playTime + 0.001) { // small epsilon
+                    activeIdx = i;
+                } else {
+                    break;
+                }
+            }
+            if (activeIdx !== window.lastActiveLogIdx) {
+                if (window.lastActiveLogIdx >= 0) {
+                    const oldRow = document.getElementById('logRow-' + window.lastActiveLogIdx);
+                    if (oldRow) oldRow.classList.remove('active-log');
+                }
+                if (activeIdx >= 0) {
+                    const newRow = document.getElementById('logRow-' + activeIdx);
+                    if (newRow) {
+                        newRow.classList.add('active-log');
+                        const container = document.getElementById('combatLogContainer');
+                        if (container) {
+                            // Calculate relative offset
+                            const targetTop = newRow.offsetTop - container.clientHeight / 2;
+                            container.scrollTo({ top: targetTop, behavior: 'smooth' });
+                        }
+                    }
+                }
+                window.lastActiveLogIdx = activeIdx;
+            }
         }
     }
 
@@ -723,7 +1029,7 @@
         playTime += delta;
         if (playTime > duration + 5) {
             isPlaying = false;
-            playBtn.innerText = '▶';
+            playBtn.innerHTML = '&#9654;'; // Play
             playTime = 0;
         }
         
@@ -734,24 +1040,79 @@
     playBtn.addEventListener('click', () => {
         isPlaying = !isPlaying;
         if (isPlaying) {
-            playBtn.innerText = '⏸';
+            playBtn.innerHTML = '&#10074;&#10074;'; // Pause
             lastAnimTime = performance.now();
             requestAnimationFrame(animLoop);
         } else {
-            playBtn.innerText = '▶';
+            playBtn.innerHTML = '&#9654;'; // Play
         }
     });
 
-    // Click to seek
-    scrollWrapper.addEventListener('click', (e) => {
-        if (e.target.closest('.event-node') || e.target.closest('.zoom-slider') || e.target.closest('.play-btn')) return;
-        const rect = scrollWrapper.getBoundingClientRect();
-        const clickX = e.clientX - rect.left + scrollWrapper.scrollLeft;
-        playTime = (clickX - OFFSET_X) / PX_PER_SEC;
-        if (playTime < 0) playTime = 0;
+    document.getElementById('prevBtn').addEventListener('click', () => {
+        playTime = Math.max(0, playTime - 1);
         updateScrubberPosition();
     });
 
+    document.getElementById('nextBtn').addEventListener('click', () => {
+        playTime = Math.min(duration + 5, playTime + 1);
+        updateScrubberPosition();
+    });
+
+    mainScrubber.addEventListener('input', (e) => {
+        playTime = parseFloat(e.target.value);
+        updateScrubberPosition();
+    });
+
+    // Render Combat Log
+    const combatLogBody = document.getElementById('combatLogBody');
+    if (combatLogBody) {
+        // Sort events by time
+        const sortedEvents = events.slice().sort((a, b) => a.time - b.time);
+        window.sortedLogEvents = [];
+        window.lastActiveLogIdx = -1;
+        
+        let logHtml = '';
+        sortedEvents.forEach(e => {
+            const timeStr = e.time.toFixed(3) + 's';
+            let eventType = '';
+            let details = '';
+            let color = 'var(--text-main)';
+
+            if (e.type === 'cast') {
+                eventType = 'Cast';
+                details = `Used <strong style="color:var(--color-green);">${e.ability}</strong>`;
+            } else if (e.type === 'damage') {
+                eventType = 'Damage';
+                details = `<strong style="color:var(--color-cyan);">${e.ability}</strong> hit for <strong style="color:#f87171;">${e.amount.toFixed(1)}</strong>`;
+            } else if (e.type === 'death') {
+                eventType = 'Death';
+                details = `Died`;
+                color = '#f87171';
+            } else if (e.type === 'buff_apply') {
+                eventType = 'Buff Apply';
+                details = `Gained <strong style="color:#a855f7;">${e.buff_name}</strong>`;
+            } else if (e.type === 'buff_expire') {
+                eventType = 'Buff Expire';
+                details = `Lost <strong style="color:var(--text-muted);">${e.buff_name}</strong>`;
+            } else {
+                return; // Skip resource updates for log to keep it clean
+            }
+            
+            const currentIdx = window.sortedLogEvents.length;
+            window.sortedLogEvents.push(e);
+
+            logHtml += `
+            <tr id="logRow-${currentIdx}" style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s;">
+                <td style="padding: 6px 16px; color: var(--text-muted); font-family: monospace;">${timeStr}</td>
+                <td style="padding: 6px 16px; color: ${color};">${eventType}</td>
+                <td style="padding: 6px 16px;">${e.source || e.target}</td>
+                <td style="padding: 6px 16px;">${details}</td>
+            </tr>`;
+        });
+        combatLogBody.innerHTML = logHtml;
+    }
+
+    updateScrubberPosition();
 </script>
 </body>
 </html>

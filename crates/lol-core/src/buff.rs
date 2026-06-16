@@ -90,6 +90,13 @@ impl BuffManager {
         self.active_effects.retain(|_, active| active.expiration_time > current_time);
     }
 
+    /// Checks if a buff is active by name.
+    pub fn has_buff_by_name(&self, name: &str, current_time: SimTime) -> bool {
+        self.active_effects.values().any(|active| {
+            active.effect.name().eq_ignore_ascii_case(name) && active.expiration_time > current_time
+        })
+    }
+
     /// Removes a specific effect entirely.
     pub fn remove_effect(&mut self, id: &EffectId) {
         self.active_effects.remove(id);

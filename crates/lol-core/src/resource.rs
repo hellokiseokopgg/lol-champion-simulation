@@ -21,12 +21,13 @@ impl Resource {
         }
     }
 
-    /// Consumes a given amount of the resource. Returns true if successful, false if insufficient.
+    /// Consumes a given amount of the resource. Returns true if fully successful, false if it had to be capped at 0.
     pub fn consume(&mut self, amount: f64) -> bool {
         if self.current >= amount {
             self.current -= amount;
             true
         } else {
+            self.current = 0.0;
             false
         }
     }

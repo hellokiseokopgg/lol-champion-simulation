@@ -119,10 +119,10 @@ fn main() {
             
             let apl_script = "
 actions+=/R,if=target.health.pct<30
-actions+=/Q
+actions+=/AutoAttack,if=buff.Judgment.down
+actions+=/Q,if=buff.Judgment.down
 actions+=/E
 actions+=/W
-actions+=/AutoAttack
 ";
             let garen_apl = lol_apl::parser::ActionPriorityList::parse(apl_script).unwrap();
 
@@ -149,7 +149,7 @@ actions+=/AutoAttack
             println!("\n{}", gantt);
 
             if let Some(path) = html_out {
-                let html = lol_report::formatter::Formatter::format_html(&collector.borrow());
+                let html = lol_report::formatter::Formatter::format_html(&collector.borrow(), apl_script);
                 std::fs::write(path, html).expect("Failed to write HTML report");
                 info!("Saved HTML report to {}", path);
             }

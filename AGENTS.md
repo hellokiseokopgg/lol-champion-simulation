@@ -146,3 +146,7 @@ cargo run -- simulate -a Garen -b Darius --html-out report.html
 cargo run -- simulate -a Garen -b Darius --iterations 1000
 ```
 - `-i`, `--iterations <NUM>`: 시뮬레이션을 몇 회 반복할지 설정합니다. 치명타, 회피, 발동 확률 등의 난수 효과에 대한 정밀한 평균 DPS를 구하기 위해 사용됩니다. (기본값: 100)
+
+## References
+
+- [GSE Builder Macro Reference](https://tools.wowlazymacros.com/gse-builder?_gl=1*14t8b2v*_ga*MTA0NjQxNTQ1Ni4xNzc2OTE5OTEz*_ga_CZH3DPC08F*czE3ODE2MTA2NTQkbzQkZzEkdDE3ODE2MTIyNTkkajU2JGwwJGgw&name=SCG_FRO_AOE&class=deathknight&specid=251&author=Detnit%40Echo+Isles#share=!GSE3!1ZQ7b9NQFIDTtEQMSJR2oRVDJSYWEjdN+pgItuM4zQOaUBAM1Y190li5sV3f60phQEFsSIiZCakvEGJDIFgQDJVAYkCCseJX0KFiAKd5+DaprUgVQmz2tb/zsM/5NiQT1bGB1C15GVkaKmEgjWQWKZZBGhkRQw10yhu2ToNyAdZs0BUgG4sFXlpJLuVXEnlxS74JqJqwLUQaqWWwiGbo5P7mNVkv2RqmblQpodDms0c7IjEB44nXBwKtm9C6S8k6BWsd4URUKDqnydbbgqwY+mRg9PNDwdY1emWHQdphPj73Z4ef7nmy7766bKzFLoEJiLbZ4OgXL3YyEHpzsS/zEfq2teuZ+ZPknzn0+0eHZVrqpB4/d5dN7UZv02dfPW7THWL40j02iy+99mC5hw4eILYMX/p09IVn1x+mXHTumH8VHHvi0/UIH/LNfGp270jdE+/5gasOjr9tsdtHytIo1K5y0V708Pzw/aSJUR2sbea4xcx4TSVDiRlUAiwJUEY2posZROgNU0UU1Nx0ZDoeiXMxLs5FYzOpLFAkIIpeplKATazp1VsXKpSaZCEcVjWiGJZ6eXU1vEqgGR5UqYiws7nOLidsWjGs6wLQZneiUjGmZOLsY1oqiO11nThzsJRFuo1wq2QHdE73U3wFlCqxa4vr3IKCUJmbny13ih0qinrZsBTgjZrpFFbSsEbr+xnBGS9ddTShAdnsiIRxi2uRRrJggiIL53/xxTw/GRj6vivkUA1YuaQ714XiiTwz6BS4nunKZWBHuZ7pyuVY1t8zjFz8Mnt4piuX43c91t8x45l+w/Vopr/nfs+MfMsPXHdw7E4vzYcG/t7utp/AM8/YdIJGmiOk/vSYl65LAxvdOBVPXzn2+U+NE5nnIv/eONMliKrz6tzfNw5jmcOPmubzmYzIF+V87g8=)
