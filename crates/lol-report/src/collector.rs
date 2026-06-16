@@ -41,7 +41,7 @@ pub enum CombatEvent {
 #[derive(Debug, Default)]
 pub struct DataCollector {
     pub events: Vec<CombatEvent>,
-    pub champion_items: std::collections::HashMap<ChampionId, Vec<String>>,
+    pub champion_items: std::collections::HashMap<ChampionId, Vec<(String, String)>>,
 }
 
 impl DataCollector {

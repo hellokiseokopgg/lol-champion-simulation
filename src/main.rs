@@ -112,8 +112,8 @@ fn main() {
                 max_duration: 60.0, // 60s fight
             });
 
-            let items_a: Vec<String> = config_a.item_build.items.iter().map(|i| i.name.clone()).collect();
-            let items_b: Vec<String> = config_b.item_build.items.iter().map(|i| i.name.clone()).collect();
+            let items_a: Vec<(String, String)> = config_a.item_build.items.iter().map(|i| (i.id.clone(), i.name.clone())).collect();
+            let items_b: Vec<(String, String)> = config_b.item_build.items.iter().map(|i| (i.id.clone(), i.name.clone())).collect();
 
             let inst_a = std::rc::Rc::new(std::cell::RefCell::new(champ_a_module.create_instance(config_a)));
             let inst_b = std::rc::Rc::new(std::cell::RefCell::new(champ_b_module.create_instance(config_b)));

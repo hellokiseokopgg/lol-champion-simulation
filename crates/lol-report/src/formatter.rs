@@ -16,7 +16,8 @@ impl Formatter {
             
             if let Some(items) = collector.champion_items.get(champion) {
                 if !items.is_empty() {
-                    writeln!(output, "  Items: {}", items.join(", ")).unwrap();
+                    let item_names: Vec<String> = items.iter().map(|(_, name)| name.clone()).collect();
+                    writeln!(output, "  Items: {}", item_names.join(", ")).unwrap();
                 } else {
                     writeln!(output, "  Items: None").unwrap();
                 }
@@ -135,7 +136,7 @@ impl Formatter {
 
         let mut json_items = String::from("{\n");
         for (i, (champ, items)) in collector.champion_items.iter().enumerate() {
-            let items_list = items.iter().map(|s| format!("\"{}\"", s)).collect::<Vec<_>>().join(", ");
+            let items_list = items.iter().map(|(id, name)| format!("{{\"id\": \"{}\", \"name\": \"{}\"}}", id, name)).collect::<Vec<_>>().join(", ");
             json_items.push_str(&format!(r#"  "{}": [{}]"#, champ.0, items_list));
             if i < collector.champion_items.len() - 1 {
                 json_items.push_str(",\n");

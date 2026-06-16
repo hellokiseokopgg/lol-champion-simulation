@@ -690,8 +690,8 @@
   { "type": "death", "time": 2.2500000000000004, "source": "Darius" }
 ];
     const itemsData = {
-  "Garen": ["Black Cleaver"],
-  "Darius": []
+  "Darius": [],
+  "Garen": [{"id": "black_cleaver", "name": "Black Cleaver"}]
 };
     
     // UI Elements
@@ -718,9 +718,10 @@
             } else {
                 html += `<div style="display: flex; gap: 8px; flex-wrap: wrap;">`;
                 items.forEach(item => {
-                    const initials = item.split(' ').map(w => w[0]).join('').substring(0, 3);
-                    html += `<div style="width: 44px; height: 44px; background: linear-gradient(135deg, #2a2b36 0%, #1a1b23 100%); border: 1px solid #4b5563; border-radius: 6px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.3); cursor: pointer; transition: all 0.2s;" title="${item}" onmouseover="this.style.borderColor='var(--color-purple)'; this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='#4b5563'; this.style.transform='translateY(0)';">
-                        <span style="font-size: 12px; font-weight: bold; color: #e5e7eb; text-shadow: 1px 1px 2px #000;">${initials}</span>
+                    const iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/item/${item.id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
+                    html += `<div style="width: 44px; height: 44px; background: linear-gradient(135deg, #2a2b36 0%, #1a1b23 100%); border: 1px solid #4b5563; border-radius: 6px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.3); cursor: pointer; transition: all 0.2s; position: relative;" title="${item.name}" onmouseover="this.style.borderColor='var(--color-purple)'; this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='#4b5563'; this.style.transform='translateY(0)';">
+                        <img src="${iconUrl}" alt="${item.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 4px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <span style="display: none; font-size: 12px; font-weight: bold; color: #e5e7eb; text-shadow: 1px 1px 2px #000; position: absolute;">${item.name.split(' ').map(w => w[0]).join('').substring(0, 3)}</span>
                     </div>`;
                 });
                 html += `</div>`;
