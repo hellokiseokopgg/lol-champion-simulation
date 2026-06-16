@@ -111,6 +111,8 @@ fn main() {
 
 
             let run_sim = |script: &str| -> (f64, std::rc::Rc<std::cell::RefCell<lol_report::collector::DataCollector>>) {
+                let parsed_apl = lol_apl::parser::ActionPriorityList::parse(script).unwrap();
+
                 let base_stats_a = lol_core::stats::StatBlock {
                     health: data_a.base_stats.hp as f64,
                     health_regen: data_a.base_stats.hp_regen as f64,
@@ -128,7 +130,13 @@ fn main() {
                 let all_items = loader.load_all_items().unwrap_or_default();
                 let mut item_build_a = lol_core::item::ItemBuild::new();
 
-                if let Some(item_ids) = &items {
+                if let Some(item_ids) = &parsed_apl.items {
+                    for id in item_ids {
+                        if let Some(item) = all_items.iter().find(|i| i.id == *id) {
+                            let _ = item_build_a.add_item(item.clone().into_item());
+                        }
+                    }
+                } else if let Some(item_ids) = &items {
                     for id in item_ids {
                         if let Some(item) = all_items.iter().find(|i| i.id == *id) {
                             let _ = item_build_a.add_item(item.clone().into_item());
@@ -216,8 +224,6 @@ fn main() {
                 let collector = std::rc::Rc::new(std::cell::RefCell::new(lol_report::collector::DataCollector::new()));
                 collector.borrow_mut().champion_items.insert(id_a.clone(), items_a);
                 collector.borrow_mut().champion_items.insert(id_b.clone(), items_b);
-
-                let parsed_apl = lol_apl::parser::ActionPriorityList::parse(script).unwrap();
 
                 let tick_event = lol_apl::executor::ActorTickEvent {
                     actor: id_a.clone(),
