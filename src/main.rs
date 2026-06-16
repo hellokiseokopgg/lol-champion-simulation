@@ -324,7 +324,7 @@ actions+=/AutoAttack
             println!("\n{}", gantt);
 
             if let Some(out_path) = html_out {
-                let html = lol_report::formatter::Formatter::format_html(&collector.borrow(), &best_script, &translator);
+                let html = lol_report::formatter::Formatter::format_html(&collector.borrow(), &best_script, &translator, &stats);
                 std::fs::write(&out_path, html).unwrap();
                 info!("Saved HTML report to {}", out_path);
             }

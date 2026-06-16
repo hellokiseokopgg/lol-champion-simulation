@@ -69,6 +69,34 @@ impl StatBlock {
         let n = (level - 1) as f64;
         base + growth * n * (0.7025 + 0.0175 * n)
     }
+
+    /// Calculates the full stat block at a given level using the provided growth stats.
+    pub fn calculate_growth(&self, growth: &StatBlock, level: u32) -> Self {
+        Self {
+            health: Self::stat_at_level(self.health, growth.health, level),
+            health_regen: Self::stat_at_level(self.health_regen, growth.health_regen, level),
+            mana: Self::stat_at_level(self.mana, growth.mana, level),
+            mana_regen: Self::stat_at_level(self.mana_regen, growth.mana_regen, level),
+            attack_damage: Self::stat_at_level(self.attack_damage, growth.attack_damage, level),
+            ability_power: self.ability_power, // No AP growth natively
+            armor: Self::stat_at_level(self.armor, growth.armor, level),
+            magic_resist: Self::stat_at_level(self.magic_resist, growth.magic_resist, level),
+            attack_speed: self.attack_speed * (1.0 + Self::stat_at_level(0.0, growth.attack_speed, level)), // AS growth is a % increase of base AS
+            attack_speed_ratio: self.attack_speed_ratio,
+            movement_speed: self.movement_speed, // No MS growth
+            crit_chance: self.crit_chance,
+            crit_damage: self.crit_damage,
+            armor_pen_flat: self.armor_pen_flat,
+            armor_pen_percent: self.armor_pen_percent,
+            magic_pen_flat: self.magic_pen_flat,
+            magic_pen_percent: self.magic_pen_percent,
+            ability_haste: self.ability_haste,
+            life_steal: self.life_steal,
+            omnivamp: self.omnivamp,
+            armor_reduction_percent: self.armor_reduction_percent,
+            damage_reduction_percent: self.damage_reduction_percent,
+        }
+    }
 }
 
 impl std::ops::Add for StatBlock {

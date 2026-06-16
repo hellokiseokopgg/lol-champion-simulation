@@ -599,26 +599,22 @@
         </div>
 
         <div class="legend-bar">
-            <div class="legend-item"><div class="l-circle" style="background: var(--color-green);"></div> Instant</div>
-            <div class="legend-item"><div class="l-circle" style="background: var(--text-warning); border: 2px solid var(--text-warning); background: transparent;"></div> Cast</div>
-            <div class="legend-item"><div class="l-circle" style="background: var(--color-green); display:flex; align-items:center; justify-content:center; font-size:6px; color:#000;">★</div> Primary</div>
-            <div class="legend-item"><div class="l-circle" style="background: var(--text-warning); border: 1px dashed var(--text-warning); background: transparent;"></div> Fallback</div>
-            <div class="legend-item"><div class="l-circle" style="background: var(--color-purple); display:flex; align-items:center; justify-content:center; font-size:6px; color:#fff;">⚡</div> Off-GCD</div>
-            <div class="legend-item"><div class="l-circle" style="background: #3f3f46;"></div> Gap</div>
+            <!-- Skills -->
+            <div class="legend-item"><div class="l-square" style="background: transparent; border: 2px solid var(--color-green);"></div> Primary Skill</div>
+            <div class="legend-item"><div class="l-square" style="background: transparent; border: 2px solid #3b82f6;"></div> Active Skill</div>
+            <div class="legend-item"><div class="l-square" style="background: transparent; border: 2px solid var(--text-warning);"></div> Auto Attack</div>
             
             <div style="width: 1px; height: 16px; background: var(--border-color); margin: 0 10px;"></div>
 
-            <div class="legend-item"><div class="l-square" style="background: #166534;"></div> >50%</div>
-            <div class="legend-item"><div class="l-square" style="background: #854d0e;"></div> 25-50%</div>
-            <div class="legend-item"><div class="l-square" style="background: #7f1d1d;"></div> <25%</div>
-            <div class="legend-item"><div class="l-square" style="background: #f87171;"></div> Starved</div>
+            <!-- Events -->
+            <div class="legend-item"><div class="l-circle" style="background: #3b0764; border: 2px solid #a855f7; width: 14px; height: 14px;"></div> Item/Buff Proc</div>
             
             <div style="width: 1px; height: 16px; background: var(--border-color); margin: 0 10px;"></div>
 
-            <div class="legend-item"><div class="l-square" style="background: #a16207; height: 4px;"></div> Cast Time</div>
-            <div class="legend-item"><div class="l-square" style="background: #0e7490; height: 4px;"></div> Channel</div>
-            <div class="legend-item"><div class="l-circle" style="background: #d946ef; width: 6px; height:6px;"></div><div class="l-circle" style="background: #d946ef; width: 6px; height:6px;"></div> Proc Chain</div>
-            <div class="legend-item"><span style="color:#f87171; font-weight:bold;">-35</span> <span style="color:var(--text-success); font-weight:bold;">+20</span> Resource +/-</div>
+            <!-- Graphs -->
+            <div class="legend-item"><div class="l-square" style="background: var(--color-cyan); opacity: 0.5;"></div> Resource Usage</div>
+            <div class="legend-item"><div style="width: 16px; height: 2px; background: var(--color-orange);"></div> Cumulative Damage</div>
+            <div class="legend-item"><span style="color:var(--color-cyan); font-weight:bold;">+20</span> <span style="color:#f87171; font-weight:bold;">-35</span> Resource +/-</div>
         </div>
 
         <div class="playback-bar">
@@ -723,6 +719,7 @@
         "열정": "3071",
         "Black Cleaver Shred": "3071",
         "Black Cleaver Fervor": "3071",
+        "제압의 가르기": "6631",
         "비장한 걸음": "6631",
         "망령의 왈츠": "3046",
         "고통스러운 상처": "3033",
@@ -737,6 +734,11 @@
     };
 
     function getItemId(champ, name) {
+        if (name.startsWith("Item(")) {
+            const match = name.match(/Item\((\d+)\)/);
+            if (match) return match[1];
+        }
+
         let itemId = BUFF_TO_ITEM[name];
         if (itemId) return itemId;
         
@@ -753,15 +755,17 @@
     const damages = events.filter(e => e.type === "damage");
     const buffs = events.filter(e => e.type === "buff_apply");
     let resourceUpdates = events.filter(e => e.type === "resource_update");
-    const levelUps = events.filter(e => e.type === "level_up");
+
     
     let maxTime = 0;
     events.forEach(e => { if (e.time > maxTime) maxTime = e.time; });
     const duration = maxTime > 0 ? maxTime : 60;
     
+    let finalDmg = 0;
+    damages.forEach(d => finalDmg += d.amount);
+    
     document.getElementById('headerStats').innerText = `${casts.length} casts | ${duration.toFixed(0)}s | 1.50s GCD (Global Cooldown)`;
-    document.getElementById('cardFooter').innerHTML = `<strong>${casts.length}</strong> casts &nbsp;*&nbsp; <strong class="f-green">100%</strong> GCD uptime &nbsp;*&nbsp; <strong class="f-orange">0</strong> wasted &nbsp;*&nbsp; <strong>1.50s</strong> GCD`;
-
+    document.getElementById('cardFooter').innerHTML = `<strong>${casts.length}</strong> casts &nbsp;*&nbsp; <strong class="f-green">100%</strong> GCD uptime &nbsp;*&nbsp; <strong class="f-orange">0</strong> wasted &nbsp;*&nbsp; <strong>1.50s</strong> GCD &nbsp;*&nbsp; <strong style="color:var(--color-cyan);">${Math.floor(finalDmg)}</strong> Total Damage`;
     mainScrubber.max = duration + 5;
 
     // Settings
@@ -926,38 +930,7 @@
             timelineContent.appendChild(node);
         });
 
-        // 2.6 Level Up Events
-        levelUps.forEach(lvl => {
-            const node = document.createElement('div');
-            node.className = 'event-icon';
-            node.style.width = '20px';
-            node.style.height = '20px';
-            node.style.borderRadius = '50%';
-            node.style.border = '2px solid #eab308';
-            node.style.backgroundColor = '#713f12';
-            node.style.display = 'flex';
-            node.style.alignItems = 'center';
-            node.style.justifyContent = 'center';
-            node.innerHTML = `<span style="color: #fef08a; font-size: 10px; font-weight: bold;">${lvl.level}</span>`;
-            
-            const x = lvl.time * PX_PER_SEC + OFFSET_X;
-            node.style.left = x + 'px';
-            node.style.top = '10px'; // Near the top
-            
-            node.addEventListener('mouseenter', (e) => {
-                tooltip.innerHTML = `<strong>Level Up: ${lvl.level}</strong><br>Time: <span class="time">${lvl.time.toFixed(3)}s</span><br>Target: ${lvl.target}`;
-                tooltip.style.opacity = 1;
-                tooltip.style.left = (e.clientX + 15) + 'px';
-                tooltip.style.top = (e.clientY + 15) + 'px';
-            });
-            node.addEventListener('mousemove', (e) => {
-                tooltip.style.left = (e.clientX + 15) + 'px';
-                tooltip.style.top = (e.clientY + 15) + 'px';
-            });
-            node.addEventListener('mouseleave', () => tooltip.style.opacity = 0);
 
-            timelineContent.appendChild(node);
-        });
 
         // 3. SVG Resource Graph Background
         if (resourceUpdates.length > 0) {
@@ -976,7 +949,52 @@
             const pathFill = document.createElementNS("http://www.w3.org/2000/svg", "path");
             pathFill.setAttribute("d", fillPath);
             pathFill.setAttribute("fill", "var(--color-cyan)");
+            pathFill.setAttribute("opacity", "0.2"); // Added opacity for better layering
             svgGraph.appendChild(pathFill);
+        }
+
+        // 4. SVG Cumulative Damage Graph
+        const damages = events.filter(e => e.type === 'damage');
+        if (damages.length > 0) {
+            const h = 220;
+            // Sort by time
+            damages.sort((a, b) => a.time - b.time);
+            
+            let cumulative = 0;
+            let dataPoints = [{ time: 0, dmg: 0 }];
+            
+            damages.forEach(d => {
+                cumulative += d.amount;
+                dataPoints.push({ time: d.time, dmg: cumulative });
+            });
+            
+            const maxDmg = cumulative > 0 ? cumulative : 1;
+            
+            let dmgPath = `M 0 ${h} `;
+            dataPoints.forEach(p => {
+                let x = p.time * PX_PER_SEC + OFFSET_X;
+                // Leave a little padding at the top (h - 20)
+                let y = h - (p.dmg / maxDmg) * (h - 20);
+                dmgPath += `L ${x} ${y} `;
+            });
+            
+            const endX = totalWidth;
+            dmgPath += `L ${endX} ${h - (cumulative / maxDmg) * (h - 20)}`;
+            
+            const pathStroke = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            pathStroke.setAttribute("d", dmgPath);
+            pathStroke.setAttribute("fill", "none");
+            pathStroke.setAttribute("stroke", "var(--color-orange)");
+            pathStroke.setAttribute("stroke-width", "2");
+            svgGraph.appendChild(pathStroke);
+
+            // Optional area under the damage graph
+            let dmgAreaPath = dmgPath + ` L ${endX} ${h} Z`;
+            const areaFill = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            areaFill.setAttribute("d", dmgAreaPath);
+            areaFill.setAttribute("fill", "var(--color-orange)");
+            areaFill.setAttribute("opacity", "0.05");
+            svgGraph.appendChild(areaFill);
         }
     }
 
@@ -1000,16 +1018,30 @@
         scrubber.style.left = (playTime * PX_PER_SEC + OFFSET_X) + 'px';
         mainScrubber.value = playTime;
         
-        // Find current resource
+        // Calculate current damage
+        let currentDmg = 0;
+        for(let d of damages) {
+            if (d.time <= playTime) {
+                currentDmg += d.amount;
+            }
+        }
+
+        let labelText = "";
         if (resourceUpdates.length > 0) {
             let res = 100;
             for(let r of resourceUpdates) {
                 if(r.time <= playTime) res = r.amount;
             }
-            scrubberLabel.innerText = `${Math.floor(res)}/100 (${Math.floor(res)}%)`;
+            labelText = `${Math.floor(res)}/100 (${Math.floor(res)}%)`;
         } else {
-            scrubberLabel.innerText = `소모값 없음`;
+            labelText = `소모값 없음`;
         }
+
+        if (currentDmg > 0) {
+            labelText += ` | 누적 딜: ${Math.floor(currentDmg)}`;
+        }
+        
+        scrubberLabel.innerText = labelText;
         
         // Auto scroll timeline
         const scrollLeft = playTime * PX_PER_SEC + OFFSET_X - (scrollWrapper.clientWidth / 2);

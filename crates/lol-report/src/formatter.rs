@@ -11,7 +11,10 @@ impl Formatter {
         writeln!(output, "Combat Duration: {:.2}s", stats.duration).unwrap();
         writeln!(output, "--------------------------------").unwrap();
 
-        for (champion, champ_stat) in &stats.champion_stats {
+        let mut sorted_stats: Vec<_> = stats.champion_stats.iter().collect();
+        sorted_stats.sort_by(|a, b| b.1.total_damage.partial_cmp(&a.1.total_damage).unwrap_or(std::cmp::Ordering::Equal));
+
+        for (champion, champ_stat) in sorted_stats {
             writeln!(output, "Champion: {:?}", champion.0).unwrap();
             
             if let Some(items) = collector.champion_items.get(champion) {
@@ -106,7 +109,7 @@ impl Formatter {
         out
     }
 
-    pub fn format_html(collector: &DataCollector, apl_script: &str, translator: &crate::i18n::Translator) -> String {
+    pub fn format_html(collector: &DataCollector, apl_script: &str, translator: &crate::i18n::Translator, stats: &Statistics) -> String {
         let mut json_events = String::from("[\n");
         let mut filtered_json_strs = Vec::new();
         let mut last_buff_times_html: std::collections::HashMap<String, f64> = std::collections::HashMap::new();
@@ -163,12 +166,7 @@ impl Formatter {
                         time.as_f64(), target.0, resource_type, amount, max
                     ))
                 }
-                CombatEvent::LevelUp { time, target, level } => {
-                    Some(format!(
-                        r#"  {{ "type": "level_up", "time": {}, "target": "{}", "level": {} }}"#,
-                        time.as_f64(), target.0, level
-                    ))
-                }
+
                 CombatEvent::ItemAcquisition { time, target, item_id, item_name } => {
                     let localized = translator.translate_buff(&item_name); 
                     Some(format!(
@@ -187,7 +185,16 @@ impl Formatter {
         json_events.push(']');
 
         let mut json_items = String::from("{\n");
-        for (i, (champ, items)) in collector.champion_items.iter().enumerate() {
+        
+        // Sort champions by total damage dealt so the primary attacker appears first
+        let mut sorted_champs: Vec<_> = collector.champion_items.iter().collect();
+        sorted_champs.sort_by(|a, b| {
+            let dmg_a = stats.champion_stats.get(a.0).map_or(0.0, |s| s.total_damage);
+            let dmg_b = stats.champion_stats.get(b.0).map_or(0.0, |s| s.total_damage);
+            dmg_b.partial_cmp(&dmg_a).unwrap_or(std::cmp::Ordering::Equal)
+        });
+
+        for (i, (champ, items)) in sorted_champs.into_iter().enumerate() {
             let items_list = items.iter().map(|(id, name)| {
                 let localized = translator.translate_buff(name);
                 format!("{{\"id\": \"{}\", \"name\": \"{}\"}}", id, localized)

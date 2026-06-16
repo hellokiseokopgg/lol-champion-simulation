@@ -15,7 +15,6 @@ pub trait EventRecorder {
     fn record_buff_expire(&mut self, time: SimTime, target: crate::types::ChampionId, buff_name: String);
     fn record_resource_update(&mut self, time: SimTime, target: crate::types::ChampionId, resource_type: String, amount: f64, max: f64);
     fn record_item_acquisition(&mut self, time: SimTime, target: crate::types::ChampionId, item_id: String, item_name: String);
-    fn record_level_up(&mut self, time: SimTime, target: crate::types::ChampionId, level: u32);
 }
 
 /// Context provided to events when they are executed.
@@ -167,32 +166,7 @@ impl SimEvent for ItemAcquisitionEvent {
     }
 }
 
-/// Event representing a champion leveling up.
-pub struct LevelUpEvent {
-    pub target: crate::types::ChampionId,
-}
 
-impl SimEvent for LevelUpEvent {
-    fn execute(&self, ctx: &mut SimContext, _event_manager: &mut EventManager) {
-        let mut new_level = 0;
-        if let Some(champ_ref) = ctx.champions.get(&self.target) {
-            let mut champ = champ_ref.borrow_mut();
-            let state = champ.state_mut();
-            state.level = std::cmp::min(18, state.level + 1);
-            new_level = state.level;
-            champ.update_stats();
-        }
-        if new_level > 0 {
-            if let Some(recorder) = &ctx.recorder {
-                recorder.borrow_mut().record_level_up(ctx.current_time, self.target.clone(), new_level);
-            }
-        }
-    }
-
-    fn name(&self) -> &str {
-        "LevelUpEvent"
-    }
-}
 
 /// Event representing a tick of periodic damage (DoT).
 pub struct DoTTickEvent {

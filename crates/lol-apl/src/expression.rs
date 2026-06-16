@@ -47,6 +47,11 @@ impl Expression {
                 "E" => AbilitySlot::E,
                 "R" => AbilitySlot::R,
                 "AutoAttack" | "AA" => AbilitySlot::AutoAttack,
+                s if s.starts_with("Item:") => {
+                    let id_str = &s["Item:".len()..];
+                    let id = id_str.parse::<u32>().map_err(|_| format!("Invalid item ID in expression: {}", id_str))?;
+                    AbilitySlot::Item(id)
+                }
                 _ => return Err(format!("Unknown ability slot in cooldown condition: {}", slot_str)),
             };
             return Ok(Expression::CooldownReady(slot));

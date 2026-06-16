@@ -27,6 +27,8 @@ pub enum AbilitySlot {
     Passive,
     /// Basic auto attack
     AutoAttack,
+    /// Active item (stores the item ID)
+    Item(u32),
 }
 
 /// Represents the resource type a champion uses for their abilities.

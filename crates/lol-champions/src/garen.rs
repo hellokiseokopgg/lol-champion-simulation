@@ -35,16 +35,26 @@ impl ChampionModule for GarenModule {
         if let Some(e) = state.abilities.get_state_mut(AbilitySlot::E) { e.level = 5; }
         if let Some(r) = state.abilities.get_state_mut(AbilitySlot::R) { r.level = 3; }
 
+        let mut abilities: Vec<Box<dyn Ability>> = vec![
+            Box::new(GarenAutoAttack),
+            Box::new(GarenQ),
+            Box::new(GarenW),
+            Box::new(GarenE),
+            Box::new(GarenR),
+        ];
+
+        // Register active items
+        for item in &config.item_build.items {
+            if item.id == "6631" { // Stridebreaker
+                state.abilities.register_ability(AbilitySlot::Item(6631), 1);
+                abilities.push(Box::new(lol_core::item::StridebreakerActive));
+            }
+        }
+
         Box::new(GarenInstance {
             state,
             _config: config,
-            abilities: vec![
-                Box::new(GarenAutoAttack),
-                Box::new(GarenQ),
-                Box::new(GarenW),
-                Box::new(GarenE),
-                Box::new(GarenR),
-            ],
+            abilities,
         })
     }
 }

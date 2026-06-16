@@ -96,6 +96,13 @@ impl AbilitySlotManager {
         }
     }
 
+    /// Registers a new ability slot with a starting level (e.g., for items).
+    pub fn register_ability(&mut self, slot: AbilitySlot, level: u32) {
+        let mut state = AbilityState::new();
+        state.level = level;
+        self.states.insert(slot, state);
+    }
+
     /// Resets the cooldown of the specified ability to ready.
     pub fn reset_cooldown(&mut self, slot: AbilitySlot) {
         if let Some(state) = self.states.get_mut(&slot) {

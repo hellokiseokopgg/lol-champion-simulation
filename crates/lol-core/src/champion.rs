@@ -54,7 +54,8 @@ pub struct ChampionState {
 
 impl ChampionState {
     pub fn new(level: u32, base_stats: StatBlock, growth_stats: StatBlock, resource_type: ResourceType, rune_stats: StatBlock, item_stats: StatBlock, item_effects: Vec<Box<dyn crate::item::ItemEffect>>) -> Self {
-        let mut stats = ThreeLayerStats::new(base_stats.clone());
+        let leveled_stats = base_stats.calculate_growth(&growth_stats, level);
+        let mut stats = ThreeLayerStats::new(leveled_stats);
         stats.recalculate_initial(&(rune_stats.clone() + item_stats.clone()));
         stats.recalculate_current(&StatBlock::new()); // Make sure current reflects initial
         

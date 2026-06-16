@@ -157,6 +157,121 @@ impl ItemBuild {
     }
 }
 
+pub struct HaltingSlashDebuff;
+
+impl crate::buff::StatusEffect for HaltingSlashDebuff {
+    fn id(&self) -> crate::types::EffectId {
+        crate::types::EffectId("HaltingSlashDebuff".into())
+    }
+
+    fn name(&self) -> &str {
+        "제압의 가르기"
+    }
+
+    fn duration(&self) -> f64 {
+        3.0
+    }
+
+    fn refresh_behavior(&self) -> crate::buff::RefreshBehavior {
+        crate::buff::RefreshBehavior::RefreshDuration
+    }
+
+    fn max_stacks(&self) -> u32 {
+        1
+    }
+
+    fn stat_modifiers(&self, _stacks: u32) -> StatBlock {
+        // -30% movement speed for the target (simplified)
+        StatBlock::new()
+    }
+}
+
+pub struct HeroicGaitBuff;
+
+impl crate::buff::StatusEffect for HeroicGaitBuff {
+    fn id(&self) -> crate::types::EffectId {
+        crate::types::EffectId("HeroicGaitBuff".into())
+    }
+
+    fn name(&self) -> &str {
+        "비장한 걸음"
+    }
+
+    fn duration(&self) -> f64 {
+        3.0
+    }
+
+    fn refresh_behavior(&self) -> crate::buff::RefreshBehavior {
+        crate::buff::RefreshBehavior::RefreshDuration
+    }
+
+    fn max_stacks(&self) -> u32 {
+        1
+    }
+
+    fn stat_modifiers(&self, _stacks: u32) -> StatBlock {
+        // +30% movement speed for the source (simplified)
+        StatBlock::new()
+    }
+}
+
+pub struct StridebreakerActive;
+
+impl crate::ability::Ability for StridebreakerActive {
+    fn slot(&self) -> crate::types::AbilitySlot {
+        crate::types::AbilitySlot::Item(6631)
+    }
+
+    fn cast_time(&self) -> f64 {
+        0.0
+    }
+
+    fn base_cooldown(&self, _level: u32) -> f64 {
+        15.0
+    }
+
+    fn cost(&self, _level: u32) -> f64 {
+        0.0
+    }
+
+    fn execute(&self, ctx: &mut crate::event::SimContext, actor: &crate::types::ChampionId, target: &crate::types::ChampionId) {
+        let (attacker_stats, defender_stats) = {
+            let attacker_ref = ctx.champions.get(actor).unwrap().borrow();
+            let defender_ref = ctx.champions.get(target).unwrap().borrow();
+            (
+                attacker_ref.state().stats.current.clone(),
+                defender_ref.state().stats.current.clone(),
+            )
+        };
+
+        let raw_damage = attacker_stats.attack_damage * 0.8;
+
+        let damage_result = crate::damage::DamagePipeline::process(
+            raw_damage,
+            crate::types::DamageType::Physical,
+            false,
+            &attacker_stats,
+            &defender_stats,
+        );
+
+        if let Some(recorder) = &ctx.recorder {
+            recorder.borrow_mut().record_damage(
+                ctx.current_time, actor.clone(), target.clone(), self.slot(), damage_result.final_damage, false,
+            );
+        }
+
+        ctx.trigger_on_physical_damage(actor, target, &damage_result);
+
+        ctx.apply_buff(target, Box::new(HaltingSlashDebuff));
+        ctx.apply_buff(actor, Box::new(HeroicGaitBuff));
+    }
+
+    fn clone_box(&self) -> Box<dyn crate::ability::Ability> {
+        Box::new(StridebreakerActive)
+    }
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -237,7 +352,7 @@ mod tests {
         
         let mut target_stats = StatBlock::new();
         target_stats.armor = 100.0;
-        let mut target_state = ChampionState::new(target_stats, ResourceType::None, StatBlock::new(), vec![]);
+        let mut target_state = ChampionState::new(1, target_stats, StatBlock::new(), ResourceType::None, StatBlock::new(), StatBlock::new(), vec![]);
         target_state.stats.recalculate_current(&StatBlock::new());
         
         sim.champions.insert(target_id.clone(), std::rc::Rc::new(std::cell::RefCell::new(
