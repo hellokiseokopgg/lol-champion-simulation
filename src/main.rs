@@ -112,6 +112,9 @@ fn main() {
                 max_duration: 60.0, // 60s fight
             });
 
+            let items_a: Vec<String> = config_a.item_build.items.iter().map(|i| i.name.clone()).collect();
+            let items_b: Vec<String> = config_b.item_build.items.iter().map(|i| i.name.clone()).collect();
+
             let inst_a = std::rc::Rc::new(std::cell::RefCell::new(champ_a_module.create_instance(config_a)));
             let inst_b = std::rc::Rc::new(std::cell::RefCell::new(champ_b_module.create_instance(config_b)));
 
@@ -123,6 +126,11 @@ fn main() {
 
             // For now, we mock the damage directly to test reporting
             let collector = std::rc::Rc::new(std::cell::RefCell::new(lol_report::collector::DataCollector::new()));
+            {
+                let mut col = collector.borrow_mut();
+                col.champion_items.insert(id_a.clone(), items_a);
+                col.champion_items.insert(id_b.clone(), items_b);
+            }
             
             let garen_apl_script = "
 actions+=/R,if=target.health.pct<30
@@ -161,7 +169,7 @@ actions+=/AutoAttack
 
             let max_time = lol_core::types::SimTime::new(60.0);
             let stats = lol_report::statistics::Statistics::calculate(&collector.borrow(), max_time);
-            let report = lol_report::formatter::Formatter::format_text(&stats);
+            let report = lol_report::formatter::Formatter::format_text(&stats, &collector.borrow());
             let gantt = lol_report::formatter::Formatter::format_gantt(&collector.borrow());
 
             println!("\n{}", report);

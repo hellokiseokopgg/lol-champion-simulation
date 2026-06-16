@@ -643,12 +643,27 @@
         </div>
     </div>
 
+    </div>
+
+    <!-- Items Card -->
+    <div class="panel">
+        <div class="timeline-header">
+            <div class="timeline-title">Champions & Items</div>
+        </div>
+        <div class="panel-body">
+            <div id="itemsContainer" style="display: flex; gap: 40px; width: 100%;">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <div class="tooltip" id="tooltip"></div>
 
 <script>
     const events = /* __EVENTS_JSON__ */;
+    const itemsData = /* __ITEMS_JSON__ */;
     
     // UI Elements
     const timelineInner = document.getElementById('timelineInner');
@@ -661,6 +676,27 @@
     const mainScrubber = document.getElementById('mainScrubber');
     const svgGraph = document.getElementById('svgGraph');
     const tooltip = document.getElementById('tooltip');
+    const itemsContainer = document.getElementById('itemsContainer');
+    
+    // Render Items
+    if (itemsData) {
+        for (const [champ, items] of Object.entries(itemsData)) {
+            const col = document.createElement('div');
+            col.className = 'col';
+            let html = `<h4>${champ}</h4>`;
+            if (items.length === 0) {
+                html += `<p>No items equipped.</p>`;
+            } else {
+                html += `<ul style="list-style: none; padding: 0;">`;
+                items.forEach(item => {
+                    html += `<li style="padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px; margin-bottom: 4px; border: 1px solid #303240;">${item}</li>`;
+                });
+                html += `</ul>`;
+            }
+            col.innerHTML = html;
+            itemsContainer.appendChild(col);
+        }
+    }
     
     // Process Data
     const casts = events.filter(e => e.type === "cast");

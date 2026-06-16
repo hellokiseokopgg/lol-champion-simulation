@@ -5,14 +5,22 @@ use std::fmt::Write;
 pub struct Formatter;
 
 impl Formatter {
-    pub fn format_text(stats: &Statistics) -> String {
+    pub fn format_text(stats: &Statistics, collector: &DataCollector) -> String {
         let mut output = String::new();
         writeln!(output, "--- Combat Simulation Report ---").unwrap();
         writeln!(output, "Combat Duration: {:.2}s", stats.duration).unwrap();
         writeln!(output, "--------------------------------").unwrap();
 
         for (champion, champ_stat) in &stats.champion_stats {
-            writeln!(output, "Champion: {:?}", champion).unwrap();
+            writeln!(output, "Champion: {:?}", champion.0).unwrap();
+            
+            if let Some(items) = collector.champion_items.get(champion) {
+                if !items.is_empty() {
+                    writeln!(output, "  Items: {}", items.join(", ")).unwrap();
+                } else {
+                    writeln!(output, "  Items: None").unwrap();
+                }
+            }
             writeln!(output, "  Total Damage: {:.1}", champ_stat.total_damage).unwrap();
             writeln!(output, "  DPS: {:.1}", champ_stat.dps).unwrap();
             writeln!(output, "  Ability Breakdown:").unwrap();
@@ -125,8 +133,22 @@ impl Formatter {
         }
         json_events.push(']');
 
-        let html_template = include_str!("report_template.html");
-        html_template.replace("/* __EVENTS_JSON__ */", &json_events)
-                     .replace("<!-- __APL_SCRIPT__ -->", &apl_script.replace('\n', "<br>"))
+        let mut json_items = String::from("{\n");
+        for (i, (champ, items)) in collector.champion_items.iter().enumerate() {
+            let items_list = items.iter().map(|s| format!("\"{}\"", s)).collect::<Vec<_>>().join(", ");
+            json_items.push_str(&format!(r#"  "{}": [{}]"#, champ.0, items_list));
+            if i < collector.champion_items.len() - 1 {
+                json_items.push_str(",\n");
+            } else {
+                json_items.push('\n');
+            }
+        }
+        json_items.push('}');
+
+        let template = include_str!("report_template.html");
+        template
+            .replace("/* __EVENTS_JSON__ */", &json_events)
+            .replace("/* __APL_SCRIPT__ */", apl_script)
+            .replace("/* __ITEMS_JSON__ */", &json_items)
     }
 }

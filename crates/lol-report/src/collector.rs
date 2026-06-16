@@ -41,11 +41,15 @@ pub enum CombatEvent {
 #[derive(Debug, Default)]
 pub struct DataCollector {
     pub events: Vec<CombatEvent>,
+    pub champion_items: std::collections::HashMap<ChampionId, Vec<String>>,
 }
 
 impl DataCollector {
     pub fn new() -> Self {
-        Self::default()
+        Self {
+            events: Vec::new(),
+            champion_items: std::collections::HashMap::new(),
+        }
     }
 
     pub fn record_damage(
