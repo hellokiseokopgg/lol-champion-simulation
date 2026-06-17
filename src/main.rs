@@ -106,6 +106,10 @@ fn main() {
                         attack_speed: 0.0,
                         attack_range: 0.0,
                         move_speed: 0.0,
+                        attack_delay_offset: None,
+                        attack_speed_ratio: None,
+                        windup_percent: None,
+                        windup_modifier: None,
                     },
                     growth_stats: lol_data::champion_data::GrowthStats {
                         hp: 0.0,
@@ -139,8 +143,11 @@ fn main() {
                     armor: data_a.base_stats.armor as f64,
                     magic_resist: data_a.base_stats.magic_resist as f64,
                     attack_speed: data_a.base_stats.attack_speed as f64,
-                    attack_speed_ratio: Some(data_a.base_stats.attack_speed as f64),
+                    attack_speed_ratio: data_a.base_stats.attack_speed_ratio,
                     movement_speed: data_a.base_stats.move_speed as f64,
+                    attack_delay_offset: data_a.base_stats.attack_delay_offset,
+                    windup_percent: data_a.base_stats.windup_percent,
+                    windup_modifier: data_a.base_stats.windup_modifier,
                     ..Default::default()
                 };
                 let all_items = loader.load_all_items().unwrap_or_default();
@@ -243,8 +250,11 @@ fn main() {
                     armor: data_b.base_stats.armor as f64,
                     magic_resist: data_b.base_stats.magic_resist as f64,
                     attack_speed: data_b.base_stats.attack_speed as f64,
-                    attack_speed_ratio: Some(data_b.base_stats.attack_speed as f64),
+                    attack_speed_ratio: data_b.base_stats.attack_speed_ratio,
                     movement_speed: data_b.base_stats.move_speed as f64,
+                    attack_delay_offset: data_b.base_stats.attack_delay_offset,
+                    windup_percent: data_b.base_stats.windup_percent,
+                    windup_modifier: data_b.base_stats.windup_modifier,
                     ..Default::default()
                 };
                 let mut rune_page_b = lol_core::rune::RunePage::default();

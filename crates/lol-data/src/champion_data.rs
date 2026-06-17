@@ -29,6 +29,10 @@ pub struct BaseStats {
     pub attack_speed: f32,
     pub attack_range: f32,
     pub move_speed: f32,
+    pub attack_delay_offset: Option<f64>,
+    pub attack_speed_ratio: Option<f64>,
+    pub windup_percent: Option<f64>,
+    pub windup_modifier: Option<f64>,
 }
 
 /// Stat growth per level for a champion.

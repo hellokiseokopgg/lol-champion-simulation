@@ -11,7 +11,11 @@
         "attack_damage": 69,
         "attack_speed": 0.625,
         "attack_range": 175,
-        "move_speed": 340
+        "move_speed": 340,
+        "attack_delay_offset": 0.0,
+        "attack_speed_ratio": 0.625,
+        "windup_percent": 0.17544,
+        "windup_modifier": 1.0
     },
     "growth_stats": {
         "hp": 98,

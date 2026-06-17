@@ -1,0 +1,336 @@
+[2m2026-06-17T05:08:54.777007Z[0m [32m INFO[0m [2mlol_champion_simulation[0m[2m:[0m Initializing LoL Champion Simulation Engine...
+[2m2026-06-17T05:08:54.777270Z[0m [32m INFO[0m [2mlol_champion_simulation[0m[2m:[0m Matchup: Garen vs Dummy
+[2m2026-06-17T05:08:54.777354Z[0m [32m INFO[0m [2mlol_champion_simulation[0m[2m:[0m Iterations: 100
+[2m2026-06-17T05:08:54.777884Z[0m [32m INFO[0m [2mlol_data::loader[0m[2m:[0m Loaded champion data for Garen
+[2m2026-06-17T05:08:54.778266Z[0m [32m INFO[0m [2mlol_data::loader[0m[2m:[0m Loaded 8 runes
+[2m2026-06-17T05:08:54.778681Z[0m [32m INFO[0m [2mlol_data::loader[0m[2m:[0m Loaded 6 items
+
+Optimal APL:
+
+actions+=/R,if=target.health.pct<30
+actions+=/AutoAttack,if=buff.Judgment.down
+actions+=/Q,if=buff.Judgment.down
+actions+=/E
+actions+=/W
+
+
+--- Combat Simulation Report ---
+Combat Duration: 59.60s
+--------------------------------
+Champion: "Garen"
+  Items: Stridebreaker, Mortal Reminder, Phantom Dancer
+  Total Damage: 19494.6
+  Damage Taken: 0.0
+  DPS: 327.1
+  Ability Breakdown:
+    AutoAttack: 9510.9 (48.8%)
+    E: 7187.1 (36.9%)
+    Q: 2796.6 (14.3%)
+--------------------------------
+Champion: "Dummy"
+  Items: None
+  Total Damage: 0.0
+  Damage Taken: 19494.6
+  DPS: 0.0
+  Ability Breakdown:
+--------------------------------
+
+
+```mermaid
+gantt
+    title Combat Skill Timeline
+    dateFormat x
+    axisFormat %S.%L
+
+    section Garen
+    Cast AutoAttack : 0, 200
+    Dmg AutoAttack : 0, 100
+    Effect 정복자 (2스택) : 0, 150
+    Cast Q : 250, 450
+    Effect 결정적 일격 : 250, 400
+    Cast AutoAttack : 500, 700
+    Dmg Q : 500, 600
+    Effect 정복자 (4스택) : 500, 650
+    Cast E : 750, 950
+    Effect 심판 : 750, 900
+    Dmg E : 750, 850
+    Effect 정복자 (6스택) : 750, 900
+    Dmg E : 980, 1080
+    Effect 정복자 (8스택) : 980, 1130
+    Cast W : 1000, 1200
+    Effect 용기 : 1000, 1150
+    Dmg E : 1211, 1311
+    Effect 정복자 (10스택) : 1211, 1361
+    Dmg E : 1442, 1542
+    Effect 정복자 (12스택) : 1442, 1592
+    Dmg E : 1673, 1773
+    Dmg E : 1903, 2003
+    Dmg E : 2134, 2234
+    Dmg E : 2365, 2465
+    Dmg E : 2596, 2696
+    Dmg E : 2826, 2926
+    Dmg E : 3057, 3157
+    Dmg E : 3288, 3388
+    Dmg E : 3519, 3619
+    Effect GarenEBuff 만료 : 3750, 3900
+    Cast AutoAttack : 3750, 3950
+    Dmg AutoAttack : 3750, 3850
+    Cast AutoAttack : 4400, 4600
+    Dmg AutoAttack : 4400, 4500
+    Cast AutoAttack : 5049, 5249
+    Dmg AutoAttack : 5049, 5149
+    Cast AutoAttack : 5699, 5899
+    Dmg AutoAttack : 5699, 5799
+    Effect GarenW 만료 : 6000, 6150
+    Cast AutoAttack : 6349, 6549
+    Dmg AutoAttack : 6349, 6449
+    Cast AutoAttack : 6999, 7199
+    Dmg AutoAttack : 6999, 7099
+    Cast AutoAttack : 7649, 7849
+    Dmg AutoAttack : 7649, 7749
+    Cast AutoAttack : 8299, 8499
+    Dmg AutoAttack : 8299, 8399
+    Cast Q : 8549, 8749
+    Effect 결정적 일격 : 8549, 8699
+    Cast AutoAttack : 8799, 8999
+    Dmg Q : 8799, 8899
+    Cast AutoAttack : 9449, 9649
+    Dmg AutoAttack : 9449, 9549
+    Cast E : 9799, 9999
+    Effect 심판 : 9799, 9949
+    Dmg E : 9799, 9899
+    Dmg E : 10030, 10130
+    Dmg E : 10261, 10361
+    Dmg E : 10492, 10592
+    Dmg E : 10723, 10823
+    Dmg E : 10953, 11053
+    Dmg E : 11184, 11284
+    Dmg E : 11415, 11515
+    Dmg E : 11646, 11746
+    Dmg E : 11876, 11976
+    Dmg E : 12107, 12207
+    Dmg E : 12338, 12438
+    Dmg E : 12569, 12669
+    Effect GarenEBuff 만료 : 12799, 12949
+    Cast AutoAttack : 12849, 13049
+    Dmg AutoAttack : 12849, 12949
+    Cast AutoAttack : 13499, 13699
+    Dmg AutoAttack : 13499, 13599
+    Cast AutoAttack : 14149, 14349
+    Dmg AutoAttack : 14149, 14249
+    Cast AutoAttack : 14799, 14999
+    Dmg AutoAttack : 14799, 14899
+    Cast AutoAttack : 15449, 15649
+    Dmg AutoAttack : 15449, 15549
+    Cast AutoAttack : 16099, 16299
+    Dmg AutoAttack : 16099, 16199
+    Cast W : 16349, 16549
+    Effect 용기 : 16349, 16499
+    Cast Q : 16599, 16799
+    Effect 결정적 일격 : 16599, 16749
+    Cast AutoAttack : 16849, 17049
+    Dmg Q : 16849, 16949
+    Cast AutoAttack : 17499, 17699
+    Dmg AutoAttack : 17499, 17599
+    Cast AutoAttack : 18149, 18349
+    Dmg AutoAttack : 18149, 18249
+    Cast AutoAttack : 18799, 18999
+    Dmg AutoAttack : 18799, 18899
+    Cast E : 19049, 19249
+    Effect 심판 : 19049, 19199
+    Dmg E : 19049, 19149
+    Dmg E : 19280, 19380
+    Dmg E : 19511, 19611
+    Dmg E : 19742, 19842
+    Dmg E : 19973, 20073
+    Dmg E : 20203, 20303
+    Dmg E : 20434, 20534
+    Dmg E : 20665, 20765
+    Dmg E : 20896, 20996
+    Dmg E : 21126, 21226
+    Effect GarenW 만료 : 21349, 21499
+    Dmg E : 21357, 21457
+    Dmg E : 21588, 21688
+    Dmg E : 21819, 21919
+    Effect GarenEBuff 만료 : 22049, 22199
+    Cast AutoAttack : 22100, 22300
+    Dmg AutoAttack : 22100, 22200
+    Cast AutoAttack : 22750, 22950
+    Dmg AutoAttack : 22750, 22850
+    Cast AutoAttack : 23400, 23600
+    Dmg AutoAttack : 23400, 23500
+    Cast AutoAttack : 24050, 24250
+    Dmg AutoAttack : 24050, 24150
+    Cast Q : 24600, 24800
+    Effect 결정적 일격 : 24600, 24750
+    Cast AutoAttack : 24850, 25050
+    Dmg Q : 24850, 24950
+    Cast AutoAttack : 25500, 25700
+    Dmg AutoAttack : 25500, 25600
+    Cast AutoAttack : 26150, 26350
+    Dmg AutoAttack : 26150, 26250
+    Cast AutoAttack : 26800, 27000
+    Dmg AutoAttack : 26800, 26900
+    Cast AutoAttack : 27450, 27650
+    Dmg AutoAttack : 27450, 27550
+    Cast AutoAttack : 28100, 28300
+    Dmg AutoAttack : 28100, 28200
+    Cast E : 28350, 28550
+    Effect 심판 : 28350, 28500
+    Dmg E : 28350, 28450
+    Dmg E : 28580, 28680
+    Dmg E : 28811, 28911
+    Dmg E : 29042, 29142
+    Dmg E : 29273, 29373
+    Dmg E : 29503, 29603
+    Dmg E : 29734, 29834
+    Dmg E : 29965, 30065
+    Dmg E : 30196, 30296
+    Dmg E : 30426, 30526
+    Dmg E : 30657, 30757
+    Dmg E : 30888, 30988
+    Dmg E : 31119, 31219
+    Effect GarenEBuff 만료 : 31350, 31500
+    Cast AutoAttack : 31400, 31600
+    Dmg AutoAttack : 31400, 31500
+    Cast W : 31650, 31850
+    Effect 용기 : 31650, 31800
+    Cast AutoAttack : 32100, 32300
+    Dmg AutoAttack : 32100, 32200
+    Cast Q : 32650, 32850
+    Effect 결정적 일격 : 32650, 32800
+    Cast AutoAttack : 32900, 33100
+    Dmg Q : 32900, 33000
+    Cast AutoAttack : 33550, 33750
+    Dmg AutoAttack : 33550, 33650
+    Cast AutoAttack : 34200, 34400
+    Dmg AutoAttack : 34200, 34300
+    Cast AutoAttack : 34850, 35050
+    Dmg AutoAttack : 34850, 34950
+    Cast AutoAttack : 35500, 35700
+    Dmg AutoAttack : 35500, 35600
+    Cast AutoAttack : 36150, 36350
+    Dmg AutoAttack : 36150, 36250
+    Effect GarenW 만료 : 36650, 36800
+    Cast AutoAttack : 36800, 37000
+    Dmg AutoAttack : 36800, 36900
+    Cast E : 37350, 37550
+    Effect 심판 : 37350, 37500
+    Dmg E : 37350, 37450
+    Dmg E : 37580, 37680
+    Dmg E : 37811, 37911
+    Dmg E : 38042, 38142
+    Dmg E : 38273, 38373
+    Dmg E : 38503, 38603
+    Dmg E : 38734, 38834
+    Dmg E : 38965, 39065
+    Dmg E : 39196, 39296
+    Dmg E : 39426, 39526
+    Dmg E : 39657, 39757
+    Dmg E : 39888, 39988
+    Dmg E : 40119, 40219
+    Effect GarenEBuff 만료 : 40350, 40500
+    Cast AutoAttack : 40400, 40600
+    Dmg AutoAttack : 40400, 40500
+    Cast Q : 40650, 40850
+    Effect 결정적 일격 : 40650, 40800
+    Cast AutoAttack : 40900, 41100
+    Dmg Q : 40900, 41000
+    Cast AutoAttack : 41550, 41750
+    Dmg AutoAttack : 41550, 41650
+    Cast AutoAttack : 42200, 42400
+    Dmg AutoAttack : 42200, 42300
+    Cast AutoAttack : 42850, 43050
+    Dmg AutoAttack : 42850, 42950
+    Cast AutoAttack : 43500, 43700
+    Dmg AutoAttack : 43500, 43600
+    Cast AutoAttack : 44150, 44350
+    Dmg AutoAttack : 44150, 44250
+    Cast AutoAttack : 44800, 45000
+    Dmg AutoAttack : 44800, 44900
+    Cast AutoAttack : 45450, 45650
+    Dmg AutoAttack : 45450, 45550
+    Cast AutoAttack : 46100, 46300
+    Dmg AutoAttack : 46100, 46200
+    Cast E : 46350, 46550
+    Effect 심판 : 46350, 46500
+    Dmg E : 46350, 46450
+    Dmg E : 46580, 46680
+    Cast W : 46700, 46900
+    Effect 용기 : 46700, 46850
+    Dmg E : 46811, 46911
+    Dmg E : 47042, 47142
+    Dmg E : 47273, 47373
+    Dmg E : 47503, 47603
+    Dmg E : 47734, 47834
+    Dmg E : 47965, 48065
+    Dmg E : 48196, 48296
+    Dmg E : 48426, 48526
+    Dmg E : 48657, 48757
+    Dmg E : 48888, 48988
+    Dmg E : 49119, 49219
+    Effect GarenEBuff 만료 : 49350, 49500
+    Cast AutoAttack : 49350, 49550
+    Dmg AutoAttack : 49350, 49450
+    Cast Q : 49600, 49800
+    Effect 결정적 일격 : 49600, 49750
+    Cast AutoAttack : 49850, 50050
+    Dmg Q : 49850, 49950
+    Cast AutoAttack : 50500, 50700
+    Dmg AutoAttack : 50500, 50600
+    Cast AutoAttack : 51150, 51350
+    Dmg AutoAttack : 51150, 51250
+    Effect GarenW 만료 : 51700, 51850
+    Cast AutoAttack : 51800, 52000
+    Dmg AutoAttack : 51800, 51900
+    Cast AutoAttack : 52450, 52650
+    Dmg AutoAttack : 52450, 52550
+    Cast AutoAttack : 53100, 53300
+    Dmg AutoAttack : 53100, 53200
+    Cast AutoAttack : 53750, 53950
+    Dmg AutoAttack : 53750, 53850
+    Cast AutoAttack : 54400, 54600
+    Dmg AutoAttack : 54400, 54500
+    Cast AutoAttack : 55050, 55250
+    Dmg AutoAttack : 55050, 55150
+    Cast E : 55400, 55600
+    Effect 심판 : 55400, 55550
+    Dmg E : 55400, 55500
+    Dmg E : 55630, 55730
+    Dmg E : 55861, 55961
+    Dmg E : 56092, 56192
+    Dmg E : 56323, 56423
+    Dmg E : 56553, 56653
+    Dmg E : 56784, 56884
+    Dmg E : 57015, 57115
+    Dmg E : 57246, 57346
+    Dmg E : 57476, 57576
+    Dmg E : 57707, 57807
+    Dmg E : 57938, 58038
+    Dmg E : 58169, 58269
+    Effect GarenEBuff 만료 : 58400, 58550
+    Cast AutoAttack : 58450, 58650
+    Dmg AutoAttack : 58450, 58550
+    Cast Q : 58700, 58900
+    Effect 결정적 일격 : 58700, 58850
+    Cast AutoAttack : 58950, 59150
+    Dmg Q : 58950, 59050
+    Cast AutoAttack : 59600, 59800
+    Dmg AutoAttack : 59600, 59700
+    section Dummy
+    Effect 심판의 방어력 감소 : 1903, 2053
+    Effect GarenEShred 만료 : 7903, 8053
+    Effect 심판의 방어력 감소 : 10953, 11103
+    Effect GarenEShred 만료 : 16953, 17103
+    Effect 심판의 방어력 감소 : 20203, 20353
+    Effect GarenEShred 만료 : 26203, 26353
+    Effect 심판의 방어력 감소 : 29503, 29653
+    Effect GarenEShred 만료 : 35503, 35653
+    Effect 심판의 방어력 감소 : 38503, 38653
+    Effect GarenEShred 만료 : 44503, 44653
+    Effect 심판의 방어력 감소 : 47503, 47653
+    Effect GarenEShred 만료 : 53503, 53653
+    Effect 심판의 방어력 감소 : 56553, 56703
+```
+
+[2m2026-06-17T05:08:54.782738Z[0m [32m INFO[0m [2mlol_champion_simulation[0m[2m:[0m Simulation complete.

@@ -70,15 +70,25 @@ impl lol_core::event::SimEvent for ActorTickEvent {
                             }
                             
                             if slot == lol_core::types::AbilitySlot::AutoAttack {
-                                let as_stat = champ_inst.state().stats.current.attack_speed;
-                                base_cooldown = 1.0 / as_stat.max(0.1);
+                                let stats = &champ_inst.state().stats.current;
+                                let as_stat = stats.attack_speed;
+                                base_cooldown = 1.0 / as_stat.max(0.001);
                                 
-                                let windup = ability.windup_percent();
-                                if windup > 0.0 {
-                                    cast_time = base_cooldown * windup;
+                                let attack_delay_offset = stats.attack_delay_offset.unwrap_or(0.0);
+                                let base_as = 0.625 / (1.0 + attack_delay_offset);
+                                
+                                let windup_percent = stats.windup_percent.unwrap_or_else(|| ability.windup_percent());
+                                let windup_modifier = stats.windup_modifier.unwrap_or(1.0);
+                                
+                                let as_ratio = stats.attack_speed_ratio.unwrap_or(base_as);
+                                let bonus_as_pct = if as_ratio > 0.0 {
+                                    (as_stat - base_as) / as_ratio
                                 } else {
-                                    cast_time = ability.cast_time();
-                                }
+                                    0.0
+                                };
+                                
+                                let base_windup_time = windup_percent / base_as.max(0.001);
+                                cast_time = base_windup_time / (1.0 + bonus_as_pct * windup_modifier).max(0.1);
                             } else {
                                 let ah = champ_inst.state().stats.current.ability_haste;
                                 let cdr = ah / (100.0 + ah);

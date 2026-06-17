@@ -47,6 +47,11 @@ pub struct StatBlock {
     pub armor_reduction_percent: f64,
     /// Percentage damage reduction (e.g., 0.3 for 30% reduction)
     pub damage_reduction_percent: f64,
+
+    // Hidden Auto Attack timing metadata
+    pub attack_delay_offset: Option<f64>,
+    pub windup_percent: Option<f64>,
+    pub windup_modifier: Option<f64>,
 }
 
 impl StatBlock {
@@ -95,6 +100,9 @@ impl StatBlock {
             omnivamp: self.omnivamp,
             armor_reduction_percent: self.armor_reduction_percent,
             damage_reduction_percent: self.damage_reduction_percent,
+            attack_delay_offset: self.attack_delay_offset,
+            windup_percent: self.windup_percent,
+            windup_modifier: self.windup_modifier,
         }
     }
     pub fn apply_bonus(&self, bonus: &StatBlock) -> Self {
@@ -144,6 +152,9 @@ impl std::ops::Add for StatBlock {
             omnivamp: self.omnivamp + rhs.omnivamp,
             armor_reduction_percent: self.armor_reduction_percent + rhs.armor_reduction_percent,
             damage_reduction_percent: 1.0 - ((1.0 - self.damage_reduction_percent) * (1.0 - rhs.damage_reduction_percent)),
+            attack_delay_offset: self.attack_delay_offset.or(rhs.attack_delay_offset),
+            windup_percent: self.windup_percent.or(rhs.windup_percent),
+            windup_modifier: self.windup_modifier.or(rhs.windup_modifier),
         }
     }
 }
