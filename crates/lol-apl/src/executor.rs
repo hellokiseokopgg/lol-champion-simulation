@@ -148,16 +148,27 @@ impl lol_core::event::SimEvent for ActorTickEvent {
                 let champ = champ_ref.borrow();
                 let mut min_cd: f64 = 10.0;
                 let mut found = false;
+                let mut polling_needed = false;
+
                 for action in &self.apl.actions {
                     if let Some(state) = champ.state().abilities.get_state(action.slot) {
                         let rem = state.cooldown.ready_at.as_f64() - ctx.current_time.as_f64();
-                        if rem > 0.0 && rem < min_cd {
-                            min_cd = rem;
-                            found = true;
+                        if rem > 0.0 {
+                            if rem < min_cd {
+                                min_cd = rem;
+                                found = true;
+                            }
+                        } else {
+                            // Cooldown is ready, but action was skipped due to can_cast or condition.
+                            // We need to poll to catch when the condition becomes true.
+                            polling_needed = true;
                         }
                     }
                 }
-                if found {
+                
+                if polling_needed {
+                    wait_time = 0.1; // Poll every 100ms
+                } else if found {
                     wait_time = min_cd.max(0.001); // Precision down to 1ms
                 }
             }
