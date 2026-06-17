@@ -49,9 +49,13 @@ enum Commands {
         #[arg(long)]
         optimize: bool,
 
-        /// Path to a custom APL script file for the champion
+        /// Path to a custom APL script file for the first champion
         #[arg(long)]
         apl: Option<String>,
+
+        /// Path to a custom APL script file for the second champion
+        #[arg(long)]
+        apl_b: Option<String>,
 
         /// Comma-separated list of Item IDs to equip
         #[arg(long, value_delimiter = ',')]
@@ -71,7 +75,7 @@ fn main() {
     let cli = Cli::parse();
 
     match &cli.command {
-        Commands::Simulate { champion_a, champion_b, iterations, html_out, lang, optimize, apl, items, runes } => {
+        Commands::Simulate { champion_a, champion_b, iterations, html_out, lang, optimize, apl, apl_b, items, runes } => {
             let champion_b = champion_b.clone().unwrap_or_else(|| "Dummy".to_string());
             info!("Initializing LoL Champion Simulation Engine...");
             info!("Matchup: {} vs {}", champion_a, champion_b);
@@ -140,7 +144,7 @@ fn main() {
                 }
             }
 
-            let run_sim = |script: &str| -> (f64, std::rc::Rc<std::cell::RefCell<lol_report::collector::DataCollector>>) {
+            let run_sim = |script: &str, script_b_opt: Option<&str>| -> (f64, std::rc::Rc<std::cell::RefCell<lol_report::collector::DataCollector>>) {
                 let parsed_apl = lol_apl::parser::ActionPriorityList::parse(script, Some(&item_map)).unwrap();
 
                 let base_stats_a = lol_core::stats::StatBlock {
@@ -266,8 +270,22 @@ fn main() {
                     windup_modifier: data_b.base_stats.windup_modifier,
                     ..Default::default()
                 };
+                
                 let mut rune_page_b = lol_core::rune::RunePage::default();
                 let mut runes_meta_b = Vec::new();
+                let parsed_apl_b = script_b_opt.map(|s| lol_apl::parser::ActionPriorityList::parse(s, Some(&item_map)).unwrap());
+
+                let mut item_build_b = lol_core::item::ItemBuild::new();
+                if let Some(apl_b) = &parsed_apl_b {
+                    if let Some(item_ids) = &apl_b.items {
+                        for id in item_ids {
+                            if let Some(item) = all_items.iter().find(|i| i.id == *id) {
+                                let _ = item_build_b.add_item(item.clone().into_item());
+                            }
+                        }
+                    }
+                }
+
                 if let Some(r) = all_runes.iter().find(|r| r.id == "conqueror") {
                     rune_page_b.keystone = Box::new(DataRune { name: r.name.clone(), icon: r.icon.clone(), tree: r.tree.clone() });
                     runes_meta_b.push((r.icon.clone(), r.name.clone(), r.tree.clone()));
@@ -287,7 +305,7 @@ fn main() {
 
                 let config_b = lol_core::champion::ChampionConfig {
                     level: 18,
-                    item_build: lol_core::item::ItemBuild::new(),
+                    item_build: item_build_b,
                     rune_page: rune_page_b,
                     base_stats: base_stats_b,
                     growth_stats: growth_stats_b,
@@ -320,16 +338,27 @@ fn main() {
                     collector.borrow_mut().record_rune_equipped(id_b.clone(), icon, name, tree);
                 }
 
-                let tick_event = lol_apl::executor::ActorTickEvent {
+                let tick_event_a = lol_apl::executor::ActorTickEvent {
                     actor: id_a.clone(),
                     target: id_b.clone(),
                     apl: parsed_apl,
                 };
-
                 sim.event_manager_mut().schedule(
                     lol_core::types::SimTime::new(0.0),
-                    Box::new(tick_event),
+                    Box::new(tick_event_a),
                 );
+
+                if let Some(apl_b) = parsed_apl_b {
+                    let tick_event_b = lol_apl::executor::ActorTickEvent {
+                        actor: id_b.clone(),
+                        target: id_a.clone(),
+                        apl: apl_b,
+                    };
+                    sim.event_manager_mut().schedule(
+                        lol_core::types::SimTime::new(0.0),
+                        Box::new(tick_event_b),
+                    );
+                }
 
                 sim.run(Some(collector.clone() as std::rc::Rc<std::cell::RefCell<dyn lol_core::event::EventRecorder>>));
                 
@@ -387,7 +416,7 @@ actions+=/AutoAttack
                 let mut best_dmg = 0.0;
                 let mut best_str = String::new();
                 for perm in perms {
-                    let (dmg, _) = run_sim(&perm);
+                    let (dmg, _) = run_sim(&perm, None);
                     if dmg > best_dmg {
                         best_dmg = dmg;
                         best_str = perm;
@@ -403,8 +432,14 @@ actions+=/AutoAttack
                 garen_apl_script.to_string()
             };
 
+            let script_b_str = if let Some(apl_path) = apl_b {
+                Some(std::fs::read_to_string(apl_path).expect("Failed to read APL file for B"))
+            } else {
+                None
+            };
+
             // Final run with collector
-            let (_, collector) = run_sim(&best_script);
+            let (_, collector) = run_sim(&best_script, script_b_str.as_deref());
             
             let max_time = lol_core::types::SimTime::new(60.0);
             let stats = lol_report::statistics::Statistics::calculate(&collector.borrow(), max_time);

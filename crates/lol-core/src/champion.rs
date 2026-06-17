@@ -105,9 +105,9 @@ pub trait ChampionInstance {
     fn take_damage(&mut self, amount: f64) -> crate::types::TakeDamageResult;
 
     /// Called when this champion deals damage. Routes to RuneManager and other passives.
-    fn on_damage_dealt(&mut self, time: crate::types::SimTime, amount: f64, is_ability: bool) -> Vec<crate::rune_manager::RuneEvent> {
+    fn on_damage_dealt(&mut self, time: crate::types::SimTime, amount: f64, is_ability: bool, slot: crate::types::AbilitySlot) -> Vec<crate::rune_manager::RuneEvent> {
         let state = self.state_mut();
-        state.rune_manager.on_damage_dealt(time, amount, is_ability)
+        state.rune_manager.on_damage_dealt(time, amount, is_ability, slot)
     }
 
     /// Heals the champion.
