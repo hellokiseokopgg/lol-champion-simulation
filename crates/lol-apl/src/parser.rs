@@ -15,7 +15,7 @@ pub struct ActionPriorityList {
 }
 
 impl ActionPriorityList {
-    pub fn parse(input: &str) -> Result<Self, String> {
+    pub fn parse(input: &str, item_map: Option<&std::collections::HashMap<String, u32>>) -> Result<Self, String> {
         let mut actions = Vec::new();
         let mut items = None;
         let mut runes = None;
@@ -59,7 +59,17 @@ impl ActionPriorityList {
                     let id = id_str.parse::<u32>().map_err(|_| format!("Invalid item ID: {}", id_str))?;
                     AbilitySlot::Item(id)
                 }
-                _ => return Err(format!("Unknown ability slot: {}", slot_str)),
+                _ => {
+                    if let Some(map) = item_map {
+                        if let Some(&id) = map.get(&slot_str.to_lowercase()) {
+                            AbilitySlot::Item(id)
+                        } else {
+                            return Err(format!("Unknown ability slot or item: {}", slot_str));
+                        }
+                    } else {
+                        return Err(format!("Unknown ability slot: {}", slot_str));
+                    }
+                }
             };
 
             let condition = if parts.len() > 1 {

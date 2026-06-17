@@ -129,9 +129,19 @@ fn main() {
 
 
             let all_runes = loader.load_all_runes().unwrap_or_default();
+            let all_items = loader.load_all_items().unwrap_or_default();
+            let translator = lol_report::i18n::Translator::new("ko");
+            let mut item_map = std::collections::HashMap::new();
+            for item in &all_items {
+                if let Ok(id) = item.id.parse::<u32>() {
+                    item_map.insert(item.name.to_lowercase(), id);
+                    let localized = translator.translate_buff(&item.name);
+                    item_map.insert(localized.to_lowercase(), id);
+                }
+            }
 
             let run_sim = |script: &str| -> (f64, std::rc::Rc<std::cell::RefCell<lol_report::collector::DataCollector>>) {
-                let parsed_apl = lol_apl::parser::ActionPriorityList::parse(script).unwrap();
+                let parsed_apl = lol_apl::parser::ActionPriorityList::parse(script, Some(&item_map)).unwrap();
 
                 let base_stats_a = lol_core::stats::StatBlock {
                     health: data_a.base_stats.hp as f64,
@@ -150,7 +160,6 @@ fn main() {
                     windup_modifier: data_a.base_stats.windup_modifier,
                     ..Default::default()
                 };
-                let all_items = loader.load_all_items().unwrap_or_default();
                 let mut item_build_a = lol_core::item::ItemBuild::new();
 
                 if let Some(item_ids) = &parsed_apl.items {

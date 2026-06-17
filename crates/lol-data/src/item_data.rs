@@ -84,6 +84,9 @@ impl ItemData {
                 if self.id == "3071" || self.id == "black_cleaver" {
                     effects.push(Box::new(lol_core::item::BlackCleaverEffect));
                 }
+                if self.id == "6631" || self.id == "stridebreaker" {
+                    effects.push(Box::new(lol_core::item::StridebreakerEffect));
+                }
                 effects
             },
         }

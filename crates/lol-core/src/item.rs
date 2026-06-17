@@ -15,6 +15,11 @@ pub trait ItemEffect {
     
     /// Triggered when the champion deals magic damage.
     fn on_magic_damage(&self, _sim: &mut SimContext, _actor: &ChampionId, _target: &ChampionId, _damage: &DamageResult) {}
+    
+    /// Returns the active ability associated with this item, if any.
+    fn active_ability(&self) -> Option<Box<dyn crate::ability::Ability>> {
+        None
+    }
 }
 
 /// Manages the item effects for a champion.
@@ -271,6 +276,19 @@ impl crate::ability::Ability for StridebreakerActive {
         Box::new(StridebreakerActive)
     }
 }
+
+pub struct StridebreakerEffect;
+
+impl ItemEffect for StridebreakerEffect {
+    fn name(&self) -> &str {
+        "Stridebreaker"
+    }
+
+    fn active_ability(&self) -> Option<Box<dyn crate::ability::Ability>> {
+        Some(Box::new(StridebreakerActive))
+    }
+}
+
 
 
 #[cfg(test)]

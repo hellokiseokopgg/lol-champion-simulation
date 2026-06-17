@@ -1,0 +1,7 @@
+actions+=/발걸음 분쇄기
+actions+=/Stridebreaker
+actions+=/R,if=target.health.pct<30
+actions+=/AutoAttack,if=buff.Judgment.down
+actions+=/Q,if=buff.Judgment.down
+actions+=/E
+actions+=/W

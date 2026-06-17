@@ -50,11 +50,11 @@ impl ChampionModule for GarenModule {
             Box::new(GarenR),
         ];
 
-        // Register active items
-        for item in &config.item_build.items {
-            if item.id == "6631" { // Stridebreaker
-                state.abilities.register_ability(AbilitySlot::Item(6631), 1);
-                abilities.push(Box::new(lol_core::item::StridebreakerActive));
+        // Register active items dynamically
+        for effect in state.items.effects() {
+            if let Some(active) = effect.active_ability() {
+                state.abilities.register_ability(active.slot(), 1);
+                abilities.push(active);
             }
         }
 
