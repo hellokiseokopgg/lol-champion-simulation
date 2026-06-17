@@ -9,8 +9,14 @@ pub trait Ability {
     /// Returns the slot this ability occupies.
     fn slot(&self) -> AbilitySlot;
     
-    /// Returns the cast time of the ability.
+    /// Returns the base cast time of the ability.
     fn cast_time(&self) -> f64;
+    
+    /// Returns the windup percent of the total cast animation.
+    /// Mostly used for AutoAttacks, representing the percentage of Attack Delay before damage hits.
+    fn windup_percent(&self) -> f64 {
+        0.0 // Defaults to 0 for normal abilities
+    }
     
     /// Returns the base cooldown at a given ability level.
     fn base_cooldown(&self, level: u32) -> f64;

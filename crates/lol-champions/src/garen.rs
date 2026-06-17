@@ -94,8 +94,11 @@ impl ChampionInstance for GarenInstance {
         new_base.armor += self.state.growth_stats.armor * growth_multiplier;
         new_base.magic_resist += self.state.growth_stats.magic_resist * growth_multiplier;
         new_base.attack_damage += self.state.growth_stats.attack_damage * growth_multiplier;
-        // Attack speed growth is slightly different in LoL, but we'll use flat for simplicity
-        new_base.attack_speed += self.state.growth_stats.attack_speed * growth_multiplier;
+        
+        // Attack Speed growth is a percentage of the AS Ratio.
+        let as_ratio = self.state.base_stats.attack_speed_ratio.unwrap_or(self.state.base_stats.attack_speed);
+        let bonus_as_from_growth = self.state.growth_stats.attack_speed * growth_multiplier;
+        new_base.attack_speed += as_ratio * bonus_as_from_growth;
         
         self.state.stats.base = new_base;
 
@@ -292,7 +295,8 @@ impl Ability for GarenR {
 pub struct GarenAutoAttack;
 impl Ability for GarenAutoAttack {
     fn slot(&self) -> AbilitySlot { AbilitySlot::AutoAttack }
-    fn cast_time(&self) -> f64 { 0.25 }
+    fn cast_time(&self) -> f64 { 0.0 }
+    fn windup_percent(&self) -> f64 { 0.20 } // Garen's basic attack windup is 20%
     fn base_cooldown(&self, _level: u32) -> f64 { 1.0 }
     fn cost(&self, _level: u32) -> f64 { 0.0 }
     fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, target: &ChampionId) {

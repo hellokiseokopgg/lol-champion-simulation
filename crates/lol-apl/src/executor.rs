@@ -72,6 +72,13 @@ impl lol_core::event::SimEvent for ActorTickEvent {
                             if slot == lol_core::types::AbilitySlot::AutoAttack {
                                 let as_stat = champ_inst.state().stats.current.attack_speed;
                                 base_cooldown = 1.0 / as_stat.max(0.1);
+                                
+                                let windup = ability.windup_percent();
+                                if windup > 0.0 {
+                                    cast_time = base_cooldown * windup;
+                                } else {
+                                    cast_time = ability.cast_time();
+                                }
                             } else {
                                 let ah = champ_inst.state().stats.current.ability_haste;
                                 let cdr = ah / (100.0 + ah);
@@ -135,9 +142,28 @@ impl lol_core::event::SimEvent for ActorTickEvent {
                 }),
             ));
         } else {
-            // No action available, wait a bit and poll again
+            // No action available, find the shortest time until an APL action is ready
+            let mut wait_time = 0.1; // Default 100ms
+            if let Some(champ_ref) = ctx.champions.get(&self.actor) {
+                let champ = champ_ref.borrow();
+                let mut min_cd: f64 = 10.0;
+                let mut found = false;
+                for action in &self.apl.actions {
+                    if let Some(state) = champ.state().abilities.get_state(action.slot) {
+                        let rem = state.cooldown.ready_at.as_f64() - ctx.current_time.as_f64();
+                        if rem > 0.0 && rem < min_cd {
+                            min_cd = rem;
+                            found = true;
+                        }
+                    }
+                }
+                if found {
+                    wait_time = min_cd.max(0.001); // Precision down to 1ms
+                }
+            }
+            
             ctx.new_events.push((
-                0.1, // 100ms polling
+                wait_time,
                 Box::new(ActorTickEvent {
                     actor: self.actor.clone(),
                     target: self.target.clone(),

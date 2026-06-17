@@ -81,7 +81,7 @@ impl StatBlock {
             ability_power: self.ability_power, // No AP growth natively
             armor: Self::stat_at_level(self.armor, growth.armor, level),
             magic_resist: Self::stat_at_level(self.magic_resist, growth.magic_resist, level),
-            attack_speed: self.attack_speed * (1.0 + Self::stat_at_level(0.0, growth.attack_speed, level)), // AS growth is a % increase of base AS
+            attack_speed: self.attack_speed + self.attack_speed_ratio.unwrap_or(self.attack_speed) * Self::stat_at_level(0.0, growth.attack_speed, level), // Bonus AS% multiplied by AS Ratio
             attack_speed_ratio: self.attack_speed_ratio,
             movement_speed: self.movement_speed, // No MS growth
             crit_chance: self.crit_chance,
@@ -96,6 +96,24 @@ impl StatBlock {
             armor_reduction_percent: self.armor_reduction_percent,
             damage_reduction_percent: self.damage_reduction_percent,
         }
+    }
+    pub fn apply_bonus(&self, bonus: &StatBlock) -> Self {
+        let mut result = self.clone() + bonus.clone();
+        
+        // Attack Speed: Base_AS + AS_Ratio * Bonus_AS_Percent
+        // self.attack_speed is the flat AS (base + growth).
+        // bonus.attack_speed is the Bonus AS %.
+        // However, wait. If we just do self.attack_speed + as_ratio * bonus, what if we apply multiple bonuses sequentially?
+        // initial = base.apply_bonus(items);
+        // current = initial.apply_bonus(buffs);
+        // If we do this, `initial.attack_speed` becomes the new flat AS.
+        // Then `initial.apply_bonus(buffs)` will add `as_ratio * buffs.attack_speed` to `initial.attack_speed`.
+        // This works perfectly! Because AS bonuses are purely additive based on the unchanging AS_Ratio.
+        let as_ratio = self.attack_speed_ratio.unwrap_or(self.attack_speed); // if ratio is not defined, it assumes base AS
+        // Note: the `+` operator already added `bonus.attack_speed` directly, which is wrong, so we overwrite it:
+        result.attack_speed = self.attack_speed + (as_ratio * bonus.attack_speed);
+        
+        result
     }
 }
 
@@ -154,13 +172,13 @@ impl ThreeLayerStats {
 
     /// Re-calculates `initial` stats by applying static bonuses (items/runes) to `base` stats.
     pub fn recalculate_initial(&mut self, items_and_runes: &StatBlock) {
-        self.initial = self.base.clone() + items_and_runes.clone();
+        self.initial = self.base.apply_bonus(items_and_runes);
         // Special logic like Rabadon's or multiplicative stats would go here in a full engine
     }
 
     /// Re-calculates `current` stats by applying temporary buffs to the `initial` stats.
     pub fn recalculate_current(&mut self, buffs: &StatBlock) {
-        self.current = self.initial.clone() + buffs.clone();
+        self.current = self.initial.apply_bonus(buffs);
         
         // Apply % armor reduction
         if self.current.armor_reduction_percent > 0.0 {
