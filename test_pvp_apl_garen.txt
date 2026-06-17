@@ -1,0 +1,3 @@
+actions+=/AutoAttack,if=buff.Decisive Strike.up
+actions+=/Q,if=target.casting.R
+actions+=/AutoAttack

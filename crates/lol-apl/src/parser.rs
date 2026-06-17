@@ -15,7 +15,10 @@ pub struct ActionPriorityList {
 }
 
 impl ActionPriorityList {
-    pub fn parse(input: &str, item_map: Option<&std::collections::HashMap<String, u32>>) -> Result<Self, String> {
+    pub fn parse(
+        input: &str,
+        item_map: Option<&std::collections::HashMap<String, u32>>,
+    ) -> Result<Self, String> {
         let mut actions = Vec::new();
         let mut items = None;
         let mut runes = None;
@@ -30,14 +33,12 @@ impl ActionPriorityList {
             // Or just: actions+=/Q
             // Or items: items=6631,3033
             // Or runes: runes=conqueror,triumph
-            if line.starts_with("items=") {
-                let items_str = &line["items=".len()..];
+            if let Some(items_str) = line.strip_prefix("items=") {
                 items = Some(items_str.split(',').map(|s| s.trim().to_string()).collect());
                 continue;
             }
 
-            if line.starts_with("runes=") {
-                let runes_str = &line["runes=".len()..];
+            if let Some(runes_str) = line.strip_prefix("runes=") {
                 runes = Some(runes_str.split(',').map(|s| s.trim().to_string()).collect());
                 continue;
             }
@@ -56,7 +57,9 @@ impl ActionPriorityList {
                 "AutoAttack" | "AA" => AbilitySlot::AutoAttack,
                 s if s.starts_with("Item:") => {
                     let id_str = &s["Item:".len()..];
-                    let id = id_str.parse::<u32>().map_err(|_| format!("Invalid item ID: {}", id_str))?;
+                    let id = id_str
+                        .parse::<u32>()
+                        .map_err(|_| format!("Invalid item ID: {}", id_str))?;
                     AbilitySlot::Item(id)
                 }
                 _ => {
@@ -85,6 +88,10 @@ impl ActionPriorityList {
             actions.push(ActionPriority { slot, condition });
         }
 
-        Ok(Self { actions, items, runes })
+        Ok(Self {
+            actions,
+            items,
+            runes,
+        })
     }
 }

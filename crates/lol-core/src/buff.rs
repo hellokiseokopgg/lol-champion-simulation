@@ -23,15 +23,19 @@ pub trait StatusEffect {
     fn duration(&self) -> f64;
     fn refresh_behavior(&self) -> RefreshBehavior;
     fn max_stacks(&self) -> u32;
-    
+
     /// Calculate stat modifiers this effect provides based on current stacks.
     fn stat_modifiers(&self, stacks: u32) -> StatBlock;
 
     /// The CC type of this effect, if any.
-    fn cc_type(&self) -> Option<crate::types::CCType> { None }
+    fn cc_type(&self) -> Option<crate::types::CCType> {
+        None
+    }
 
     /// Whether this effect prevents the champion from using basic attacks.
-    fn prevents_basic_attacks(&self) -> bool { false }
+    fn prevents_basic_attacks(&self) -> bool {
+        false
+    }
 }
 
 /// Tracks an active instance of a status effect.
@@ -60,19 +64,22 @@ impl BuffManager {
     }
 
     /// Applies a status effect, taking the target's tenacity into account for CC effects.
-    pub fn apply_effect(&mut self, effect: Box<dyn StatusEffect>, current_time: SimTime, target_tenacity: f64) {
+    pub fn apply_effect(
+        &mut self,
+        effect: Box<dyn StatusEffect>,
+        current_time: SimTime,
+        target_tenacity: f64,
+    ) {
         let id = effect.id();
         let mut duration = effect.duration();
 
         // Apply Tenacity reduction if applicable
-        if let Some(cc) = effect.cc_type() {
-            if cc.affected_by_tenacity() {
-                duration *= 1.0 - target_tenacity;
-            }
+        if effect.cc_type().is_some_and(|cc| cc.affected_by_tenacity()) {
+            duration *= 1.0 - target_tenacity;
         }
 
         let expiration_time = current_time + duration;
-        
+
         if let Some(active) = self.active_effects.get_mut(&id) {
             match effect.refresh_behavior() {
                 RefreshBehavior::RefreshDuration => {
@@ -102,18 +109,18 @@ impl BuffManager {
     /// Checks if the champion is currently affected by any Hard CC (Stun, Airborne, Silence).
     pub fn has_hard_cc(&self, current_time: SimTime) -> bool {
         self.active_effects.values().any(|active| {
-            if active.expiration_time > current_time {
-                if let Some(cc) = active.effect.cc_type() {
-                    return cc.class() == crate::types::CCClass::Hard;
-                }
-            }
-            false
+            active.expiration_time > current_time
+                && active
+                    .effect
+                    .cc_type()
+                    .is_some_and(|cc| cc.class() == crate::types::CCClass::Hard)
         })
     }
 
     /// Cleans up expired effects at the given simulation time.
     pub fn cleanup_expired(&mut self, current_time: SimTime) {
-        self.active_effects.retain(|_, active| active.expiration_time > current_time);
+        self.active_effects
+            .retain(|_, active| active.expiration_time > current_time);
     }
 
     /// Checks if a buff is active by name.
@@ -134,12 +141,10 @@ impl BuffManager {
 
     /// Checks if a buff is active by id.
     pub fn get_stacks_by_id(&self, effect_id: &EffectId, current_time: SimTime) -> u32 {
-        if let Some(active) = self.active_effects.get(effect_id) {
-            if active.expiration_time > current_time {
-                return active.stacks;
-            }
-        }
-        0
+        self.active_effects
+            .get(effect_id)
+            .filter(|active| active.expiration_time > current_time)
+            .map_or(0, |active| active.stacks)
     }
 
     /// Checks if any active buff prevents basic attacks.
@@ -151,8 +156,12 @@ impl BuffManager {
 
     /// Gets the number of stacks of a buff by name. Returns 0 if not found or expired.
     pub fn get_stacks_by_name(&self, name: &str, current_time: SimTime) -> u32 {
-        self.active_effects.values()
-            .find(|active| active.effect.name().eq_ignore_ascii_case(name) && active.expiration_time > current_time)
+        self.active_effects
+            .values()
+            .find(|active| {
+                active.effect.name().eq_ignore_ascii_case(name)
+                    && active.expiration_time > current_time
+            })
             .map(|active| active.stacks)
             .unwrap_or(0)
     }
@@ -164,11 +173,13 @@ impl BuffManager {
 
     /// Removes a specific effect if it has expired at the given time. Returns true if removed.
     pub fn remove_effect_if_expired(&mut self, id: &EffectId, current_time: SimTime) -> bool {
-        if let Some(active) = self.active_effects.get(id) {
-            if active.expiration_time <= current_time {
-                self.active_effects.remove(id);
-                return true;
-            }
+        if self
+            .active_effects
+            .get(id)
+            .is_some_and(|active| active.expiration_time <= current_time)
+        {
+            self.active_effects.remove(id);
+            return true;
         }
         false
     }
@@ -201,11 +212,21 @@ mod tests {
     }
 
     impl StatusEffect for TestBuff {
-        fn id(&self) -> EffectId { self.id.clone() }
-        fn name(&self) -> &str { "Test Buff" }
-        fn duration(&self) -> f64 { self.duration }
-        fn refresh_behavior(&self) -> RefreshBehavior { self.behavior }
-        fn max_stacks(&self) -> u32 { self.max_stacks }
+        fn id(&self) -> EffectId {
+            self.id.clone()
+        }
+        fn name(&self) -> &str {
+            "Test Buff"
+        }
+        fn duration(&self) -> f64 {
+            self.duration
+        }
+        fn refresh_behavior(&self) -> RefreshBehavior {
+            self.behavior
+        }
+        fn max_stacks(&self) -> u32 {
+            self.max_stacks
+        }
         fn stat_modifiers(&self, stacks: u32) -> StatBlock {
             let mut stats = StatBlock::new();
             stats.attack_damage = self.ad_per_stack * stacks as f64;
@@ -217,14 +238,16 @@ mod tests {
     fn test_buff_stacking() {
         let mut manager = BuffManager::new();
         let buff_id = EffectId("test_stack".to_string());
-        
-        let make_buff = || Box::new(TestBuff {
-            id: buff_id.clone(),
-            behavior: RefreshBehavior::AddStack,
-            max_stacks: 3,
-            duration: 5.0,
-            ad_per_stack: 10.0,
-        });
+
+        let make_buff = || {
+            Box::new(TestBuff {
+                id: buff_id.clone(),
+                behavior: RefreshBehavior::AddStack,
+                max_stacks: 3,
+                duration: 5.0,
+                ad_per_stack: 10.0,
+            })
+        };
 
         manager.apply_effect(make_buff(), SimTime::new(0.0), 0.0);
         assert_eq!(manager.get_stacks(&buff_id), 1);
@@ -245,7 +268,7 @@ mod tests {
     fn test_buff_expiration() {
         let mut manager = BuffManager::new();
         let buff_id = EffectId("test_exp".to_string());
-        
+
         let buff = Box::new(TestBuff {
             id: buff_id.clone(),
             behavior: RefreshBehavior::RefreshDuration,
@@ -255,7 +278,7 @@ mod tests {
         });
 
         manager.apply_effect(buff, SimTime::new(0.0), 0.0);
-        
+
         manager.cleanup_expired(SimTime::new(4.0));
         assert_eq!(manager.get_stacks(&buff_id), 1);
 

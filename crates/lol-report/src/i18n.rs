@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use serde::Deserialize;
+use std::collections::HashMap;
 use std::fs;
 
 #[derive(Debug, Deserialize)]
@@ -14,7 +14,7 @@ pub struct Translator {
 impl Translator {
     pub fn new(lang: &str) -> Self {
         let path = format!("data/locales/{}.json", lang);
-        
+
         let json_content = if let Ok(content) = fs::read_to_string(&path) {
             content
         } else {
@@ -26,11 +26,10 @@ impl Translator {
             })
         };
 
-        let locale_data: LocaleData = serde_json::from_str(&json_content).unwrap_or_else(|_| {
-            LocaleData {
+        let locale_data: LocaleData =
+            serde_json::from_str(&json_content).unwrap_or_else(|_| LocaleData {
                 buffs: HashMap::new(),
-            }
-        });
+            });
 
         Self { locale_data }
     }

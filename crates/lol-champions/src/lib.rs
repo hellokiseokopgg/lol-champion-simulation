@@ -1,9 +1,9 @@
 pub mod ahri;
 pub mod darius;
+pub mod dummy;
 pub mod garen;
 pub mod jinx;
 pub mod zed;
-pub mod dummy;
 
 use lol_core::champion::ChampionModule;
 use std::collections::HashMap;

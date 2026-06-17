@@ -1,0 +1,2 @@
+actions+=/R,if=target.buff.Hemorrhage.stack>0
+actions+=/AutoAttack

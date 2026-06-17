@@ -32,24 +32,25 @@ impl Statistics {
 
         for event in &collector.events {
             match event {
-                CombatEvent::Damage { time, source, target, amount, ability, .. } => {
+                CombatEvent::Damage {
+                    time,
+                    source,
+                    target,
+                    amount,
+                    ability,
+                    ..
+                } => {
                     let time_val = time.0.into_inner();
                     if time_val > end_time {
                         end_time = time_val;
                     }
 
-                    let source_stat = stats
-                        .champion_stats
-                        .entry(source.clone())
-                        .or_insert_with(ChampionStats::default);
+                    let source_stat = stats.champion_stats.entry(source.clone()).or_default();
 
                     source_stat.total_damage += amount;
                     *source_stat.ability_breakdown.entry(*ability).or_insert(0.0) += amount;
 
-                    let target_stat = stats
-                        .champion_stats
-                        .entry(target.clone())
-                        .or_insert_with(ChampionStats::default);
+                    let target_stat = stats.champion_stats.entry(target.clone()).or_default();
                     target_stat.damage_taken += amount;
                 }
                 CombatEvent::Cast { time, .. } | CombatEvent::Death { time, .. } => {

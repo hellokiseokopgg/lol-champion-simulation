@@ -1,0 +1,3 @@
+# Victory Auditor Workspace
+
+This directory is reserved for the teamwork_preview_victory_auditor agent.

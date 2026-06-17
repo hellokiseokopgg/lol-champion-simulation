@@ -124,8 +124,8 @@ impl DamagePipeline {
 
         // Apply damage reduction
         let mut final_damage = mitigated_damage;
-        if defender_stats.damage_reduction_percent > 0.0 {
-            final_damage *= (1.0 - defender_stats.damage_reduction_percent);
+        if defender_stats.damage_reduction_percent != 0.0 {
+            final_damage *= 1.0 - defender_stats.damage_reduction_percent;
         }
 
         // Shield absorption would happen here in a fuller implementation.
@@ -166,7 +166,7 @@ mod tests {
     fn test_apply_resistance() {
         // 100 armor = 50% damage
         assert_eq!(apply_resistance(100.0, 100.0), 50.0);
-        
+
         // 0 armor = 100% damage
         assert_eq!(apply_resistance(100.0, 0.0), 100.0);
 
@@ -183,13 +183,8 @@ mod tests {
         let mut defender = StatBlock::new();
         defender.armor = 110.0;
 
-        let result = DamagePipeline::process(
-            100.0,
-            DamageType::Physical,
-            false,
-            &attacker,
-            &defender,
-        );
+        let result =
+            DamagePipeline::process(100.0, DamageType::Physical, false, &attacker, &defender);
 
         assert_eq!(result.raw_damage, 100.0);
         // Effective armor = 110 - 10 = 100 -> 50% damage

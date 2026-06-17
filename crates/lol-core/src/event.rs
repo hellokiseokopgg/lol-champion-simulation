@@ -8,13 +8,56 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 pub trait EventRecorder {
-    fn record_damage(&mut self, time: SimTime, source: crate::types::ChampionId, target: crate::types::ChampionId, ability: crate::types::AbilitySlot, amount: f64, is_crit: bool);
-    fn record_cast(&mut self, time: SimTime, source: crate::types::ChampionId, ability: crate::types::AbilitySlot);
+    fn record_damage(
+        &mut self,
+        time: SimTime,
+        source: crate::types::ChampionId,
+        target: crate::types::ChampionId,
+        ability: crate::types::AbilitySlot,
+        amount: f64,
+        is_crit: bool,
+    );
+    fn record_cast(
+        &mut self,
+        time: SimTime,
+        source: crate::types::ChampionId,
+        ability: crate::types::AbilitySlot,
+    );
+    fn record_heal(
+        &mut self,
+        time: SimTime,
+        source: crate::types::ChampionId,
+        target: crate::types::ChampionId,
+        amount: f64,
+    );
     fn record_death(&mut self, time: SimTime, champion: crate::types::ChampionId);
-    fn record_buff_apply(&mut self, time: SimTime, target: crate::types::ChampionId, buff_name: String);
-    fn record_buff_expire(&mut self, time: SimTime, target: crate::types::ChampionId, buff_name: String);
-    fn record_resource_update(&mut self, time: SimTime, target: crate::types::ChampionId, resource_type: String, amount: f64, max: f64);
-    fn record_item_acquisition(&mut self, time: SimTime, target: crate::types::ChampionId, item_id: String, item_name: String);
+    fn record_buff_apply(
+        &mut self,
+        time: SimTime,
+        target: crate::types::ChampionId,
+        buff_name: String,
+    );
+    fn record_buff_expire(
+        &mut self,
+        time: SimTime,
+        target: crate::types::ChampionId,
+        buff_name: String,
+    );
+    fn record_resource_update(
+        &mut self,
+        time: SimTime,
+        target: crate::types::ChampionId,
+        resource_type: String,
+        amount: f64,
+        max: f64,
+    );
+    fn record_item_acquisition(
+        &mut self,
+        time: SimTime,
+        target: crate::types::ChampionId,
+        item_id: String,
+        item_name: String,
+    );
 }
 
 /// Context provided to events when they are executed.
@@ -28,37 +71,54 @@ pub struct SimContext {
     /// The tuple contains (delay_in_seconds, event).
     pub new_events: Vec<(f64, Box<dyn SimEvent>)>,
     /// Access to the champions in the simulation.
-    pub champions: HashMap<crate::types::ChampionId, Rc<RefCell<Box<dyn crate::champion::ChampionInstance>>>>,
+    pub champions:
+        HashMap<crate::types::ChampionId, Rc<RefCell<Box<dyn crate::champion::ChampionInstance>>>>,
     /// Flag to indicate if the simulation should terminate early (e.g., due to death).
     pub is_simulation_over: bool,
 }
 
 impl SimContext {
     /// Helper method to apply a buff to a champion and automatically schedule its expiration.
-    pub fn apply_buff(&mut self, target: &crate::types::ChampionId, effect: Box<dyn crate::buff::StatusEffect>) {
+    pub fn apply_buff(
+        &mut self,
+        target: &crate::types::ChampionId,
+        effect: Box<dyn crate::buff::StatusEffect>,
+    ) {
         let duration = effect.duration();
         let buff_id = effect.id();
         let buff_name = effect.name().to_string();
-        
-        let mut target_tenacity = 0.0;
+
         if let Some(champ_ref) = self.champions.get(target) {
             let mut champ = champ_ref.borrow_mut();
-            target_tenacity = champ.state().stats.current.tenacity;
-            champ.state_mut().buffs.apply_effect(effect, self.current_time, target_tenacity);
+            let target_tenacity = champ.state().stats.current.tenacity;
+            champ
+                .state_mut()
+                .buffs
+                .apply_effect(effect, self.current_time, target_tenacity);
             champ.update_stats(self.current_time);
         }
-        
+
         if let Some(recorder) = &self.recorder {
-            recorder.borrow_mut().record_buff_apply(self.current_time, target.clone(), buff_name);
+            recorder
+                .borrow_mut()
+                .record_buff_apply(self.current_time, target.clone(), buff_name);
         }
-        
-        self.new_events.push((duration, Box::new(BuffExpireEvent {
-            target: target.clone(),
-            buff_id,
-        })));
+
+        self.new_events.push((
+            duration,
+            Box::new(BuffExpireEvent {
+                target: target.clone(),
+                buff_id,
+            }),
+        ));
     }
 
-    pub fn trigger_on_hit(&mut self, actor: &crate::types::ChampionId, target: &crate::types::ChampionId, damage_result: &crate::damage::DamageResult) {
+    pub fn trigger_on_hit(
+        &mut self,
+        actor: &crate::types::ChampionId,
+        target: &crate::types::ChampionId,
+        damage_result: &crate::damage::DamageResult,
+    ) {
         let items = if let Some(champ_ref) = self.champions.get(actor) {
             std::mem::take(&mut champ_ref.borrow_mut().state_mut().items)
         } else {
@@ -74,7 +134,12 @@ impl SimContext {
         }
     }
 
-    pub fn trigger_on_physical_damage(&mut self, actor: &crate::types::ChampionId, target: &crate::types::ChampionId, damage_result: &crate::damage::DamageResult) {
+    pub fn trigger_on_physical_damage(
+        &mut self,
+        actor: &crate::types::ChampionId,
+        target: &crate::types::ChampionId,
+        damage_result: &crate::damage::DamageResult,
+    ) {
         let items = if let Some(champ_ref) = self.champions.get(actor) {
             std::mem::take(&mut champ_ref.borrow_mut().state_mut().items)
         } else {
@@ -90,9 +155,17 @@ impl SimContext {
         }
     }
 
-    pub fn trigger_on_damage_dealt(&mut self, actor: &crate::types::ChampionId, amount: f64, is_ability: bool, slot: crate::types::AbilitySlot) {
+    pub fn trigger_on_damage_dealt(
+        &mut self,
+        actor: &crate::types::ChampionId,
+        amount: f64,
+        is_ability: bool,
+        slot: crate::types::AbilitySlot,
+    ) {
         let rune_events = if let Some(champ_ref) = self.champions.get(actor) {
-            champ_ref.borrow_mut().on_damage_dealt(self.current_time, amount, is_ability, slot)
+            champ_ref
+                .borrow_mut()
+                .on_damage_dealt(self.current_time, amount, is_ability, slot)
         } else {
             return;
         };
@@ -108,24 +181,142 @@ impl SimContext {
                         } else {
                             name.clone()
                         };
-                        
+
                         if let Some(recorder) = &self.recorder {
-                            recorder.borrow_mut().record_buff_apply(self.current_time, actor.clone(), buff_name);
+                            recorder.borrow_mut().record_buff_apply(
+                                self.current_time,
+                                actor.clone(),
+                                buff_name,
+                            );
                         }
 
                         // Schedule an expiration check event
-                        let duration = if name == "Conqueror" { 5.0 } else if name == "Lethal Tempo" { 6.0 } else if name.contains("Phase Rush") { 3.0 } else { 0.0 };
+                        let duration = if name == "Conqueror" {
+                            5.0
+                        } else if name == "Lethal Tempo" {
+                            6.0
+                        } else if name.contains("Phase Rush") {
+                            3.0
+                        } else if name.contains("Press the Attack") {
+                            6.0
+                        } else {
+                            0.0
+                        };
                         if duration > 0.0 {
                             self.new_events.push((
                                 duration + 0.001, // Slightly after expiration
-                                Box::new(RuneExpireCheckEvent { target: actor.clone() }),
+                                Box::new(RuneExpireCheckEvent {
+                                    target: actor.clone(),
+                                }),
                             ));
                         }
                     }
                 }
                 crate::rune_manager::RuneEvent::Healed { amount } => {
-                    if let Some(champ_ref) = self.champions.get(actor) {
-                        champ_ref.borrow_mut().heal(amount);
+                    self.new_events.push((0.0, Box::new(crate::event::HealEvent {
+                        target: actor.clone(),
+                        source: actor.clone(),
+                        amount,
+                    })));
+                }
+                crate::rune_manager::RuneEvent::ApplyDebuff {
+                    name,
+                    duration,
+                    damage_reduction_percent,
+                } => {
+                    let target_id = self.champions.keys().find(|&k| k != actor).cloned();
+                    if let Some(target_id) = target_id {
+                        struct DebuffStructInstance {
+                            name: String,
+                            duration: f64,
+                            damage_reduction_percent: f64,
+                        }
+                        impl crate::buff::StatusEffect for DebuffStructInstance {
+                            fn id(&self) -> crate::types::EffectId {
+                                crate::types::EffectId(self.name.clone())
+                            }
+                            fn name(&self) -> &str {
+                                &self.name
+                            }
+                            fn duration(&self) -> f64 {
+                                self.duration
+                            }
+                            fn refresh_behavior(&self) -> crate::buff::RefreshBehavior {
+                                crate::buff::RefreshBehavior::RefreshDuration
+                            }
+                            fn max_stacks(&self) -> u32 {
+                                1
+                            }
+                            fn stat_modifiers(&self, _stacks: u32) -> crate::stats::StatBlock {
+                                let mut stats = crate::stats::StatBlock::new();
+                                stats.damage_reduction_percent = self.damage_reduction_percent;
+                                stats
+                            }
+                        }
+                        self.apply_buff(
+                            &target_id,
+                            Box::new(DebuffStructInstance {
+                                name,
+                                duration,
+                                damage_reduction_percent,
+                            }),
+                        );
+                    }
+                }
+                crate::rune_manager::RuneEvent::DamageDealt {
+                    amount,
+                    damage_type,
+                    slot,
+                } => {
+                    let target_id = self.champions.keys().find(|&k| k != actor).cloned();
+                    if let Some(target_id) = target_id {
+                        let (attacker_stats, defender_stats) = {
+                            let attacker = self
+                                .champions
+                                .get(actor)
+                                .map(|c| c.borrow().state().stats.current.clone());
+                            let defender = self
+                                .champions
+                                .get(&target_id)
+                                .map(|c| c.borrow().state().stats.current.clone());
+                            match (attacker, defender) {
+                                (Some(a), Some(d)) => (a, d),
+                                _ => continue,
+                            }
+                        };
+
+                        let damage_result = crate::damage::DamagePipeline::process(
+                            amount,
+                            damage_type,
+                            false,
+                            &attacker_stats,
+                            &defender_stats,
+                        );
+
+                        let is_dead = if let Some(champ_ref) = self.champions.get(&target_id) {
+                            champ_ref
+                                .borrow_mut()
+                                .take_damage(damage_result.final_damage)
+                                .is_dead
+                        } else {
+                            false
+                        };
+
+                        if let Some(recorder) = &self.recorder {
+                            recorder.borrow_mut().record_damage(
+                                self.current_time,
+                                actor.clone(),
+                                target_id.clone(),
+                                slot,
+                                damage_result.final_damage,
+                                false,
+                            );
+                        }
+
+                        if is_dead {
+                            self.new_events
+                                .push((0.0, Box::new(DeathEvent { target: target_id })));
+                        }
                     }
                 }
             }
@@ -137,7 +328,7 @@ impl SimContext {
 pub trait SimEvent {
     /// Execute the event logic.
     fn execute(&self, ctx: &mut SimContext, event_manager: &mut EventManager);
-    
+
     /// Provide a human-readable name for the event, useful for debugging.
     fn name(&self) -> &str;
 }
@@ -150,13 +341,54 @@ pub struct DeathEvent {
 impl SimEvent for DeathEvent {
     fn execute(&self, ctx: &mut SimContext, _event_manager: &mut EventManager) {
         if let Some(recorder) = &ctx.recorder {
-            recorder.borrow_mut().record_death(ctx.current_time, self.target.clone());
+            recorder
+                .borrow_mut()
+                .record_death(ctx.current_time, self.target.clone());
         }
         ctx.is_simulation_over = true;
     }
 
     fn name(&self) -> &str {
-        "DeathEvent"
+        "Death"
+    }
+}
+
+/// An event that heals a champion.
+pub struct HealEvent {
+    pub target: crate::types::ChampionId,
+    pub source: crate::types::ChampionId,
+    pub amount: f64,
+}
+
+impl SimEvent for HealEvent {
+    fn execute(&self, ctx: &mut SimContext, _event_manager: &mut EventManager) {
+        if let Some(target_champ) = ctx.champions.get(&self.target) {
+            let mut champ = target_champ.borrow_mut();
+            
+            // Apply Grievous Wounds
+            let gw = champ.state().stats.current.grievous_wounds;
+            let actual_heal = self.amount * f64::max(0.0, 1.0 - gw);
+
+            // Apply heal, clamping to max health
+            let max_hp = champ.state().stats.current.health;
+            champ.state_mut().health.current += actual_heal;
+            if champ.state().health.current > max_hp {
+                champ.state_mut().health.current = max_hp;
+            }
+
+            if let Some(recorder) = &ctx.recorder {
+                recorder.borrow_mut().record_heal(
+                    ctx.current_time,
+                    self.source.clone(),
+                    self.target.clone(),
+                    actual_heal,
+                );
+            }
+        }
+    }
+
+    fn name(&self) -> &str {
+        "Heal"
     }
 }
 
@@ -175,37 +407,48 @@ impl SimEvent for RuneExpireCheckEvent {
         };
 
         for event in events {
-            match event {
-                crate::rune_manager::RuneEvent::StacksChanged { name, stacks } => {
-                    if let Some(recorder) = &ctx.recorder {
-                        if stacks == 0 {
-                            // Determine which stack counts were previously active to remove them visually
-                            // Determine which stack counts were previously active to remove them visually
-                            if name == "Conqueror" || name == "Lethal Tempo" {
-                                for old_stacks in 1..=12 {
-                                    let old_buff_name = if name == "Conqueror" {
-                                        format!("정복자 ({}스택)", old_stacks)
-                                    } else {
-                                        format!("치명적 속도 ({}스택)", old_stacks)
-                                    };
-                                    recorder.borrow_mut().record_buff_expire(ctx.current_time, self.target.clone(), old_buff_name);
-                                }
+            if let (
+                crate::rune_manager::RuneEvent::StacksChanged { name, stacks },
+                Some(recorder),
+            ) = (event, &ctx.recorder)
+            {
+                if stacks == 0 {
+                    // Determine which stack counts were previously active to remove them visually
+                    // Determine which stack counts were previously active to remove them visually
+                    if name == "Conqueror" || name == "Lethal Tempo" {
+                        for old_stacks in 1..=12 {
+                            let old_buff_name = if name == "Conqueror" {
+                                format!("정복자 ({}스택)", old_stacks)
                             } else {
-                                recorder.borrow_mut().record_buff_expire(ctx.current_time, self.target.clone(), name.clone());
-                            }
-                        } else {
-                            let buff_name = if name == "Conqueror" {
-                                format!("정복자 ({}스택)", stacks)
-                            } else if name == "Lethal Tempo" {
-                                format!("치명적 속도 ({}스택)", stacks)
-                            } else {
-                                name.clone()
+                                format!("치명적 속도 ({}스택)", old_stacks)
                             };
-                            recorder.borrow_mut().record_buff_apply(ctx.current_time, self.target.clone(), buff_name);
+                            recorder.borrow_mut().record_buff_expire(
+                                ctx.current_time,
+                                self.target.clone(),
+                                old_buff_name,
+                            );
                         }
+                    } else {
+                        recorder.borrow_mut().record_buff_expire(
+                            ctx.current_time,
+                            self.target.clone(),
+                            name.clone(),
+                        );
                     }
+                } else {
+                    let buff_name = if name == "Conqueror" {
+                        format!("정복자 ({}스택)", stacks)
+                    } else if name == "Lethal Tempo" {
+                        format!("치명적 속도 ({}스택)", stacks)
+                    } else {
+                        name.clone()
+                    };
+                    recorder.borrow_mut().record_buff_apply(
+                        ctx.current_time,
+                        self.target.clone(),
+                        buff_name,
+                    );
                 }
-                _ => {}
             }
         }
     }
@@ -225,11 +468,19 @@ impl SimEvent for BuffExpireEvent {
     fn execute(&self, ctx: &mut SimContext, _event_manager: &mut EventManager) {
         if let Some(champ_ref) = ctx.champions.get(&self.target) {
             let mut champ = champ_ref.borrow_mut();
-            if champ.state_mut().buffs.remove_effect_if_expired(&self.buff_id, ctx.current_time) {
+            if champ
+                .state_mut()
+                .buffs
+                .remove_effect_if_expired(&self.buff_id, ctx.current_time)
+            {
                 champ.update_stats(ctx.current_time);
-                
+
                 if let Some(recorder) = &ctx.recorder {
-                    recorder.borrow_mut().record_buff_expire(ctx.current_time, self.target.clone(), self.buff_id.0.clone());
+                    recorder.borrow_mut().record_buff_expire(
+                        ctx.current_time,
+                        self.target.clone(),
+                        self.buff_id.0.clone(),
+                    );
                 }
             }
         }
@@ -252,11 +503,17 @@ impl SimEvent for ItemAcquisitionEvent {
     fn execute(&self, ctx: &mut SimContext, _event_manager: &mut EventManager) {
         if let Some(champ_ref) = ctx.champions.get(&self.target) {
             let mut champ = champ_ref.borrow_mut();
-            champ.state_mut().item_stats = champ.state().item_stats.clone() + self.item_stats.clone();
+            champ.state_mut().item_stats =
+                champ.state().item_stats.clone() + self.item_stats.clone();
             champ.update_stats(ctx.current_time);
         }
         if let Some(recorder) = &ctx.recorder {
-            recorder.borrow_mut().record_item_acquisition(ctx.current_time, self.target.clone(), self.item_id.clone(), self.item_name.clone());
+            recorder.borrow_mut().record_item_acquisition(
+                ctx.current_time,
+                self.target.clone(),
+                self.item_id.clone(),
+                self.item_name.clone(),
+            );
         }
     }
 
@@ -264,8 +521,6 @@ impl SimEvent for ItemAcquisitionEvent {
         "ItemAcquisitionEvent"
     }
 }
-
-
 
 /// Event representing a tick of periodic damage (DoT).
 pub struct DoTTickEvent {
@@ -280,11 +535,15 @@ impl SimEvent for DoTTickEvent {
     fn execute(&self, ctx: &mut SimContext, _event_manager: &mut EventManager) {
         // If the buff is no longer active, DoT stops ticking.
         let is_active = if let Some(champ_ref) = ctx.champions.get(&self.target) {
-            champ_ref.borrow().state().buffs.has_effect_by_id(&self.effect_id, ctx.current_time)
+            champ_ref
+                .borrow()
+                .state()
+                .buffs
+                .has_effect_by_id(&self.effect_id, ctx.current_time)
         } else {
             false
         };
-        
+
         if !is_active {
             return;
         }
@@ -295,7 +554,7 @@ impl SimEvent for DoTTickEvent {
         if let Some(champ_ref) = ctx.champions.get(&self.target) {
             let mut champ = champ_ref.borrow_mut();
             let is_dead = champ.take_damage(self.damage).is_dead;
-            
+
             if let Some(recorder) = &ctx.recorder {
                 recorder.borrow_mut().record_damage(
                     ctx.current_time,
@@ -306,9 +565,14 @@ impl SimEvent for DoTTickEvent {
                     false,
                 );
             }
-            
+
             if is_dead {
-                ctx.new_events.push((0.0, Box::new(DeathEvent { target: self.target.clone() })));
+                ctx.new_events.push((
+                    0.0,
+                    Box::new(DeathEvent {
+                        target: self.target.clone(),
+                    }),
+                ));
             }
         }
     }
@@ -343,7 +607,9 @@ impl Ord for QueuedEvent {
     fn cmp(&self, other: &Self) -> Ordering {
         // Reverse order for min-heap behavior based on time.
         // If time is equal, use event_id to preserve insertion order (stable sort).
-        other.time.cmp(&self.time)
+        other
+            .time
+            .cmp(&self.time)
             .then_with(|| other.event_id.cmp(&self.event_id))
     }
 }
@@ -397,20 +663,20 @@ impl EventManager {
 
             // Extract the next event
             let queued_event = self.queue.pop().expect("Queue was peeked to have elements");
-            
+
             // Advance simulation time
             self.current_time = queued_event.time;
             ctx.current_time = self.current_time;
-            
+
             // Execute the event
             queued_event.event.execute(ctx, self);
-            
+
             // Drain and schedule any newly requested events
             for (delay, new_event) in ctx.new_events.drain(..) {
                 self.schedule_in(delay, new_event);
             }
         }
-        
+
         // After finishing the loop, advance time to max_time
         ctx.current_time = max_time;
         self.current_time = max_time;
@@ -469,7 +735,13 @@ mod tests {
             }),
         );
 
-        let mut ctx = SimContext { current_time: SimTime::new(0.0), recorder: None, new_events: Vec::new(), champions: HashMap::new(), is_simulation_over: false };
+        let mut ctx = SimContext {
+            current_time: SimTime::new(0.0),
+            recorder: None,
+            new_events: Vec::new(),
+            champions: HashMap::new(),
+            is_simulation_over: false,
+        };
         manager.run(&mut ctx, SimTime::new(10.0));
 
         let executed = log.lock().unwrap();
@@ -499,7 +771,13 @@ mod tests {
             }),
         );
 
-        let mut ctx = SimContext { current_time: SimTime::new(0.0), recorder: None, new_events: Vec::new(), champions: HashMap::new(), is_simulation_over: false };
+        let mut ctx = SimContext {
+            current_time: SimTime::new(0.0),
+            recorder: None,
+            new_events: Vec::new(),
+            champions: HashMap::new(),
+            is_simulation_over: false,
+        };
         manager.run(&mut ctx, SimTime::new(2.0));
 
         let executed = log.lock().unwrap();

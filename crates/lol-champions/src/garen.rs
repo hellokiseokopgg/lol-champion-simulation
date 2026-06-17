@@ -4,7 +4,7 @@ use lol_core::champion::{ChampionConfig, ChampionInstance, ChampionModule, Champ
 use lol_core::damage::DamagePipeline;
 use lol_core::event::{SimContext, SimEvent};
 use lol_core::stats::StatBlock;
-use lol_core::types::{AbilitySlot, ChampionId, EffectId, DamageType};
+use lol_core::types::{AbilitySlot, ChampionId, DamageType, EffectId};
 
 pub struct GarenModule;
 
@@ -15,34 +15,64 @@ impl ChampionModule for GarenModule {
 
     fn create_instance(&self, mut config: ChampionConfig) -> Box<dyn ChampionInstance> {
         let mut base_stats = config.base_stats.clone();
-        
+
         // Garen W Passive: Gains 30 Armor and MR at max stacks. We assume max stacks.
         base_stats.armor += 30.0;
         base_stats.magic_resist += 30.0;
-        
+
         let rune_stats = config.rune_page.aggregate_stats();
         let item_stats = config.item_build.aggregate_stats();
         let mut item_effects = Vec::new();
         for item in &mut config.item_build.items {
             item_effects.append(&mut item.effects);
         }
-        
-        let mut state = ChampionState::new(config.level, base_stats, config.growth_stats.clone(), lol_core::types::ResourceType::None, rune_stats, item_stats, item_effects);
-        
+
+        let mut state = ChampionState::new(
+            config.level,
+            base_stats,
+            config.growth_stats.clone(),
+            lol_core::types::ResourceType::None,
+            rune_stats,
+            item_stats,
+            item_effects,
+        );
+
         let keystone_name = config.rune_page.keystone.name();
         if keystone_name == "Conqueror" {
-            state.rune_manager.add_effect(Box::new(lol_core::rune_manager::Conqueror::new(true)));
+            state
+                .rune_manager
+                .add_effect(Box::new(lol_core::rune_manager::Conqueror::new(true)));
         } else if keystone_name == "Lethal Tempo" {
-            state.rune_manager.add_effect(Box::new(lol_core::rune_manager::LethalTempo::new(true)));
+            state
+                .rune_manager
+                .add_effect(Box::new(lol_core::rune_manager::LethalTempo::new(true)));
         } else if keystone_name == "Phase Rush" {
-            state.rune_manager.add_effect(Box::new(lol_core::rune_manager::PhaseRush::new(true)));
+            state
+                .rune_manager
+                .add_effect(Box::new(lol_core::rune_manager::PhaseRush::new(true)));
+        } else if keystone_name == "Electrocute" {
+            state
+                .rune_manager
+                .add_effect(Box::new(lol_core::rune_manager::Electrocute::new()));
+        } else if keystone_name == "Press the Attack" {
+            state
+                .rune_manager
+                .add_effect(Box::new(lol_core::rune_manager::PressTheAttack::new(true)));
         }
-        
+
         // Initialize abilities to rank 5 for testing (except R to 3)
-        if let Some(q) = state.abilities.get_state_mut(AbilitySlot::Q) { q.level = 5; }
-        if let Some(w) = state.abilities.get_state_mut(AbilitySlot::W) { w.level = 5; }
-        if let Some(e) = state.abilities.get_state_mut(AbilitySlot::E) { e.level = 5; }
-        if let Some(r) = state.abilities.get_state_mut(AbilitySlot::R) { r.level = 3; }
+        if let Some(q) = state.abilities.get_state_mut(AbilitySlot::Q) {
+            q.level = 5;
+        }
+        if let Some(w) = state.abilities.get_state_mut(AbilitySlot::W) {
+            w.level = 5;
+        }
+        if let Some(e) = state.abilities.get_state_mut(AbilitySlot::E) {
+            e.level = 5;
+        }
+        if let Some(r) = state.abilities.get_state_mut(AbilitySlot::R) {
+            r.level = 3;
+        }
 
         let mut abilities: Vec<Box<dyn Ability>> = vec![
             Box::new(GarenAutoAttack),
@@ -96,12 +126,16 @@ impl ChampionInstance for GarenInstance {
         new_base.armor += self.state.growth_stats.armor * growth_multiplier;
         new_base.magic_resist += self.state.growth_stats.magic_resist * growth_multiplier;
         new_base.attack_damage += self.state.growth_stats.attack_damage * growth_multiplier;
-        
+
         // Attack Speed growth is a percentage of the AS Ratio.
-        let as_ratio = self.state.base_stats.attack_speed_ratio.unwrap_or(self.state.base_stats.attack_speed);
+        let as_ratio = self
+            .state
+            .base_stats
+            .attack_speed_ratio
+            .unwrap_or(self.state.base_stats.attack_speed);
         let bonus_as_from_growth = self.state.growth_stats.attack_speed * growth_multiplier;
         new_base.attack_speed += as_ratio * bonus_as_from_growth;
-        
+
         self.state.stats.base = new_base;
 
         // 2. Recalculate initial stats (Base + Runes + Items)
@@ -111,26 +145,37 @@ impl ChampionInstance for GarenInstance {
         // 3. Recalculate current stats (Initial + Buffs)
         let mut total_bonus = self.state.buffs.aggregate_stats();
         let level = self.state.level;
-        total_bonus = total_bonus + self.state.rune_manager.get_bonus_stats(time, &self.state.base_stats, level);
+        total_bonus = total_bonus
+            + self
+                .state
+                .rune_manager
+                .get_bonus_stats(time, &self.state.stats.base, level);
         self.state.stats.recalculate_current(&total_bonus);
     }
-    
-    fn get_ability(&self, slot: lol_core::types::AbilitySlot) -> Option<&dyn lol_core::ability::Ability> {
-        self.abilities.iter().find(|a| a.slot() == slot).map(|a| a.as_ref())
-    }
-    
-    fn take_damage(&mut self, amount: f64) -> lol_core::types::TakeDamageResult {
-        let is_dead = self.state.health.reduce(amount);
-        lol_core::types::TakeDamageResult { actual_damage: amount, is_dead }
+
+    fn get_ability(
+        &self,
+        slot: lol_core::types::AbilitySlot,
+    ) -> Option<&dyn lol_core::ability::Ability> {
+        self.abilities
+            .iter()
+            .find(|a| a.slot() == slot)
+            .map(|a| a.as_ref())
     }
 
-    fn can_cast(&self, slot: lol_core::types::AbilitySlot, time: lol_core::types::SimTime) -> bool {
-        if slot == lol_core::types::AbilitySlot::AutoAttack {
-            // Garen cannot auto attack while spinning (E)
-            if self.state.buffs.has_buff_by_name("Judgment", time) {
-                return false;
-            }
+    fn take_damage(&mut self, amount: f64) -> lol_core::types::TakeDamageResult {
+        let is_dead = self.state.health.reduce(amount);
+        lol_core::types::TakeDamageResult {
+            actual_damage: amount,
+            is_dead,
         }
+    }
+
+    fn can_cast(
+        &self,
+        _slot: lol_core::types::AbilitySlot,
+        _time: lol_core::types::SimTime,
+    ) -> bool {
         true
     }
 }
@@ -141,11 +186,21 @@ impl ChampionInstance for GarenInstance {
 
 pub struct GarenQBuff;
 impl StatusEffect for GarenQBuff {
-    fn id(&self) -> EffectId { EffectId("GarenQ".into()) }
-    fn name(&self) -> &str { "Decisive Strike" }
-    fn duration(&self) -> f64 { 4.5 }
-    fn refresh_behavior(&self) -> RefreshBehavior { RefreshBehavior::RefreshDuration }
-    fn max_stacks(&self) -> u32 { 1 }
+    fn id(&self) -> EffectId {
+        EffectId("GarenQ".into())
+    }
+    fn name(&self) -> &str {
+        "Decisive Strike"
+    }
+    fn duration(&self) -> f64 {
+        4.5
+    }
+    fn refresh_behavior(&self) -> RefreshBehavior {
+        RefreshBehavior::RefreshDuration
+    }
+    fn max_stacks(&self) -> u32 {
+        1
+    }
     fn stat_modifiers(&self, _stacks: u32) -> StatBlock {
         let mut stats = StatBlock::new();
         // Provides 30% MS for simplified logic
@@ -156,22 +211,46 @@ impl StatusEffect for GarenQBuff {
 
 pub struct GarenQSilence;
 impl StatusEffect for GarenQSilence {
-    fn id(&self) -> EffectId { EffectId("GarenQSilence".into()) }
-    fn name(&self) -> &str { "Silence" }
-    fn duration(&self) -> f64 { 1.5 }
-    fn refresh_behavior(&self) -> RefreshBehavior { RefreshBehavior::RefreshDuration }
-    fn max_stacks(&self) -> u32 { 1 }
-    fn stat_modifiers(&self, _stacks: u32) -> StatBlock { StatBlock::new() }
-    fn cc_type(&self) -> Option<lol_core::types::CCType> { Some(lol_core::types::CCType::Silence) }
+    fn id(&self) -> EffectId {
+        EffectId("GarenQSilence".into())
+    }
+    fn name(&self) -> &str {
+        "Silence"
+    }
+    fn duration(&self) -> f64 {
+        1.5
+    }
+    fn refresh_behavior(&self) -> RefreshBehavior {
+        RefreshBehavior::RefreshDuration
+    }
+    fn max_stacks(&self) -> u32 {
+        1
+    }
+    fn stat_modifiers(&self, _stacks: u32) -> StatBlock {
+        StatBlock::new()
+    }
+    fn cc_type(&self) -> Option<lol_core::types::CCType> {
+        Some(lol_core::types::CCType::Silence)
+    }
 }
 
 pub struct GarenWBuff;
 impl StatusEffect for GarenWBuff {
-    fn id(&self) -> EffectId { EffectId("GarenW".into()) }
-    fn name(&self) -> &str { "Courage" }
-    fn duration(&self) -> f64 { 5.0 } // 5 seconds at rank 5
-    fn refresh_behavior(&self) -> RefreshBehavior { RefreshBehavior::RefreshDuration }
-    fn max_stacks(&self) -> u32 { 1 }
+    fn id(&self) -> EffectId {
+        EffectId("GarenW".into())
+    }
+    fn name(&self) -> &str {
+        "Courage"
+    }
+    fn duration(&self) -> f64 {
+        5.0
+    } // 5 seconds at rank 5
+    fn refresh_behavior(&self) -> RefreshBehavior {
+        RefreshBehavior::RefreshDuration
+    }
+    fn max_stacks(&self) -> u32 {
+        1
+    }
     fn stat_modifiers(&self, _stacks: u32) -> StatBlock {
         let mut stats = StatBlock::new();
         stats.damage_reduction_percent = 0.3; // 30% damage reduction
@@ -181,11 +260,21 @@ impl StatusEffect for GarenWBuff {
 
 pub struct GarenEArmorShred;
 impl StatusEffect for GarenEArmorShred {
-    fn id(&self) -> EffectId { EffectId("GarenEShred".into()) }
-    fn name(&self) -> &str { "Judgment Shred" }
-    fn duration(&self) -> f64 { 6.0 }
-    fn refresh_behavior(&self) -> RefreshBehavior { RefreshBehavior::RefreshDuration }
-    fn max_stacks(&self) -> u32 { 1 }
+    fn id(&self) -> EffectId {
+        EffectId("GarenEShred".into())
+    }
+    fn name(&self) -> &str {
+        "Judgment Shred"
+    }
+    fn duration(&self) -> f64 {
+        6.0
+    }
+    fn refresh_behavior(&self) -> RefreshBehavior {
+        RefreshBehavior::RefreshDuration
+    }
+    fn max_stacks(&self) -> u32 {
+        1
+    }
     fn stat_modifiers(&self, _stacks: u32) -> StatBlock {
         let mut stats = StatBlock::new();
         stats.armor_reduction_percent = 0.25; // 25% armor reduction
@@ -195,15 +284,27 @@ impl StatusEffect for GarenEArmorShred {
 
 pub struct GarenEBuff;
 impl StatusEffect for GarenEBuff {
-    fn id(&self) -> EffectId { EffectId("GarenEBuff".into()) }
-    fn name(&self) -> &str { "Judgment" }
-    fn duration(&self) -> f64 { 3.0 }
-    fn refresh_behavior(&self) -> RefreshBehavior { RefreshBehavior::RefreshDuration }
-    fn max_stacks(&self) -> u32 { 1 }
+    fn id(&self) -> EffectId {
+        EffectId("GarenEBuff".into())
+    }
+    fn name(&self) -> &str {
+        "Judgment"
+    }
+    fn duration(&self) -> f64 {
+        3.0
+    }
+    fn refresh_behavior(&self) -> RefreshBehavior {
+        RefreshBehavior::RefreshDuration
+    }
+    fn max_stacks(&self) -> u32 {
+        1
+    }
     fn stat_modifiers(&self, _stacks: u32) -> StatBlock {
         StatBlock::new()
     }
-    fn prevents_basic_attacks(&self) -> bool { true }
+    fn prevents_basic_attacks(&self) -> bool {
+        false
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -213,47 +314,88 @@ impl StatusEffect for GarenEBuff {
 #[derive(Clone)]
 pub struct GarenQ;
 impl Ability for GarenQ {
-    fn slot(&self) -> AbilitySlot { AbilitySlot::Q }
-    fn cast_time(&self) -> f64 { 0.0 }
-    fn base_cooldown(&self, _level: u32) -> f64 { 8.0 }
-    fn cost(&self, _level: u32) -> f64 { 0.0 }
-    fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, _target: &ChampionId) {
+    fn slot(&self) -> AbilitySlot {
+        AbilitySlot::Q
+    }
+    fn cast_time(&self) -> f64 {
+        0.0
+    }
+    fn base_cooldown(&self, _level: u32) -> f64 {
+        8.0
+    }
+    fn cost(&self, _level: u32) -> f64 {
+        0.0
+    }
+    fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, target: &ChampionId) {
+        println!(
+            "[DEBUG Q] Q execute start. actor={:?}, target={:?}",
+            actor, target
+        );
         ctx.apply_buff(actor, Box::new(GarenQBuff));
         if let Some(champ_ref) = ctx.champions.get(actor) {
-            champ_ref.borrow_mut().state_mut().abilities.reset_cooldown(AbilitySlot::AutoAttack);
+            champ_ref
+                .borrow_mut()
+                .state_mut()
+                .abilities
+                .reset_cooldown(AbilitySlot::AutoAttack);
         }
+        println!("[DEBUG Q] Q calling GarenAutoAttack.execute");
+        GarenAutoAttack.execute(ctx, actor, target);
+        println!("[DEBUG Q] Q execute end");
     }
-    fn clone_box(&self) -> Box<dyn Ability> { Box::new(self.clone()) }
+    fn clone_box(&self) -> Box<dyn Ability> {
+        Box::new(self.clone())
+    }
 }
 
 #[derive(Clone)]
 pub struct GarenW;
 impl Ability for GarenW {
-    fn slot(&self) -> AbilitySlot { AbilitySlot::W }
-    fn cast_time(&self) -> f64 { 0.0 }
+    fn slot(&self) -> AbilitySlot {
+        AbilitySlot::W
+    }
+    fn cast_time(&self) -> f64 {
+        0.0
+    }
     fn base_cooldown(&self, level: u32) -> f64 {
         match level {
-            1 => 23.0, 2 => 21.0, 3 => 19.0, 4 => 17.0, 5 => 15.0,
+            1 => 23.0,
+            2 => 21.0,
+            3 => 19.0,
+            4 => 17.0,
+            5 => 15.0,
             _ => 15.0,
         }
     }
-    fn cost(&self, _level: u32) -> f64 { 0.0 }
+    fn cost(&self, _level: u32) -> f64 {
+        0.0
+    }
     fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, _target: &ChampionId) {
         ctx.apply_buff(actor, Box::new(GarenWBuff));
     }
-    fn clone_box(&self) -> Box<dyn Ability> { Box::new(self.clone()) }
+    fn clone_box(&self) -> Box<dyn Ability> {
+        Box::new(self.clone())
+    }
 }
 
 #[derive(Clone)]
 pub struct GarenE;
 impl Ability for GarenE {
-    fn slot(&self) -> AbilitySlot { AbilitySlot::E }
-    fn cast_time(&self) -> f64 { 0.0 }
-    fn base_cooldown(&self, _level: u32) -> f64 { 9.0 }
-    fn cost(&self, _level: u32) -> f64 { 0.0 }
+    fn slot(&self) -> AbilitySlot {
+        AbilitySlot::E
+    }
+    fn cast_time(&self) -> f64 {
+        0.0
+    }
+    fn base_cooldown(&self, _level: u32) -> f64 {
+        9.0
+    }
+    fn cost(&self, _level: u32) -> f64 {
+        0.0
+    }
     fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, target: &ChampionId) {
         ctx.apply_buff(actor, Box::new(GarenEBuff));
-        
+
         let bonus_as_percent = if let Some(champ_ref) = ctx.champions.get(actor) {
             let champ = champ_ref.borrow();
             let stats = champ.state().stats.current.clone();
@@ -277,21 +419,31 @@ impl Ability for GarenE {
         };
         ctx.new_events.push((0.0, Box::new(e_event)));
     }
-    fn clone_box(&self) -> Box<dyn Ability> { Box::new(self.clone()) }
+    fn clone_box(&self) -> Box<dyn Ability> {
+        Box::new(self.clone())
+    }
 }
 
 #[derive(Clone)]
 pub struct GarenR;
 impl Ability for GarenR {
-    fn slot(&self) -> AbilitySlot { AbilitySlot::R }
-    fn cast_time(&self) -> f64 { 0.5 }
+    fn slot(&self) -> AbilitySlot {
+        AbilitySlot::R
+    }
+    fn cast_time(&self) -> f64 {
+        0.5
+    }
     fn base_cooldown(&self, level: u32) -> f64 {
         match level {
-            1 => 120.0, 2 => 100.0, 3 => 80.0,
+            1 => 120.0,
+            2 => 100.0,
+            3 => 80.0,
             _ => 80.0,
         }
     }
-    fn cost(&self, _level: u32) -> f64 { 0.0 }
+    fn cost(&self, _level: u32) -> f64 {
+        0.0
+    }
     fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, target: &ChampionId) {
         let r_event = DemacianJusticeEvent {
             attacker: actor.clone(),
@@ -302,26 +454,52 @@ impl Ability for GarenR {
         // R has 0.5s cast time, so damage applies after 0.5s
         ctx.new_events.push((0.5, Box::new(r_event)));
     }
-    fn clone_box(&self) -> Box<dyn Ability> { Box::new(self.clone()) }
+    fn clone_box(&self) -> Box<dyn Ability> {
+        Box::new(self.clone())
+    }
 }
 
 #[derive(Clone)]
 pub struct GarenAutoAttack;
 impl Ability for GarenAutoAttack {
-    fn slot(&self) -> AbilitySlot { AbilitySlot::AutoAttack }
-    fn cast_time(&self) -> f64 { 0.0 }
-    fn windup_percent(&self) -> f64 { 0.20 } // Garen's basic attack windup is 20%
-    fn base_cooldown(&self, _level: u32) -> f64 { 1.0 }
-    fn cost(&self, _level: u32) -> f64 { 0.0 }
+    fn slot(&self) -> AbilitySlot {
+        AbilitySlot::AutoAttack
+    }
+    fn cast_time(&self) -> f64 {
+        0.0
+    }
+    fn windup_percent(&self) -> f64 {
+        0.20
+    } // Garen's basic attack windup is 20%
+    fn base_cooldown(&self, _level: u32) -> f64 {
+        1.0
+    }
+    fn cost(&self, _level: u32) -> f64 {
+        0.0
+    }
     fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, target: &ChampionId) {
+        println!(
+            "[DEBUG AA] AA execute start. actor={:?}, target={:?}, time={}",
+            actor,
+            target,
+            ctx.current_time.as_f64()
+        );
         let mut has_q_buff = false;
         let attacker_stats = {
             if let Some(a) = ctx.champions.get(actor) {
                 let mut champ = a.borrow_mut();
-                if champ.state().buffs.has_buff_by_name("Decisive Strike", ctx.current_time) {
+                if champ
+                    .state()
+                    .buffs
+                    .has_buff_by_name("Decisive Strike", ctx.current_time)
+                {
                     has_q_buff = true;
-                    champ.state_mut().buffs.remove_effect(&EffectId("GarenQ".into()));
+                    champ
+                        .state_mut()
+                        .buffs
+                        .remove_effect(&EffectId("GarenQ".into()));
                 }
+                println!("[DEBUG AA] has_q_buff={}", has_q_buff);
                 champ.state().stats.current.clone()
             } else {
                 return;
@@ -364,22 +542,37 @@ impl Ability for GarenAutoAttack {
                 false,
             );
         }
-        
+
         ctx.trigger_on_hit(actor, target, &damage_result);
         ctx.trigger_on_physical_damage(actor, target, &damage_result);
-        
+
         // Trigger rune events based on the damage dealt
         let is_ability = slot_to_record != AbilitySlot::AutoAttack;
-        ctx.trigger_on_damage_dealt(actor, damage_result.final_damage, is_ability, lol_core::types::AbilitySlot::E);
+        ctx.trigger_on_damage_dealt(
+            actor,
+            damage_result.final_damage,
+            is_ability,
+            slot_to_record,
+        );
 
         if let Some(d) = ctx.champions.get(target) {
-            let is_dead = d.borrow_mut().take_damage(damage_result.final_damage).is_dead;
+            let is_dead = d
+                .borrow_mut()
+                .take_damage(damage_result.final_damage)
+                .is_dead;
             if is_dead {
-                ctx.new_events.push((0.0, Box::new(lol_core::event::DeathEvent { target: target.clone() })));
+                ctx.new_events.push((
+                    0.0,
+                    Box::new(lol_core::event::DeathEvent {
+                        target: target.clone(),
+                    }),
+                ));
             }
         }
     }
-    fn clone_box(&self) -> Box<dyn Ability> { Box::new(self.clone()) }
+    fn clone_box(&self) -> Box<dyn Ability> {
+        Box::new(self.clone())
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -417,7 +610,7 @@ impl SimEvent for JudgmentTickEvent {
 
         // Garen E tick damage formula
         let raw_damage = self.base_damage + (attacker_stats.attack_damage * self.ad_ratio);
-        
+
         let damage_result = DamagePipeline::process(
             raw_damage,
             DamageType::Physical,
@@ -437,17 +630,30 @@ impl SimEvent for JudgmentTickEvent {
             );
         }
         ctx.trigger_on_physical_damage(&self.attacker, &self.defender, &damage_result);
-        ctx.trigger_on_damage_dealt(&self.attacker, damage_result.final_damage, true, lol_core::types::AbilitySlot::Q);
+        ctx.trigger_on_damage_dealt(
+            &self.attacker,
+            damage_result.final_damage,
+            true,
+            lol_core::types::AbilitySlot::E,
+        );
 
         if let Some(d) = ctx.champions.get(&self.defender) {
-            let is_dead = d.borrow_mut().take_damage(damage_result.final_damage).is_dead;
+            let is_dead = d
+                .borrow_mut()
+                .take_damage(damage_result.final_damage)
+                .is_dead;
             if is_dead {
-                ctx.new_events.push((0.0, Box::new(lol_core::event::DeathEvent { target: self.defender.clone() })));
+                ctx.new_events.push((
+                    0.0,
+                    Box::new(lol_core::event::DeathEvent {
+                        target: self.defender.clone(),
+                    }),
+                ));
             }
         }
 
         let new_hits = self.hits_landed + 1;
-        
+
         // Apply shred if 6 hits landed
         if new_hits == 6 {
             ctx.apply_buff(&self.defender, Box::new(GarenEArmorShred));
@@ -468,7 +674,9 @@ impl SimEvent for JudgmentTickEvent {
             ));
         }
     }
-    fn name(&self) -> &str { "JudgmentTick" }
+    fn name(&self) -> &str {
+        "JudgmentTick"
+    }
 }
 
 pub struct DemacianJusticeEvent {
@@ -491,7 +699,7 @@ impl SimEvent for DemacianJusticeEvent {
         };
 
         let raw_damage = self.base_damage + (defender_health * self.missing_health_ratio);
-        
+
         let damage_result = DamagePipeline::process(
             raw_damage,
             DamageType::True,
@@ -510,15 +718,30 @@ impl SimEvent for DemacianJusticeEvent {
                 false,
             );
         }
-        
-        ctx.trigger_on_damage_dealt(&self.attacker, damage_result.final_damage, true, lol_core::types::AbilitySlot::R);
+
+        ctx.trigger_on_damage_dealt(
+            &self.attacker,
+            damage_result.final_damage,
+            true,
+            lol_core::types::AbilitySlot::R,
+        );
 
         if let Some(d) = ctx.champions.get(&self.defender) {
-            let is_dead = d.borrow_mut().take_damage(damage_result.final_damage).is_dead;
+            let is_dead = d
+                .borrow_mut()
+                .take_damage(damage_result.final_damage)
+                .is_dead;
             if is_dead {
-                ctx.new_events.push((0.0, Box::new(lol_core::event::DeathEvent { target: self.defender.clone() })));
+                ctx.new_events.push((
+                    0.0,
+                    Box::new(lol_core::event::DeathEvent {
+                        target: self.defender.clone(),
+                    }),
+                ));
             }
         }
     }
-    fn name(&self) -> &str { "DemacianJustice" }
+    fn name(&self) -> &str {
+        "DemacianJustice"
+    }
 }

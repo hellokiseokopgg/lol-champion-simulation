@@ -16,7 +16,11 @@ impl AplExecutor {
     ) -> Option<AbilitySlot> {
         for action in &apl.actions {
             // Check if ability is on cooldown / unlearned
-            if !champion.state().abilities.is_ready(action.slot, ctx.current_time) {
+            if !champion
+                .state()
+                .abilities
+                .is_ready(action.slot, ctx.current_time)
+            {
                 continue;
             }
 
@@ -25,11 +29,12 @@ impl AplExecutor {
                 continue;
             }
 
-            // Check specific conditional expressions if they exist
-            if let Some(cond) = &action.condition {
-                if !cond.evaluate(ctx, champion, target) {
-                    continue;
-                }
+            if action
+                .condition
+                .as_ref()
+                .is_some_and(|cond| !cond.evaluate(ctx, champion, target))
+            {
+                continue;
             }
 
             // Valid action found
@@ -50,18 +55,20 @@ impl lol_core::event::SimEvent for AbilityExecuteEvent {
     fn execute(&self, ctx: &mut SimContext, _event_manager: &mut lol_core::event::EventManager) {
         let can_execute = if let Some(champ_ref) = ctx.champions.get(&self.actor) {
             let champ = champ_ref.borrow();
-            champ.state().health.current > 0.0 
+            champ.state().health.current > 0.0
                 && champ.state().casting == Some(self.slot)
                 && !champ.state().buffs.has_hard_cc(ctx.current_time)
-        } else { false };
-        
+        } else {
+            false
+        };
+
         if !can_execute {
             if let Some(champ_ref) = ctx.champions.get(&self.actor) {
                 champ_ref.borrow_mut().state_mut().casting = None;
             }
             return;
         }
-        
+
         let ability_box: Option<Box<dyn lol_core::ability::Ability>> = {
             let champ_ref = ctx.champions.get(&self.actor).unwrap();
             let champ = champ_ref.borrow();
@@ -77,7 +84,9 @@ impl lol_core::event::SimEvent for AbilityExecuteEvent {
         }
     }
 
-    fn name(&self) -> &str { "AbilityExecute" }
+    fn name(&self) -> &str {
+        "AbilityExecute"
+    }
 }
 
 pub struct ActorTickEvent {
@@ -100,35 +109,40 @@ impl lol_core::event::SimEvent for ActorTickEvent {
                     let target_champ = target_ref.borrow();
                     let champ_inst = champ.as_ref();
                     let target_inst = target_champ.as_ref();
-                    
-                    if let Some(slot) = AplExecutor::get_next_action(&self.apl, ctx, champ_inst, target_inst) {
+
+                    if let Some(slot) =
+                        AplExecutor::get_next_action(&self.apl, ctx, champ_inst, target_inst)
+                    {
                         cast_slot = Some(slot);
                         if let Some(ability) = champ_inst.get_ability(slot) {
                             cast_time = ability.cast_time();
                             if let Some(state) = champ_inst.state().abilities.get_state(slot) {
                                 level = state.level;
                             }
-                            
+
                             if slot == lol_core::types::AbilitySlot::AutoAttack {
                                 let stats = &champ_inst.state().stats.current;
                                 let as_stat = stats.attack_speed;
                                 base_cooldown = 1.0 / as_stat.max(0.001);
-                                
+
                                 let attack_delay_offset = stats.attack_delay_offset.unwrap_or(0.0);
                                 let base_as = 0.625 / (1.0 + attack_delay_offset);
-                                
-                                let windup_percent = stats.windup_percent.unwrap_or_else(|| ability.windup_percent());
+
+                                let windup_percent = stats
+                                    .windup_percent
+                                    .unwrap_or_else(|| ability.windup_percent());
                                 let windup_modifier = stats.windup_modifier.unwrap_or(1.0);
-                                
+
                                 let as_ratio = stats.attack_speed_ratio.unwrap_or(base_as);
                                 let bonus_as_pct = if as_ratio > 0.0 {
                                     (as_stat - base_as) / as_ratio
                                 } else {
                                     0.0
                                 };
-                                
+
                                 let base_windup_time = windup_percent / base_as.max(0.001);
-                                cast_time = base_windup_time / (1.0 + bonus_as_pct * windup_modifier).max(0.1);
+                                cast_time = base_windup_time
+                                    / (1.0 + bonus_as_pct * windup_modifier).max(0.1);
                             } else {
                                 let ah = champ_inst.state().stats.current.ability_haste;
                                 let cdr = ah / (100.0 + ah);
@@ -141,23 +155,27 @@ impl lol_core::event::SimEvent for ActorTickEvent {
                 return;
             }
         }
-        
+
         if let Some(slot) = cast_slot {
             if let Some(recorder) = &ctx.recorder {
-                recorder.borrow_mut().record_cast(ctx.current_time, self.actor.clone(), slot);
+                recorder
+                    .borrow_mut()
+                    .record_cast(ctx.current_time, self.actor.clone(), slot);
             }
 
             if let Some(champ_ref) = ctx.champions.get(&self.actor) {
                 let mut champ = champ_ref.borrow_mut();
                 champ.state_mut().casting = Some(slot);
                 if let Some(state) = champ.state_mut().abilities.get_state_mut(slot) {
-                    state.cooldown.start_cooldown(ctx.current_time, base_cooldown);
+                    state
+                        .cooldown
+                        .start_cooldown(ctx.current_time, base_cooldown);
                 }
             }
 
             let gcd = 0.25;
             let delay = cast_time.max(gcd);
-            
+
             if cast_time > 0.0 {
                 ctx.new_events.push((
                     cast_time,
@@ -212,14 +230,14 @@ impl lol_core::event::SimEvent for ActorTickEvent {
                         }
                     }
                 }
-                
+
                 if polling_needed {
                     wait_time = 0.1;
                 } else if found {
                     wait_time = min_cd.max(0.001);
                 }
             }
-            
+
             ctx.new_events.push((
                 wait_time,
                 Box::new(ActorTickEvent {
@@ -230,6 +248,8 @@ impl lol_core::event::SimEvent for ActorTickEvent {
             ));
         }
     }
-    
-    fn name(&self) -> &str { "ActorTick" }
+
+    fn name(&self) -> &str {
+        "ActorTick"
+    }
 }

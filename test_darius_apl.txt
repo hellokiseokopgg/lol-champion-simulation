@@ -1,0 +1,5 @@
+actions+=/E
+actions+=/AutoAttack,if=buff.Crippling Strike.down
+actions+=/W
+actions+=/Q,if=buff.Crippling Strike.down
+actions+=/R,if=target.health.pct<20

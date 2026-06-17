@@ -57,17 +57,25 @@ pub struct ChampionState {
 }
 
 impl ChampionState {
-    pub fn new(level: u32, base_stats: StatBlock, growth_stats: StatBlock, resource_type: ResourceType, rune_stats: StatBlock, item_stats: StatBlock, item_effects: Vec<Box<dyn crate::item::ItemEffect>>) -> Self {
+    pub fn new(
+        level: u32,
+        base_stats: StatBlock,
+        growth_stats: StatBlock,
+        resource_type: ResourceType,
+        rune_stats: StatBlock,
+        item_stats: StatBlock,
+        item_effects: Vec<Box<dyn crate::item::ItemEffect>>,
+    ) -> Self {
         let leveled_stats = base_stats.calculate_growth(&growth_stats, level);
         let mut stats = ThreeLayerStats::new(leveled_stats);
         stats.recalculate_initial(&(rune_stats.clone() + item_stats.clone()));
         stats.recalculate_current(&StatBlock::new()); // Make sure current reflects initial
-        
+
         let mut item_manager = crate::item::ItemManager::new();
         for effect in item_effects {
             item_manager.add_effect(effect);
         }
-        
+
         Self {
             level,
             base_stats: base_stats.clone(),
@@ -84,30 +92,39 @@ impl ChampionState {
             casting: None,
         }
     }
-
 }
 
 /// Trait representing an actively simulating champion.
 pub trait ChampionInstance {
     /// Returns an immutable reference to the champion's state.
     fn state(&self) -> &ChampionState;
-    
+
     /// Returns a mutable reference to the champion's state.
     fn state_mut(&mut self) -> &mut ChampionState;
-    
+
     /// Triggers a full recalculation of stats based on base, items, runes, and buffs.
     fn update_stats(&mut self, time: crate::types::SimTime);
-    
+
     /// Returns a reference to the ability in the given slot, if it exists.
     fn get_ability(&self, slot: crate::types::AbilitySlot) -> Option<&dyn crate::ability::Ability>;
-    
+
     /// Applies damage to the champion's health pool. Returns the detailed damage result.
     fn take_damage(&mut self, amount: f64) -> crate::types::TakeDamageResult;
 
     /// Called when this champion deals damage. Routes to RuneManager and other passives.
-    fn on_damage_dealt(&mut self, time: crate::types::SimTime, amount: f64, is_ability: bool, slot: crate::types::AbilitySlot) -> Vec<crate::rune_manager::RuneEvent> {
+    fn on_damage_dealt(
+        &mut self,
+        time: crate::types::SimTime,
+        amount: f64,
+        is_ability: bool,
+        slot: crate::types::AbilitySlot,
+    ) -> Vec<crate::rune_manager::RuneEvent> {
         let state = self.state_mut();
-        state.rune_manager.on_damage_dealt(time, amount, is_ability, slot)
+        let level = state.level;
+        let stats = state.stats.current.clone(); // Cloned to satisfy borrow checker
+        state
+            .rune_manager
+            .on_damage_dealt(time, amount, is_ability, slot, &stats, level)
     }
 
     /// Heals the champion.
@@ -122,10 +139,10 @@ pub trait ChampionInstance {
         if self.state().casting.is_some() {
             return false;
         }
-        if slot == crate::types::AbilitySlot::AutoAttack {
-            if self.state().buffs.prevents_basic_attacks(time) {
-                return false;
-            }
+        if slot == crate::types::AbilitySlot::AutoAttack
+            && self.state().buffs.prevents_basic_attacks(time)
+        {
+            return false;
         }
         true
     }
@@ -135,7 +152,7 @@ pub trait ChampionInstance {
 pub trait ChampionModule {
     /// Returns the internal identifier of the champion (e.g., "Garen").
     fn id(&self) -> &str;
-    
+
     /// Instantiates a new champion simulation instance given a configuration.
     fn create_instance(&self, config: ChampionConfig) -> Box<dyn ChampionInstance>;
 }

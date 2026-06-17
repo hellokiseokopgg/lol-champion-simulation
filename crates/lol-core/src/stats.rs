@@ -54,6 +54,9 @@ pub struct StatBlock {
     pub attack_delay_offset: Option<f64>,
     pub windup_percent: Option<f64>,
     pub windup_modifier: Option<f64>,
+
+    /// Grievous Wounds percentage (0.0 to 1.0) reducing healing received
+    pub grievous_wounds: f64,
 }
 
 impl StatBlock {
@@ -88,7 +91,9 @@ impl StatBlock {
             ability_power: self.ability_power, // No AP growth natively
             armor: Self::stat_at_level(self.armor, growth.armor, level),
             magic_resist: Self::stat_at_level(self.magic_resist, growth.magic_resist, level),
-            attack_speed: self.attack_speed + self.attack_speed_ratio.unwrap_or(self.attack_speed) * Self::stat_at_level(0.0, growth.attack_speed, level), // Bonus AS% multiplied by AS Ratio
+            attack_speed: self.attack_speed
+                + self.attack_speed_ratio.unwrap_or(self.attack_speed)
+                    * Self::stat_at_level(0.0, growth.attack_speed, level), // Bonus AS% multiplied by AS Ratio
             attack_speed_ratio: self.attack_speed_ratio,
             movement_speed: self.movement_speed, // No MS growth
             crit_chance: self.crit_chance,
@@ -106,15 +111,16 @@ impl StatBlock {
             attack_delay_offset: self.attack_delay_offset,
             windup_percent: self.windup_percent,
             windup_modifier: self.windup_modifier,
+            grievous_wounds: self.grievous_wounds,
         }
     }
     pub fn apply_bonus(&self, bonus: &StatBlock) -> Self {
         let mut result = self.clone() + bonus.clone();
-        
+
         // Attack Speed: Base_AS + AS_Ratio * Bonus_AS_Percent
         let as_ratio = self.attack_speed_ratio.unwrap_or(self.attack_speed); // if ratio is not defined, it assumes base AS
         result.attack_speed = self.attack_speed + (as_ratio * bonus.attack_speed);
-        
+
         result
     }
 }
@@ -145,11 +151,13 @@ impl std::ops::Add for StatBlock {
             life_steal: self.life_steal + rhs.life_steal,
             omnivamp: self.omnivamp + rhs.omnivamp,
             armor_reduction_percent: self.armor_reduction_percent + rhs.armor_reduction_percent,
-            damage_reduction_percent: 1.0 - ((1.0 - self.damage_reduction_percent) * (1.0 - rhs.damage_reduction_percent)),
+            damage_reduction_percent: 1.0
+                - ((1.0 - self.damage_reduction_percent) * (1.0 - rhs.damage_reduction_percent)),
             tenacity: 1.0 - ((1.0 - self.tenacity) * (1.0 - rhs.tenacity)),
             attack_delay_offset: self.attack_delay_offset.or(rhs.attack_delay_offset),
             windup_percent: self.windup_percent.or(rhs.windup_percent),
             windup_modifier: self.windup_modifier.or(rhs.windup_modifier),
+            grievous_wounds: f64::max(self.grievous_wounds, rhs.grievous_wounds),
         }
     }
 }
@@ -185,10 +193,10 @@ impl ThreeLayerStats {
     /// Re-calculates `current` stats by applying temporary buffs to the `initial` stats.
     pub fn recalculate_current(&mut self, buffs: &StatBlock) {
         self.current = self.initial.apply_bonus(buffs);
-        
+
         // Apply % armor reduction
         if self.current.armor_reduction_percent > 0.0 {
-            self.current.armor = self.current.armor * (1.0 - self.current.armor_reduction_percent);
+            self.current.armor *= 1.0 - self.current.armor_reduction_percent;
         }
     }
 }
@@ -210,7 +218,10 @@ mod tests {
 
         // Level 18 should be exactly base + growth * 17
         // Because 17 * (0.7025 + 0.0175 * 17) = 17 * (0.7025 + 0.2975) = 17 * 1.0 = 17.0
-        assert_eq!(StatBlock::stat_at_level(base, growth, 18), 600.0 + 100.0 * 17.0);
+        assert_eq!(
+            StatBlock::stat_at_level(base, growth, 18),
+            600.0 + 100.0 * 17.0
+        );
     }
 
     #[test]

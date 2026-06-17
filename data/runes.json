@@ -74,5 +74,19 @@
     "tree": "Sorcery",
     "icon": "8230",
     "stats": {}
+  },
+  {
+    "id": "electrocute",
+    "name": "Electrocute",
+    "tree": "Domination",
+    "icon": "8112",
+    "stats": {}
+  },
+  {
+    "id": "press_the_attack",
+    "name": "Press the Attack",
+    "tree": "Precision",
+    "icon": "8005",
+    "stats": {}
   }
 ]

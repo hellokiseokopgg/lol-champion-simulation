@@ -38,6 +38,10 @@ pub enum AbilitySlot {
     AutoAttack,
     /// Active item (stores the item ID)
     Item(u32),
+    /// Electrocute rune effect
+    Electrocute,
+    /// Press the Attack rune effect
+    PressTheAttack,
 }
 
 /// Represents the resource type a champion uses for their abilities.
@@ -152,15 +156,15 @@ mod tests {
         assert_eq!(t2, SimTime::new(2.0));
         assert_eq!(t2.as_f64(), 2.0);
     }
-    
+
     #[test]
     fn test_serialization() {
         let json = serde_json::to_string(&DamageType::Physical).unwrap();
         assert_eq!(json, "\"Physical\"");
-        
+
         let slot_json = serde_json::to_string(&AbilitySlot::Q).unwrap();
         assert_eq!(slot_json, "\"Q\"");
-        
+
         let time = SimTime::new(1.5);
         let time_json = serde_json::to_string(&time).unwrap();
         assert_eq!(time_json, "1.5");

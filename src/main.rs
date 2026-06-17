@@ -1,7 +1,7 @@
+#![allow(clippy::all)]
 use clap::{Parser, Subcommand};
 use lol_champions::ChampionRegistry;
-use lol_core::champion::ChampionConfig;
-use tracing::{info, Level};
+use tracing::{Level, info};
 
 struct DataRune {
     name: String,
@@ -9,9 +9,15 @@ struct DataRune {
     tree: String,
 }
 impl lol_core::rune::RuneEffect for DataRune {
-    fn name(&self) -> &str { &self.name }
-    fn icon(&self) -> &str { &self.icon }
-    fn tree(&self) -> &str { &self.tree }
+    fn name(&self) -> &str {
+        &self.name
+    }
+    fn icon(&self) -> &str {
+        &self.icon
+    }
+    fn tree(&self) -> &str {
+        &self.tree
+    }
 }
 
 #[derive(Parser)]
@@ -68,21 +74,30 @@ enum Commands {
 }
 
 fn main() {
-    tracing_subscriber::fmt()
-        .with_max_level(Level::INFO)
-        .init();
+    tracing_subscriber::fmt().with_max_level(Level::INFO).init();
 
     let cli = Cli::parse();
 
     match &cli.command {
-        Commands::Simulate { champion_a, champion_b, iterations, html_out, lang, optimize, apl, apl_b, items, runes } => {
+        Commands::Simulate {
+            champion_a,
+            champion_b,
+            iterations,
+            html_out,
+            lang,
+            optimize,
+            apl,
+            apl_b,
+            items,
+            runes,
+        } => {
             let champion_b = champion_b.clone().unwrap_or_else(|| "Dummy".to_string());
             info!("Initializing LoL Champion Simulation Engine...");
             info!("Matchup: {} vs {}", champion_a, champion_b);
             info!("Iterations: {}", iterations);
 
             let registry = ChampionRegistry::new();
-            
+
             let champ_a_module = registry.get(champion_a).unwrap_or_else(|| {
                 panic!("Champion {} not found in registry", champion_a);
             });
@@ -93,7 +108,7 @@ fn main() {
             // Load JSON data for champions
             let loader = lol_data::loader::DataLoader::new("data");
             let data_a = loader.load_champion(&champion_a.to_lowercase()).unwrap();
-            
+
             let data_b = if champion_b.eq_ignore_ascii_case("dummy") {
                 // Return mock data for Dummy
                 lol_data::champion_data::ChampionData {
@@ -131,7 +146,6 @@ fn main() {
                 loader.load_champion(&champion_b.to_lowercase()).unwrap()
             };
 
-
             let all_runes = loader.load_all_runes().unwrap_or_default();
             let all_items = loader.load_all_items().unwrap_or_default();
             let translator = lol_report::i18n::Translator::new("ko");
@@ -144,8 +158,14 @@ fn main() {
                 }
             }
 
-            let run_sim = |script: &str, script_b_opt: Option<&str>| -> (f64, std::rc::Rc<std::cell::RefCell<lol_report::collector::DataCollector>>) {
-                let parsed_apl = lol_apl::parser::ActionPriorityList::parse(script, Some(&item_map)).unwrap();
+            let run_sim = |script: &str,
+                           script_b_opt: Option<&str>|
+             -> (
+                f64,
+                std::rc::Rc<std::cell::RefCell<lol_report::collector::DataCollector>>,
+            ) {
+                let parsed_apl =
+                    lol_apl::parser::ActionPriorityList::parse(script, Some(&item_map)).unwrap();
 
                 let base_stats_a = lol_core::stats::StatBlock {
                     health: data_a.base_stats.hp as f64,
@@ -219,27 +239,55 @@ fn main() {
                 } else if let Some(r) = runes {
                     r.clone()
                 } else {
-                    vec!["conqueror".to_string(), "triumph".to_string(), "legend_alacrity".to_string(), "last_stand".to_string(), "bone_plating".to_string(), "overgrowth".to_string()]
+                    vec![
+                        "conqueror".to_string(),
+                        "triumph".to_string(),
+                        "legend_alacrity".to_string(),
+                        "last_stand".to_string(),
+                        "bone_plating".to_string(),
+                        "overgrowth".to_string(),
+                    ]
                 };
 
                 if let Some(keystone_id) = equipped_runes.get(0) {
-                    if let Some(r) = all_runes.iter().find(|r| r.id == *keystone_id || r.icon == *keystone_id) {
-                        rune_page_a.keystone = Box::new(DataRune { name: r.name.clone(), icon: r.icon.clone(), tree: r.tree.clone() });
+                    if let Some(r) = all_runes
+                        .iter()
+                        .find(|r| r.id == *keystone_id || r.icon == *keystone_id)
+                    {
+                        rune_page_a.keystone = Box::new(DataRune {
+                            name: r.name.clone(),
+                            icon: r.icon.clone(),
+                            tree: r.tree.clone(),
+                        });
                         runes_meta_a.push((r.icon.clone(), r.name.clone(), r.tree.clone()));
                     }
                 }
                 for i in 1..=3 {
                     if let Some(rune_id) = equipped_runes.get(i) {
-                        if let Some(r) = all_runes.iter().find(|r| r.id == *rune_id || r.icon == *rune_id) {
-                            rune_page_a.primary_runes.push(Box::new(DataRune { name: r.name.clone(), icon: r.icon.clone(), tree: r.tree.clone() }));
+                        if let Some(r) = all_runes
+                            .iter()
+                            .find(|r| r.id == *rune_id || r.icon == *rune_id)
+                        {
+                            rune_page_a.primary_runes.push(Box::new(DataRune {
+                                name: r.name.clone(),
+                                icon: r.icon.clone(),
+                                tree: r.tree.clone(),
+                            }));
                             runes_meta_a.push((r.icon.clone(), r.name.clone(), r.tree.clone()));
                         }
                     }
                 }
                 for i in 4..=5 {
                     if let Some(rune_id) = equipped_runes.get(i) {
-                        if let Some(r) = all_runes.iter().find(|r| r.id == *rune_id || r.icon == *rune_id) {
-                            rune_page_a.secondary_runes.push(Box::new(DataRune { name: r.name.clone(), icon: r.icon.clone(), tree: r.tree.clone() }));
+                        if let Some(r) = all_runes
+                            .iter()
+                            .find(|r| r.id == *rune_id || r.icon == *rune_id)
+                        {
+                            rune_page_a.secondary_runes.push(Box::new(DataRune {
+                                name: r.name.clone(),
+                                icon: r.icon.clone(),
+                                tree: r.tree.clone(),
+                            }));
                             runes_meta_a.push((r.icon.clone(), r.name.clone(), r.tree.clone()));
                         }
                     }
@@ -270,10 +318,12 @@ fn main() {
                     windup_modifier: data_b.base_stats.windup_modifier,
                     ..Default::default()
                 };
-                
+
                 let mut rune_page_b = lol_core::rune::RunePage::default();
                 let mut runes_meta_b = Vec::new();
-                let parsed_apl_b = script_b_opt.map(|s| lol_apl::parser::ActionPriorityList::parse(s, Some(&item_map)).unwrap());
+                let parsed_apl_b = script_b_opt.map(|s| {
+                    lol_apl::parser::ActionPriorityList::parse(s, Some(&item_map)).unwrap()
+                });
 
                 let mut item_build_b = lol_core::item::ItemBuild::new();
                 if let Some(apl_b) = &parsed_apl_b {
@@ -287,18 +337,30 @@ fn main() {
                 }
 
                 if let Some(r) = all_runes.iter().find(|r| r.id == "conqueror") {
-                    rune_page_b.keystone = Box::new(DataRune { name: r.name.clone(), icon: r.icon.clone(), tree: r.tree.clone() });
+                    rune_page_b.keystone = Box::new(DataRune {
+                        name: r.name.clone(),
+                        icon: r.icon.clone(),
+                        tree: r.tree.clone(),
+                    });
                     runes_meta_b.push((r.icon.clone(), r.name.clone(), r.tree.clone()));
                 }
                 for rune_id in ["triumph", "legend_alacrity", "last_stand"] {
                     if let Some(r) = all_runes.iter().find(|r| r.id == rune_id) {
-                        rune_page_b.primary_runes.push(Box::new(DataRune { name: r.name.clone(), icon: r.icon.clone(), tree: r.tree.clone() }));
+                        rune_page_b.primary_runes.push(Box::new(DataRune {
+                            name: r.name.clone(),
+                            icon: r.icon.clone(),
+                            tree: r.tree.clone(),
+                        }));
                         runes_meta_b.push((r.icon.clone(), r.name.clone(), r.tree.clone()));
                     }
                 }
                 for rune_id in ["bone_plating", "overgrowth"] {
                     if let Some(r) = all_runes.iter().find(|r| r.id == rune_id) {
-                        rune_page_b.secondary_runes.push(Box::new(DataRune { name: r.name.clone(), icon: r.icon.clone(), tree: r.tree.clone() }));
+                        rune_page_b.secondary_runes.push(Box::new(DataRune {
+                            name: r.name.clone(),
+                            icon: r.icon.clone(),
+                            tree: r.tree.clone(),
+                        }));
                         runes_meta_b.push((r.icon.clone(), r.name.clone(), r.tree.clone()));
                     }
                 }
@@ -315,27 +377,53 @@ fn main() {
                     max_duration: 60.0,
                 });
 
-                let items_a: Vec<(String, String)> = config_a.item_build.items.iter().map(|i| (i.id.clone(), i.name.clone())).collect();
-                let items_b: Vec<(String, String)> = config_b.item_build.items.iter().map(|i| (i.id.clone(), i.name.clone())).collect();
+                let items_a: Vec<(String, String)> = config_a
+                    .item_build
+                    .items
+                    .iter()
+                    .map(|i| (i.id.clone(), i.name.clone()))
+                    .collect();
+                let items_b: Vec<(String, String)> = config_b
+                    .item_build
+                    .items
+                    .iter()
+                    .map(|i| (i.id.clone(), i.name.clone()))
+                    .collect();
 
                 let id_a = lol_core::types::ChampionId(champion_a.clone());
                 let id_b = lol_core::types::ChampionId(champion_b.clone());
 
-                let inst_a = std::rc::Rc::new(std::cell::RefCell::new(champ_a_module.create_instance(config_a)));
-                let inst_b = std::rc::Rc::new(std::cell::RefCell::new(champ_b_module.create_instance(config_b)));
+                let inst_a = std::rc::Rc::new(std::cell::RefCell::new(
+                    champ_a_module.create_instance(config_a),
+                ));
+                let inst_b = std::rc::Rc::new(std::cell::RefCell::new(
+                    champ_b_module.create_instance(config_b),
+                ));
 
                 sim.add_actor(id_a.clone(), inst_a);
                 sim.add_actor(id_b.clone(), inst_b);
 
-                let collector = std::rc::Rc::new(std::cell::RefCell::new(lol_report::collector::DataCollector::new()));
-                collector.borrow_mut().champion_items.insert(id_a.clone(), items_a.clone());
-                collector.borrow_mut().champion_items.insert(id_b.clone(), items_b.clone());
+                let collector = std::rc::Rc::new(std::cell::RefCell::new(
+                    lol_report::collector::DataCollector::new(),
+                ));
+                collector
+                    .borrow_mut()
+                    .champion_items
+                    .insert(id_a.clone(), items_a.clone());
+                collector
+                    .borrow_mut()
+                    .champion_items
+                    .insert(id_b.clone(), items_b.clone());
 
                 for (icon, name, tree) in runes_meta_a {
-                    collector.borrow_mut().record_rune_equipped(id_a.clone(), icon, name, tree);
+                    collector
+                        .borrow_mut()
+                        .record_rune_equipped(id_a.clone(), icon, name, tree);
                 }
                 for (icon, name, tree) in runes_meta_b {
-                    collector.borrow_mut().record_rune_equipped(id_b.clone(), icon, name, tree);
+                    collector
+                        .borrow_mut()
+                        .record_rune_equipped(id_b.clone(), icon, name, tree);
                 }
 
                 let tick_event_a = lol_apl::executor::ActorTickEvent {
@@ -343,10 +431,8 @@ fn main() {
                     target: id_b.clone(),
                     apl: parsed_apl,
                 };
-                sim.event_manager_mut().schedule(
-                    lol_core::types::SimTime::new(0.0),
-                    Box::new(tick_event_a),
-                );
+                sim.event_manager_mut()
+                    .schedule(lol_core::types::SimTime::new(0.0), Box::new(tick_event_a));
 
                 if let Some(apl_b) = parsed_apl_b {
                     let tick_event_b = lol_apl::executor::ActorTickEvent {
@@ -354,23 +440,32 @@ fn main() {
                         target: id_a.clone(),
                         apl: apl_b,
                     };
-                    sim.event_manager_mut().schedule(
-                        lol_core::types::SimTime::new(0.0),
-                        Box::new(tick_event_b),
-                    );
+                    sim.event_manager_mut()
+                        .schedule(lol_core::types::SimTime::new(0.0), Box::new(tick_event_b));
                 }
 
-                sim.run(Some(collector.clone() as std::rc::Rc<std::cell::RefCell<dyn lol_core::event::EventRecorder>>));
-                
+                sim.run(Some(collector.clone()
+                    as std::rc::Rc<
+                        std::cell::RefCell<dyn lol_core::event::EventRecorder>,
+                    >));
+
                 // Fetch target's damage taken to calculate DPS from collector
-                let taken: f64 = collector.borrow().events.iter().filter_map(|e| {
-                    if let lol_report::collector::CombatEvent::Damage { target, amount, .. } = e {
-                        if target == &id_b { Some(*amount) } else { None }
-                    } else {
-                        None
-                    }
-                }).sum();
-                
+                let taken: f64 = collector
+                    .borrow()
+                    .events
+                    .iter()
+                    .filter_map(|e| {
+                        if let lol_report::collector::CombatEvent::Damage {
+                            target, amount, ..
+                        } = e
+                        {
+                            if target == &id_b { Some(*amount) } else { None }
+                        } else {
+                            None
+                        }
+                    })
+                    .sum();
+
                 (taken, collector)
             };
 
@@ -394,7 +489,7 @@ actions+=/AutoAttack
                 } else {
                     vec!["actions+=/R,if=target.health.pct<30"]
                 };
-                
+
                 let permutable_actions = if champion_a.eq_ignore_ascii_case("darius") {
                     vec![
                         "actions+=/Q,if=cooldown.AutoAttack.ready&buff.Crippling Strike.down",
@@ -410,9 +505,10 @@ actions+=/AutoAttack
                     ]
                 };
 
-                let optimizer = lol_apl::optimizer::APLOptimizer::new(base_actions, permutable_actions);
+                let optimizer =
+                    lol_apl::optimizer::APLOptimizer::new(base_actions, permutable_actions);
                 let perms = optimizer.generate_permutations();
-                
+
                 let mut best_dmg = 0.0;
                 let mut best_str = String::new();
                 for perm in perms {
@@ -440,25 +536,32 @@ actions+=/AutoAttack
 
             // Final run with collector
             let (_, collector) = run_sim(&best_script, script_b_str.as_deref());
-            
+
             let max_time = lol_core::types::SimTime::new(60.0);
-            let stats = lol_report::statistics::Statistics::calculate(&collector.borrow(), max_time);
-            
+            let stats =
+                lol_report::statistics::Statistics::calculate(&collector.borrow(), max_time);
+
             let translator = lol_report::i18n::Translator::new(&lang);
-            
+
             let report = lol_report::formatter::Formatter::format_text(&stats, &collector.borrow());
-            let gantt = lol_report::formatter::Formatter::format_gantt(&collector.borrow(), &translator);
+            let gantt =
+                lol_report::formatter::Formatter::format_gantt(&collector.borrow(), &translator);
 
             println!("\nOptimal APL:\n{}", best_script);
             println!("\n{}", report);
             println!("\n{}", gantt);
 
             if let Some(out_path) = html_out {
-                let html = lol_report::formatter::Formatter::format_html(&collector.borrow(), &best_script, &translator, &stats);
+                let html = lol_report::formatter::Formatter::format_html(
+                    &collector.borrow(),
+                    &best_script,
+                    &translator,
+                    &stats,
+                );
                 std::fs::write(&out_path, html).unwrap();
                 info!("Saved HTML report to {}", out_path);
             }
-            
+
             info!("Simulation complete.");
         }
     }

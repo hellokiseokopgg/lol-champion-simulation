@@ -1,0 +1,144 @@
+[2m2026-06-17T06:09:02.289477Z[0m [32m INFO[0m [2mlol_champion_simulation[0m[2m:[0m Initializing LoL Champion Simulation Engine...
+[2m2026-06-17T06:09:02.289564Z[0m [32m INFO[0m [2mlol_champion_simulation[0m[2m:[0m Matchup: Garen vs Darius
+[2m2026-06-17T06:09:02.289619Z[0m [32m INFO[0m [2mlol_champion_simulation[0m[2m:[0m Iterations: 100
+[2m2026-06-17T06:09:02.290327Z[0m [32m INFO[0m [2mlol_data::loader[0m[2m:[0m Loaded champion data for Garen
+[2m2026-06-17T06:09:02.290684Z[0m [32m INFO[0m [2mlol_data::loader[0m[2m:[0m Loaded champion data for Darius
+[2m2026-06-17T06:09:02.290997Z[0m [32m INFO[0m [2mlol_data::loader[0m[2m:[0m Loaded 8 runes
+[2m2026-06-17T06:09:02.291270Z[0m [32m INFO[0m [2mlol_data::loader[0m[2m:[0m Loaded 6 items
+
+Optimal APL:
+actions+=/AutoAttack,if=buff.Decisive Strike.up
+actions+=/Q,if=target.casting.R
+actions+=/AutoAttack
+
+
+--- Combat Simulation Report ---
+Combat Duration: 11.58s
+--------------------------------
+Champion: "Garen"
+  Items: Stridebreaker, Mortal Reminder, Phantom Dancer
+  Total Damage: 2765.0
+  Damage Taken: 1668.3
+  DPS: 238.8
+  Ability Breakdown:
+    AutoAttack: 2494.7 (90.2%)
+    Q: 270.3 (9.8%)
+--------------------------------
+Champion: "Darius"
+  Items: None
+  Total Damage: 1668.3
+  Damage Taken: 2765.0
+  DPS: 144.1
+  Ability Breakdown:
+    AutoAttack: 1266.6 (75.9%)
+    Passive: 401.8 (24.1%)
+--------------------------------
+
+
+```mermaid
+gantt
+    title Combat Skill Timeline
+    dateFormat x
+    axisFormat %S.%L
+
+    section Garen
+    Cast AutoAttack : 0, 200
+    Effect Hemorrhage : 0, 150
+    Dmg AutoAttack : 111, 211
+    Effect 정복자 (2스택) : 111, 261
+    Cast Q : 350, 550
+    Effect 결정적 일격 : 350, 500
+    Cast AutoAttack : 600, 800
+    Dmg Q : 711, 811
+    Effect 정복자 (4스택) : 711, 861
+    Cast AutoAttack : 1234, 1434
+    Dmg AutoAttack : 1346, 1446
+    Effect 정복자 (6스택) : 1346, 1496
+    Effect Hemorrhage : 1367, 1517
+    Cast AutoAttack : 1869, 2069
+    Dmg AutoAttack : 1980, 2080
+    Effect 정복자 (8스택) : 1980, 2130
+    Cast AutoAttack : 2504, 2704
+    Dmg AutoAttack : 2615, 2715
+    Effect 정복자 (10스택) : 2615, 2765
+    Effect Hemorrhage : 2735, 2885
+    Cast AutoAttack : 3139, 3339
+    Dmg AutoAttack : 3250, 3350
+    Effect 정복자 (12스택) : 3250, 3400
+    Cast AutoAttack : 3773, 3973
+    Dmg AutoAttack : 3885, 3985
+    Effect Hemorrhage : 4102, 4252
+    Cast AutoAttack : 4408, 4608
+    Dmg AutoAttack : 4520, 4620
+    Cast AutoAttack : 5043, 5243
+    Dmg AutoAttack : 5154, 5254
+    Effect Hemorrhage : 5470, 5620
+    Cast AutoAttack : 5678, 5878
+    Dmg AutoAttack : 5789, 5889
+    Cast AutoAttack : 6313, 6513
+    Dmg AutoAttack : 6424, 6524
+    Effect Hemorrhage : 6837, 6987
+    Cast AutoAttack : 6947, 7147
+    Dmg AutoAttack : 7059, 7159
+    Cast AutoAttack : 7582, 7782
+    Dmg AutoAttack : 7694, 7794
+    Effect Hemorrhage : 8205, 8355
+    Cast AutoAttack : 8217, 8417
+    Dmg AutoAttack : 8328, 8428
+    Cast AutoAttack : 8867, 9067
+    Dmg AutoAttack : 8978, 9078
+    Cast AutoAttack : 9517, 9717
+    Effect Hemorrhage : 9572, 9722
+    Dmg AutoAttack : 9628, 9728
+    Cast AutoAttack : 10167, 10367
+    Dmg AutoAttack : 10278, 10378
+    Cast AutoAttack : 10817, 11017
+    Dmg AutoAttack : 10928, 11028
+    Effect Hemorrhage : 10940, 11090
+    Cast AutoAttack : 11467, 11667
+    Dmg AutoAttack : 11578, 11678
+    section Darius
+    Cast AutoAttack : 0, 200
+    Dmg AutoAttack : 0, 100
+    Effect 정복자 (2스택) : 0, 150
+    Cast R : 250, 450
+    Effect Silence : 711, 861
+    Dmg Passive : 1250, 1350
+    Effect 정복자 (4스택) : 1250, 1400
+    Cast AutoAttack : 1367, 1567
+    Dmg AutoAttack : 1367, 1467
+    Effect 정복자 (6스택) : 1367, 1517
+    Effect GarenQSilence 만료 : 2211, 2361
+    Dmg Passive : 2500, 2600
+    Effect 정복자 (8스택) : 2500, 2650
+    Cast AutoAttack : 2735, 2935
+    Dmg AutoAttack : 2735, 2835
+    Effect 정복자 (10스택) : 2735, 2885
+    Dmg Passive : 3750, 3850
+    Effect 정복자 (12스택) : 3750, 3900
+    Cast AutoAttack : 4102, 4302
+    Dmg AutoAttack : 4102, 4202
+    Dmg Passive : 5000, 5100
+    Cast AutoAttack : 5470, 5670
+    Dmg AutoAttack : 5470, 5570
+    Effect Noxian Might : 5470, 5620
+    Dmg Passive : 6250, 6350
+    Cast AutoAttack : 6837, 7037
+    Dmg AutoAttack : 6837, 6937
+    Effect Noxian Might : 6837, 6987
+    Dmg Passive : 7500, 7600
+    Cast AutoAttack : 8205, 8405
+    Dmg AutoAttack : 8205, 8305
+    Effect Noxian Might : 8205, 8355
+    Dmg Passive : 8750, 8850
+    Cast AutoAttack : 9572, 9772
+    Dmg AutoAttack : 9572, 9672
+    Effect Noxian Might : 9572, 9722
+    Dmg Passive : 10000, 10100
+    Cast AutoAttack : 10940, 11140
+    Dmg AutoAttack : 10940, 11040
+    Effect Noxian Might : 10940, 11090
+    Dmg Passive : 11250, 11350
+```
+
+[2m2026-06-17T06:09:02.293114Z[0m [32m INFO[0m [2mlol_champion_simulation[0m[2m:[0m Simulation complete.

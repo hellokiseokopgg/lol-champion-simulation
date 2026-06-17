@@ -43,6 +43,12 @@ pub enum CombatEvent {
         item_id: String,
         item_name: String,
     },
+    Heal {
+        time: SimTime,
+        source: ChampionId,
+        target: ChampionId,
+        amount: f64,
+    },
 }
 
 #[derive(Debug, Default)]
@@ -81,8 +87,17 @@ impl DataCollector {
         });
     }
 
-    pub fn record_rune_equipped(&mut self, champion: ChampionId, rune_id: String, rune_name: String, rune_tree: String) {
-        self.champion_runes.entry(champion).or_insert_with(Vec::new).push((rune_id, rune_name, rune_tree));
+    pub fn record_rune_equipped(
+        &mut self,
+        champion: ChampionId,
+        rune_id: String,
+        rune_name: String,
+        rune_tree: String,
+    ) {
+        self.champion_runes
+            .entry(champion)
+            .or_default()
+            .push((rune_id, rune_name, rune_tree));
     }
 
     pub fn record_cast(&mut self, time: SimTime, source: ChampionId, ability: AbilitySlot) {
@@ -93,55 +108,125 @@ impl DataCollector {
         });
     }
 
+    pub fn record_heal(&mut self, time: SimTime, source: ChampionId, target: ChampionId, amount: f64) {
+        self.events.push(CombatEvent::Heal {
+            time,
+            source,
+            target,
+            amount,
+        });
+    }
+
     pub fn record_death(&mut self, time: SimTime, champion: ChampionId) {
         self.events.push(CombatEvent::Death { time, champion });
     }
 
     pub fn record_buff_apply(&mut self, time: SimTime, target: ChampionId, buff_name: String) {
-        self.events.push(CombatEvent::BuffApply { time, target, buff_name });
+        self.events.push(CombatEvent::BuffApply {
+            time,
+            target,
+            buff_name,
+        });
     }
 
     pub fn record_buff_expire(&mut self, time: SimTime, target: ChampionId, buff_name: String) {
-        self.events.push(CombatEvent::BuffExpire { time, target, buff_name });
+        self.events.push(CombatEvent::BuffExpire {
+            time,
+            target,
+            buff_name,
+        });
     }
 
-    pub fn record_resource_update(&mut self, time: SimTime, target: ChampionId, resource_type: String, amount: f64, max: f64) {
-        self.events.push(CombatEvent::ResourceUpdate { time, target, resource_type, amount, max });
+    pub fn record_resource_update(
+        &mut self,
+        time: SimTime,
+        target: ChampionId,
+        resource_type: String,
+        amount: f64,
+        max: f64,
+    ) {
+        self.events.push(CombatEvent::ResourceUpdate {
+            time,
+            target,
+            resource_type,
+            amount,
+            max,
+        });
     }
 
-    pub fn record_item_acquisition(&mut self, time: SimTime, target: ChampionId, item_id: String, item_name: String) {
-        self.events.push(CombatEvent::ItemAcquisition { time, target, item_id, item_name });
+    pub fn record_item_acquisition(
+        &mut self,
+        time: SimTime,
+        target: ChampionId,
+        item_id: String,
+        item_name: String,
+    ) {
+        self.events.push(CombatEvent::ItemAcquisition {
+            time,
+            target,
+            item_id,
+            item_name,
+        });
     }
-
-
 }
 
 impl lol_core::event::EventRecorder for DataCollector {
-    fn record_damage(&mut self, time: SimTime, source: ChampionId, target: ChampionId, ability: AbilitySlot, amount: f64, is_crit: bool) {
+    fn record_damage(
+        &mut self,
+        time: SimTime,
+        source: ChampionId,
+        target: ChampionId,
+        ability: AbilitySlot,
+        amount: f64,
+        is_crit: bool,
+    ) {
         self.record_damage(time, source, target, ability, amount, is_crit);
     }
-    
+
     fn record_cast(&mut self, time: SimTime, source: ChampionId, ability: AbilitySlot) {
         self.record_cast(time, source, ability);
     }
-    
+
+    fn record_heal(
+        &mut self,
+        time: SimTime,
+        source: ChampionId,
+        target: ChampionId,
+        amount: f64,
+    ) {
+        self.record_heal(time, source, target, amount);
+    }
+
     fn record_death(&mut self, time: SimTime, champion: ChampionId) {
         self.record_death(time, champion);
     }
-    
+
     fn record_buff_apply(&mut self, time: SimTime, target: ChampionId, buff_name: String) {
         self.record_buff_apply(time, target, buff_name);
     }
-    
+
     fn record_buff_expire(&mut self, time: SimTime, target: ChampionId, buff_name: String) {
         self.record_buff_expire(time, target, buff_name);
     }
-    
-    fn record_resource_update(&mut self, time: SimTime, target: ChampionId, resource_type: String, amount: f64, max: f64) {
+
+    fn record_resource_update(
+        &mut self,
+        time: SimTime,
+        target: ChampionId,
+        resource_type: String,
+        amount: f64,
+        max: f64,
+    ) {
         self.record_resource_update(time, target, resource_type, amount, max);
     }
 
-    fn record_item_acquisition(&mut self, time: SimTime, target: ChampionId, item_id: String, item_name: String) {
+    fn record_item_acquisition(
+        &mut self,
+        time: SimTime,
+        target: ChampionId,
+        item_id: String,
+        item_name: String,
+    ) {
         self.record_item_acquisition(time, target, item_id, item_name);
     }
 }

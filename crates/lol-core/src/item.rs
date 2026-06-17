@@ -1,21 +1,42 @@
-use crate::stats::StatBlock;
-use crate::event::SimContext;
-use crate::types::ChampionId;
 use crate::damage::DamageResult;
+use crate::event::SimContext;
+use crate::stats::StatBlock;
+use crate::types::ChampionId;
 
 /// Represents an effect provided by an item (e.g., passive or active).
 pub trait ItemEffect {
     fn name(&self) -> &str;
-    
+
     /// Triggered when the champion hits a target with a basic attack.
-    fn on_hit(&self, _sim: &mut SimContext, _actor: &ChampionId, _target: &ChampionId, _damage: &DamageResult) {}
+    fn on_hit(
+        &self,
+        _sim: &mut SimContext,
+        _actor: &ChampionId,
+        _target: &ChampionId,
+        _damage: &DamageResult,
+    ) {
+    }
 
     /// Triggered when the champion deals physical damage (from AA or Ability).
-    fn on_physical_damage(&self, _sim: &mut SimContext, _actor: &ChampionId, _target: &ChampionId, _damage: &DamageResult) {}
-    
+    fn on_physical_damage(
+        &self,
+        _sim: &mut SimContext,
+        _actor: &ChampionId,
+        _target: &ChampionId,
+        _damage: &DamageResult,
+    ) {
+    }
+
     /// Triggered when the champion deals magic damage.
-    fn on_magic_damage(&self, _sim: &mut SimContext, _actor: &ChampionId, _target: &ChampionId, _damage: &DamageResult) {}
-    
+    fn on_magic_damage(
+        &self,
+        _sim: &mut SimContext,
+        _actor: &ChampionId,
+        _target: &ChampionId,
+        _damage: &DamageResult,
+    ) {
+    }
+
     /// Returns the active ability associated with this item, if any.
     fn active_ability(&self) -> Option<Box<dyn crate::ability::Ability>> {
         None
@@ -38,7 +59,7 @@ impl ItemManager {
     pub fn add_effect(&mut self, effect: Box<dyn ItemEffect>) {
         self.effects.push(effect);
     }
-    
+
     pub fn effects(&self) -> &Vec<Box<dyn ItemEffect>> {
         &self.effects
     }
@@ -112,7 +133,13 @@ impl ItemEffect for BlackCleaverEffect {
         "Black Cleaver"
     }
 
-    fn on_physical_damage(&self, ctx: &mut SimContext, actor: &ChampionId, target: &ChampionId, _damage: &DamageResult) {
+    fn on_physical_damage(
+        &self,
+        ctx: &mut SimContext,
+        actor: &ChampionId,
+        target: &ChampionId,
+        _damage: &DamageResult,
+    ) {
         ctx.apply_buff(target, Box::new(BlackCleaverShred));
         ctx.apply_buff(actor, Box::new(BlackCleaverFervor));
     }
@@ -239,17 +266,31 @@ impl crate::ability::Ability for StridebreakerActive {
         0.0
     }
 
-    fn execute(&self, ctx: &mut crate::event::SimContext, actor: &crate::types::ChampionId, target: &crate::types::ChampionId) {
-        let (attacker_stats, defender_stats) = {
-            let attacker_ref = ctx.champions.get(actor).unwrap().borrow();
-            let defender_ref = ctx.champions.get(target).unwrap().borrow();
+    fn execute(
+        &self,
+        ctx: &mut crate::event::SimContext,
+        actor: &crate::types::ChampionId,
+        target: &crate::types::ChampionId,
+    ) {
+        let (attacker_stats, defender_stats, attacker_initial_ad) = {
+            let attacker_cell = match ctx.champions.get(actor) {
+                Some(c) => c,
+                None => return,
+            };
+            let defender_cell = match ctx.champions.get(target) {
+                Some(c) => c,
+                None => return,
+            };
+            let attacker_ref = attacker_cell.borrow();
+            let defender_ref = defender_cell.borrow();
             (
                 attacker_ref.state().stats.current.clone(),
                 defender_ref.state().stats.current.clone(),
+                attacker_ref.state().stats.initial.attack_damage,
             )
         };
 
-        let raw_damage = attacker_stats.attack_damage * 0.8;
+        let raw_damage = attacker_initial_ad * 0.8;
 
         let damage_result = crate::damage::DamagePipeline::process(
             raw_damage,
@@ -261,7 +302,12 @@ impl crate::ability::Ability for StridebreakerActive {
 
         if let Some(recorder) = &ctx.recorder {
             recorder.borrow_mut().record_damage(
-                ctx.current_time, actor.clone(), target.clone(), self.slot(), damage_result.final_damage, false,
+                ctx.current_time,
+                actor.clone(),
+                target.clone(),
+                self.slot(),
+                damage_result.final_damage,
+                false,
             );
         }
 
@@ -289,8 +335,6 @@ impl ItemEffect for StridebreakerEffect {
     }
 }
 
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -298,7 +342,7 @@ mod tests {
     #[test]
     fn test_item_build_stats() {
         let mut build = ItemBuild::new();
-        
+
         let item1 = Item {
             id: "1038".to_string(),
             name: "B.F. Sword".to_string(),
@@ -308,7 +352,7 @@ mod tests {
             },
             effects: vec![],
         };
-        
+
         let item2 = Item {
             id: "1036".to_string(),
             name: "Long Sword".to_string(),
@@ -340,22 +384,34 @@ mod tests {
         assert_eq!(build.items.len(), 6);
     }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::stats::StatBlock;
-    use crate::types::{ResourceType, DamageType};
     use crate::champion::ChampionState;
+    use crate::stats::StatBlock;
+    use crate::types::{DamageType, ResourceType};
 
     struct DummyChampionInstance {
         state: ChampionState,
     }
     impl crate::champion::ChampionInstance for DummyChampionInstance {
-        fn state(&self) -> &ChampionState { &self.state }
-        fn state_mut(&mut self) -> &mut ChampionState { &mut self.state }
-        fn update_stats(&mut self, time: crate::types::SimTime) {}
-        fn get_ability(&self, _slot: crate::types::AbilitySlot) -> Option<&dyn crate::ability::Ability> { None }
-        fn take_damage(&mut self, amount: f64) -> crate::types::TakeDamageResult { let is_dead = self.state.health.reduce(amount); crate::types::TakeDamageResult { actual_damage: amount, is_dead } }
+        fn state(&self) -> &ChampionState {
+            &self.state
+        }
+        fn state_mut(&mut self) -> &mut ChampionState {
+            &mut self.state
+        }
+        fn update_stats(&mut self, _time: crate::types::SimTime) {}
+        fn get_ability(
+            &self,
+            _slot: crate::types::AbilitySlot,
+        ) -> Option<&dyn crate::ability::Ability> {
+            None
+        }
+        fn take_damage(&mut self, amount: f64) -> crate::types::TakeDamageResult {
+            let is_dead = self.state.health.reduce(amount);
+            crate::types::TakeDamageResult {
+                actual_damage: amount,
+                is_dead,
+            }
+        }
     }
 
     #[test]
@@ -368,16 +424,28 @@ mod tests {
             recorder: None,
         };
         let target_id = ChampionId("Target".into());
-        
+
         let mut target_stats = StatBlock::new();
         target_stats.armor = 100.0;
-        let mut target_state = ChampionState::new(1, target_stats, StatBlock::new(), ResourceType::None, StatBlock::new(), StatBlock::new(), vec![]);
+        let mut target_state = ChampionState::new(
+            1,
+            target_stats,
+            StatBlock::new(),
+            ResourceType::None,
+            StatBlock::new(),
+            StatBlock::new(),
+            vec![],
+        );
         target_state.stats.recalculate_current(&StatBlock::new());
-        
-        sim.champions.insert(target_id.clone(), std::rc::Rc::new(std::cell::RefCell::new(
-            Box::new(DummyChampionInstance { state: target_state }) as Box<dyn crate::champion::ChampionInstance>
-        )));
-        
+
+        sim.champions.insert(
+            target_id.clone(),
+            std::rc::Rc::new(std::cell::RefCell::new(Box::new(DummyChampionInstance {
+                state: target_state,
+            })
+                as Box<dyn crate::champion::ChampionInstance>)),
+        );
+
         let actor_id = ChampionId("Actor".into());
         let bc_effect = BlackCleaverEffect;
         let damage_result = crate::damage::DamageResult {
@@ -387,25 +455,48 @@ mod tests {
             is_critical: false,
             damage_type: DamageType::Physical,
         };
-        
+
         // 1st hit
         bc_effect.on_physical_damage(&mut sim, &actor_id, &target_id, &damage_result);
-        
-        let armor_reduction = sim.champions.get(&target_id).unwrap().borrow().state().buffs.aggregate_stats().armor_reduction_percent;
+
+        let armor_reduction = sim
+            .champions
+            .get(&target_id)
+            .unwrap()
+            .borrow()
+            .state()
+            .buffs
+            .aggregate_stats()
+            .armor_reduction_percent;
         assert_eq!(armor_reduction, 0.04); // 1 stack = 4%
-        
+
         // 6th hit
         for _ in 0..5 {
             bc_effect.on_physical_damage(&mut sim, &actor_id, &target_id, &damage_result);
         }
-        
-        let armor_reduction_max = sim.champions.get(&target_id).unwrap().borrow().state().buffs.aggregate_stats().armor_reduction_percent;
+
+        let armor_reduction_max = sim
+            .champions
+            .get(&target_id)
+            .unwrap()
+            .borrow()
+            .state()
+            .buffs
+            .aggregate_stats()
+            .armor_reduction_percent;
         assert_eq!(armor_reduction_max, 0.24); // 6 stacks = 24%
-        
+
         // 7th hit (should not exceed 6 stacks)
         bc_effect.on_physical_damage(&mut sim, &actor_id, &target_id, &damage_result);
-        let armor_reduction_cap = sim.champions.get(&target_id).unwrap().borrow().state().buffs.aggregate_stats().armor_reduction_percent;
+        let armor_reduction_cap = sim
+            .champions
+            .get(&target_id)
+            .unwrap()
+            .borrow()
+            .state()
+            .buffs
+            .aggregate_stats()
+            .armor_reduction_percent;
         assert_eq!(armor_reduction_cap, 0.24);
     }
-}
 }

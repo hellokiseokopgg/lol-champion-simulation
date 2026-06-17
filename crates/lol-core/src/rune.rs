@@ -14,12 +14,16 @@ pub enum RunePath {
 pub trait RuneEffect {
     /// The name of the rune.
     fn name(&self) -> &str;
-    
+
     /// The icon ID of the rune.
-    fn icon(&self) -> &str { "" }
-    
+    fn icon(&self) -> &str {
+        ""
+    }
+
     /// The tree the rune belongs to (e.g. Precision).
-    fn tree(&self) -> &str { "" }
+    fn tree(&self) -> &str {
+        ""
+    }
 
     /// The static stats provided by the rune.
     fn stats(&self) -> StatBlock {
@@ -39,7 +43,9 @@ pub struct RunePage {
 
 struct EmptyRune;
 impl RuneEffect for EmptyRune {
-    fn name(&self) -> &str { "Empty" }
+    fn name(&self) -> &str {
+        "Empty"
+    }
 }
 
 impl Default for RunePage {
@@ -83,7 +89,9 @@ mod tests {
     }
 
     impl RuneEffect for TestRune {
-        fn name(&self) -> &str { &self.name }
+        fn name(&self) -> &str {
+            &self.name
+        }
         fn stats(&self) -> StatBlock {
             StatBlock {
                 attack_damage: self.ad,
@@ -97,12 +105,27 @@ mod tests {
         let page = RunePage {
             primary_path: RunePath::Precision,
             secondary_path: RunePath::Domination,
-            keystone: Box::new(TestRune { name: "Conqueror".to_string(), ad: 0.0 }),
-            primary_runes: vec![Box::new(TestRune { name: "Triumph".to_string(), ad: 0.0 })],
-            secondary_runes: vec![Box::new(TestRune { name: "Eyeball".to_string(), ad: 18.0 })],
+            keystone: Box::new(TestRune {
+                name: "Conqueror".to_string(),
+                ad: 0.0,
+            }),
+            primary_runes: vec![Box::new(TestRune {
+                name: "Triumph".to_string(),
+                ad: 0.0,
+            })],
+            secondary_runes: vec![Box::new(TestRune {
+                name: "Eyeball".to_string(),
+                ad: 18.0,
+            })],
             stat_shards: vec![
-                Box::new(TestRune { name: "Adaptive".to_string(), ad: 5.4 }),
-                Box::new(TestRune { name: "Adaptive".to_string(), ad: 5.4 }),
+                Box::new(TestRune {
+                    name: "Adaptive".to_string(),
+                    ad: 5.4,
+                }),
+                Box::new(TestRune {
+                    name: "Adaptive".to_string(),
+                    ad: 5.4,
+                }),
             ],
         };
 

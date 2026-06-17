@@ -1,0 +1,252 @@
+[2m2026-06-17T05:29:37.141985Z[0m [32m INFO[0m [2mlol_champion_simulation[0m[2m:[0m Initializing LoL Champion Simulation Engine...
+[2m2026-06-17T05:29:37.142189Z[0m [32m INFO[0m [2mlol_champion_simulation[0m[2m:[0m Matchup: Darius vs Dummy
+[2m2026-06-17T05:29:37.142284Z[0m [32m INFO[0m [2mlol_champion_simulation[0m[2m:[0m Iterations: 100
+[2m2026-06-17T05:29:37.142988Z[0m [32m INFO[0m [2mlol_data::loader[0m[2m:[0m Loaded champion data for Darius
+[2m2026-06-17T05:29:37.143138Z[0m [32m INFO[0m [2mlol_data::loader[0m[2m:[0m Loaded 8 runes
+[2m2026-06-17T05:29:37.143247Z[0m [32m INFO[0m [2mlol_data::loader[0m[2m:[0m Loaded 6 items
+
+Optimal APL:
+actions+=/E
+actions+=/AutoAttack,if=buff.Crippling Strike.down
+actions+=/W
+actions+=/Q,if=buff.Crippling Strike.down
+actions+=/R,if=target.health.pct<20
+
+
+--- Combat Simulation Report ---
+Combat Duration: 59.10s
+--------------------------------
+Champion: "Darius"
+  Items: Stridebreaker, Mortal Reminder, Phantom Dancer
+  Total Damage: 19882.1
+  Damage Taken: 0.0
+  DPS: 336.4
+  Ability Breakdown:
+    AutoAttack: 7784.3 (39.2%)
+    Q: 6855.1 (34.5%)
+    Passive: 5242.7 (26.4%)
+--------------------------------
+Champion: "Dummy"
+  Items: None
+  Total Damage: 0.0
+  Damage Taken: 19882.1
+  DPS: 0.0
+  Ability Breakdown:
+--------------------------------
+
+
+```mermaid
+gantt
+    title Combat Skill Timeline
+    dateFormat x
+    axisFormat %S.%L
+
+    section Darius
+    Cast E : 0, 200
+    Cast AutoAttack : 250, 450
+    Dmg AutoAttack : 250, 350
+    Effect 정복자 (2스택) : 250, 400
+    Cast W : 500, 700
+    Effect Crippling Strike : 500, 650
+    Dmg Passive : 1500, 1600
+    Effect 정복자 (4스택) : 1500, 1650
+    Dmg Passive : 2750, 2850
+    Effect 정복자 (6스택) : 2750, 2900
+    Dmg Passive : 4000, 4100
+    Effect 정복자 (8스택) : 4000, 4150
+    Effect DariusWBuff 만료 : 4500, 4650
+    Cast AutoAttack : 4550, 4750
+    Dmg AutoAttack : 4550, 4650
+    Effect 정복자 (10스택) : 4550, 4700
+    Cast Q : 4800, 5000
+    Dmg Q : 4800, 4900
+    Effect 정복자 (12스택) : 4800, 4950
+    Dmg Passive : 5250, 5350
+    Cast AutoAttack : 5550, 5750
+    Dmg AutoAttack : 5550, 5650
+    Cast W : 5800, 6000
+    Effect Crippling Strike : 5800, 5950
+    Dmg Passive : 6500, 6600
+    Dmg Passive : 7750, 7850
+    Dmg Passive : 9000, 9100
+    Effect DariusWBuff 만료 : 9800, 9950
+    Cast AutoAttack : 9849, 10049
+    Dmg AutoAttack : 9849, 9949
+    Effect Noxian Might : 9849, 9999
+    Cast Q : 10099, 10299
+    Dmg Q : 10099, 10199
+    Dmg Passive : 10250, 10350
+    Cast AutoAttack : 10849, 11049
+    Dmg AutoAttack : 10849, 10949
+    Effect Noxian Might : 10849, 10999
+    Cast W : 11099, 11299
+    Effect Crippling Strike : 11099, 11249
+    Dmg Passive : 11500, 11600
+    Cast E : 12049, 12249
+    Dmg Passive : 12750, 12850
+    Dmg Passive : 14000, 14100
+    Effect DariusWBuff 만료 : 15099, 15249
+    Cast AutoAttack : 15199, 15399
+    Dmg AutoAttack : 15199, 15299
+    Effect Noxian Might : 15199, 15349
+    Dmg Passive : 15250, 15350
+    Cast Q : 15449, 15649
+    Dmg Q : 15449, 15549
+    Cast AutoAttack : 16199, 16399
+    Dmg AutoAttack : 16199, 16299
+    Effect Noxian Might : 16199, 16349
+    Cast W : 16449, 16649
+    Effect Crippling Strike : 16449, 16599
+    Dmg Passive : 16500, 16600
+    Dmg Passive : 17750, 17850
+    Dmg Passive : 19000, 19100
+    Dmg Passive : 20250, 20350
+    Effect DariusWBuff 만료 : 20449, 20599
+    Cast AutoAttack : 20500, 20700
+    Dmg AutoAttack : 20500, 20600
+    Effect Noxian Might : 20500, 20650
+    Cast Q : 20750, 20950
+    Dmg Q : 20750, 20850
+    Dmg Passive : 21500, 21600
+    Cast AutoAttack : 21500, 21700
+    Dmg AutoAttack : 21500, 21600
+    Effect Noxian Might : 21500, 21650
+    Cast W : 21750, 21950
+    Effect Crippling Strike : 21750, 21900
+    Dmg Passive : 22750, 22850
+    Dmg Passive : 24000, 24100
+    Cast E : 24100, 24300
+    Dmg Passive : 25250, 25350
+    Effect DariusWBuff 만료 : 25750, 25900
+    Cast AutoAttack : 25750, 25950
+    Dmg AutoAttack : 25750, 25850
+    Effect Noxian Might : 25750, 25900
+    Cast Q : 26000, 26200
+    Dmg Q : 26000, 26100
+    Dmg Passive : 26500, 26600
+    Cast AutoAttack : 26750, 26950
+    Dmg AutoAttack : 26750, 26850
+    Effect Noxian Might : 26750, 26900
+    Cast W : 27000, 27200
+    Effect Crippling Strike : 27000, 27150
+    Dmg Passive : 27750, 27850
+    Dmg Passive : 29000, 29100
+    Dmg Passive : 30250, 30350
+    Effect DariusWBuff 만료 : 31000, 31150
+    Cast AutoAttack : 31050, 31250
+    Dmg AutoAttack : 31050, 31150
+    Effect Noxian Might : 31050, 31200
+    Cast Q : 31300, 31500
+    Dmg Q : 31300, 31400
+    Dmg Passive : 31500, 31600
+    Cast AutoAttack : 32050, 32250
+    Dmg AutoAttack : 32050, 32150
+    Effect Noxian Might : 32050, 32200
+    Cast W : 32300, 32500
+    Effect Crippling Strike : 32300, 32450
+    Dmg Passive : 32750, 32850
+    Dmg Passive : 34000, 34100
+    Dmg Passive : 35250, 35350
+    Cast E : 36150, 36350
+    Effect DariusWBuff 만료 : 36300, 36450
+    Cast AutoAttack : 36400, 36600
+    Dmg AutoAttack : 36400, 36500
+    Effect Noxian Might : 36400, 36550
+    Dmg Passive : 36500, 36600
+    Cast Q : 36650, 36850
+    Dmg Q : 36650, 36750
+    Cast AutoAttack : 37400, 37600
+    Dmg AutoAttack : 37400, 37500
+    Effect Noxian Might : 37400, 37550
+    Cast W : 37650, 37850
+    Effect Crippling Strike : 37650, 37800
+    Dmg Passive : 37750, 37850
+    Dmg Passive : 39000, 39100
+    Dmg Passive : 40250, 40350
+    Dmg Passive : 41500, 41600
+    Effect DariusWBuff 만료 : 41650, 41800
+    Cast AutoAttack : 41700, 41900
+    Dmg AutoAttack : 41700, 41800
+    Effect Noxian Might : 41700, 41850
+    Cast Q : 41950, 42150
+    Dmg Q : 41950, 42050
+    Cast AutoAttack : 42700, 42900
+    Dmg AutoAttack : 42700, 42800
+    Effect Noxian Might : 42700, 42850
+    Dmg Passive : 42750, 42850
+    Cast W : 42950, 43150
+    Effect Crippling Strike : 42950, 43100
+    Dmg Passive : 44000, 44100
+    Dmg Passive : 45250, 45350
+    Dmg Passive : 46500, 46600
+    Effect DariusWBuff 만료 : 46950, 47100
+    Cast AutoAttack : 47000, 47200
+    Dmg AutoAttack : 47000, 47100
+    Effect Noxian Might : 47000, 47150
+    Cast Q : 47250, 47450
+    Dmg Q : 47250, 47350
+    Dmg Passive : 47750, 47850
+    Cast AutoAttack : 48000, 48200
+    Dmg AutoAttack : 48000, 48100
+    Effect Noxian Might : 48000, 48150
+    Cast E : 48250, 48450
+    Cast W : 48500, 48700
+    Effect Crippling Strike : 48500, 48650
+    Dmg Passive : 49000, 49100
+    Dmg Passive : 50250, 50350
+    Dmg Passive : 51500, 51600
+    Effect DariusWBuff 만료 : 52500, 52650
+    Cast AutoAttack : 52550, 52750
+    Dmg AutoAttack : 52550, 52650
+    Effect Noxian Might : 52550, 52700
+    Dmg Passive : 52750, 52850
+    Cast Q : 52800, 53000
+    Dmg Q : 52800, 52900
+    Cast AutoAttack : 53550, 53750
+    Dmg AutoAttack : 53550, 53650
+    Effect Noxian Might : 53550, 53700
+    Cast W : 53800, 54000
+    Effect Crippling Strike : 53800, 53950
+    Dmg Passive : 54000, 54100
+    Dmg Passive : 55250, 55350
+    Dmg Passive : 56500, 56600
+    Dmg Passive : 57750, 57850
+    Effect DariusWBuff 만료 : 57800, 57950
+    Cast AutoAttack : 57850, 58050
+    Dmg AutoAttack : 57850, 57950
+    Effect Noxian Might : 57850, 58000
+    Cast Q : 58100, 58300
+    Dmg Q : 58100, 58200
+    Cast AutoAttack : 58850, 59050
+    Dmg AutoAttack : 58850, 58950
+    Effect Noxian Might : 58850, 59000
+    Dmg Passive : 59000, 59100
+    Cast W : 59100, 59300
+    Effect Crippling Strike : 59100, 59250
+    section Dummy
+    Effect Hemorrhage : 250, 400
+    Effect Hemorrhage : 4550, 4700
+    Effect Hemorrhage : 5550, 5700
+    Effect Hemorrhage : 9849, 9999
+    Effect Hemorrhage : 10849, 10999
+    Effect Hemorrhage : 15199, 15349
+    Effect Hemorrhage : 16199, 16349
+    Effect Hemorrhage : 20500, 20650
+    Effect Hemorrhage : 21500, 21650
+    Effect Hemorrhage : 25750, 25900
+    Effect Hemorrhage : 26750, 26900
+    Effect Hemorrhage : 31050, 31200
+    Effect Hemorrhage : 32050, 32200
+    Effect Hemorrhage : 36400, 36550
+    Effect Hemorrhage : 37400, 37550
+    Effect Hemorrhage : 41700, 41850
+    Effect Hemorrhage : 42700, 42850
+    Effect Hemorrhage : 47000, 47150
+    Effect Hemorrhage : 48000, 48150
+    Effect Hemorrhage : 52550, 52700
+    Effect Hemorrhage : 53550, 53700
+    Effect Hemorrhage : 57850, 58000
+    Effect Hemorrhage : 58850, 59000
+```
+
+[2m2026-06-17T05:29:37.149404Z[0m [32m INFO[0m [2mlol_champion_simulation[0m[2m:[0m Simulation complete.

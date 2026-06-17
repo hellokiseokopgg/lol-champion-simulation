@@ -62,9 +62,9 @@ mod tests {
     fn test_cooldown_tracking() {
         let mut cd = Cooldown::new();
         let current_time = SimTime::new(10.0);
-        
+
         assert!(cd.is_ready(current_time));
-        
+
         cd.start_cooldown(current_time, 5.0);
         assert!(!cd.is_ready(current_time));
         assert!(cd.is_ready(SimTime::new(15.0)));

@@ -1,4 +1,4 @@
 pub mod executor;
 pub mod expression;
-pub mod parser;
 pub mod optimizer;
+pub mod parser;

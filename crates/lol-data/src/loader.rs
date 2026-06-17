@@ -91,7 +91,7 @@ mod tests {
                 "attack_speed": 0.0362
             }
         }"#;
-        
+
         let file_path = champs_dir.join("garen.json");
         let mut file = fs::File::create(file_path).unwrap();
         file.write_all(garen_json.as_bytes()).unwrap();
