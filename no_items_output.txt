@@ -1,0 +1,226 @@
+[2m2026-06-17T03:16:40.454574Z[0m [32m INFO[0m [2mlol_champion_simulation[0m[2m:[0m Initializing LoL Champion Simulation Engine...
+[2m2026-06-17T03:16:40.454643Z[0m [32m INFO[0m [2mlol_champion_simulation[0m[2m:[0m Matchup: Garen vs Dummy
+[2m2026-06-17T03:16:40.454683Z[0m [32m INFO[0m [2mlol_champion_simulation[0m[2m:[0m Iterations: 100
+[2m2026-06-17T03:16:40.454921Z[0m [32m INFO[0m [2mlol_data::loader[0m[2m:[0m Loaded champion data for Garen
+[2m2026-06-17T03:16:40.454968Z[0m [32m INFO[0m [2mlol_data::loader[0m[2m:[0m Loaded 8 runes
+[2m2026-06-17T03:16:40.455126Z[0m [32m INFO[0m [2mlol_data::loader[0m[2m:[0m Loaded 6 items
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+AS: 1.0128124943003058, CD: 0.9873495890182938
+
+Optimal APL:
+actions+=/AutoAttack
+items=
+runes=
+
+
+--- Combat Simulation Report ---
+Combat Duration: 59.24s
+--------------------------------
+Champion: "Garen"
+  Items: None
+  Total Damage: 4437.8
+  Damage Taken: 0.0
+  DPS: 74.9
+  Ability Breakdown:
+    AutoAttack: 4437.8 (100.0%)
+--------------------------------
+Champion: "Dummy"
+  Items: None
+  Total Damage: 0.0
+  Damage Taken: 4437.8
+  DPS: 0.0
+  Ability Breakdown:
+--------------------------------
+
+
+```mermaid
+gantt
+    title Combat Skill Timeline
+    dateFormat x
+    axisFormat %S.%L
+
+    section Garen
+    Cast AutoAttack : 0, 200
+    Dmg AutoAttack : 0, 100
+    Cast AutoAttack : 987, 1187
+    Dmg AutoAttack : 987, 1087
+    Cast AutoAttack : 1974, 2174
+    Dmg AutoAttack : 1974, 2074
+    Cast AutoAttack : 2962, 3162
+    Dmg AutoAttack : 2962, 3062
+    Cast AutoAttack : 3949, 4149
+    Dmg AutoAttack : 3949, 4049
+    Cast AutoAttack : 4936, 5136
+    Dmg AutoAttack : 4936, 5036
+    Cast AutoAttack : 5924, 6124
+    Dmg AutoAttack : 5924, 6024
+    Cast AutoAttack : 6911, 7111
+    Dmg AutoAttack : 6911, 7011
+    Cast AutoAttack : 7898, 8098
+    Dmg AutoAttack : 7898, 7998
+    Cast AutoAttack : 8886, 9086
+    Dmg AutoAttack : 8886, 8986
+    Cast AutoAttack : 9873, 10073
+    Dmg AutoAttack : 9873, 9973
+    Cast AutoAttack : 10860, 11060
+    Dmg AutoAttack : 10860, 10960
+    Cast AutoAttack : 11848, 12048
+    Dmg AutoAttack : 11848, 11948
+    Cast AutoAttack : 12835, 13035
+    Dmg AutoAttack : 12835, 12935
+    Cast AutoAttack : 13822, 14022
+    Dmg AutoAttack : 13822, 13922
+    Cast AutoAttack : 14810, 15010
+    Dmg AutoAttack : 14810, 14910
+    Cast AutoAttack : 15797, 15997
+    Dmg AutoAttack : 15797, 15897
+    Cast AutoAttack : 16784, 16984
+    Dmg AutoAttack : 16784, 16884
+    Cast AutoAttack : 17772, 17972
+    Dmg AutoAttack : 17772, 17872
+    Cast AutoAttack : 18759, 18959
+    Dmg AutoAttack : 18759, 18859
+    Cast AutoAttack : 19746, 19946
+    Dmg AutoAttack : 19746, 19846
+    Cast AutoAttack : 20734, 20934
+    Dmg AutoAttack : 20734, 20834
+    Cast AutoAttack : 21721, 21921
+    Dmg AutoAttack : 21721, 21821
+    Cast AutoAttack : 22709, 22909
+    Dmg AutoAttack : 22709, 22809
+    Cast AutoAttack : 23696, 23896
+    Dmg AutoAttack : 23696, 23796
+    Cast AutoAttack : 24683, 24883
+    Dmg AutoAttack : 24683, 24783
+    Cast AutoAttack : 25671, 25871
+    Dmg AutoAttack : 25671, 25771
+    Cast AutoAttack : 26658, 26858
+    Dmg AutoAttack : 26658, 26758
+    Cast AutoAttack : 27645, 27845
+    Dmg AutoAttack : 27645, 27745
+    Cast AutoAttack : 28633, 28833
+    Dmg AutoAttack : 28633, 28733
+    Cast AutoAttack : 29620, 29820
+    Dmg AutoAttack : 29620, 29720
+    Cast AutoAttack : 30607, 30807
+    Dmg AutoAttack : 30607, 30707
+    Cast AutoAttack : 31595, 31795
+    Dmg AutoAttack : 31595, 31695
+    Cast AutoAttack : 32582, 32782
+    Dmg AutoAttack : 32582, 32682
+    Cast AutoAttack : 33569, 33769
+    Dmg AutoAttack : 33569, 33669
+    Cast AutoAttack : 34557, 34757
+    Dmg AutoAttack : 34557, 34657
+    Cast AutoAttack : 35544, 35744
+    Dmg AutoAttack : 35544, 35644
+    Cast AutoAttack : 36531, 36731
+    Dmg AutoAttack : 36531, 36631
+    Cast AutoAttack : 37519, 37719
+    Dmg AutoAttack : 37519, 37619
+    Cast AutoAttack : 38506, 38706
+    Dmg AutoAttack : 38506, 38606
+    Cast AutoAttack : 39493, 39693
+    Dmg AutoAttack : 39493, 39593
+    Cast AutoAttack : 40481, 40681
+    Dmg AutoAttack : 40481, 40581
+    Cast AutoAttack : 41468, 41668
+    Dmg AutoAttack : 41468, 41568
+    Cast AutoAttack : 42456, 42656
+    Dmg AutoAttack : 42456, 42556
+    Cast AutoAttack : 43443, 43643
+    Dmg AutoAttack : 43443, 43543
+    Cast AutoAttack : 44430, 44630
+    Dmg AutoAttack : 44430, 44530
+    Cast AutoAttack : 45418, 45618
+    Dmg AutoAttack : 45418, 45518
+    Cast AutoAttack : 46405, 46605
+    Dmg AutoAttack : 46405, 46505
+    Cast AutoAttack : 47392, 47592
+    Dmg AutoAttack : 47392, 47492
+    Cast AutoAttack : 48380, 48580
+    Dmg AutoAttack : 48380, 48480
+    Cast AutoAttack : 49367, 49567
+    Dmg AutoAttack : 49367, 49467
+    Cast AutoAttack : 50354, 50554
+    Dmg AutoAttack : 50354, 50454
+    Cast AutoAttack : 51342, 51542
+    Dmg AutoAttack : 51342, 51442
+    Cast AutoAttack : 52329, 52529
+    Dmg AutoAttack : 52329, 52429
+    Cast AutoAttack : 53316, 53516
+    Dmg AutoAttack : 53316, 53416
+    Cast AutoAttack : 54304, 54504
+    Dmg AutoAttack : 54304, 54404
+    Cast AutoAttack : 55291, 55491
+    Dmg AutoAttack : 55291, 55391
+    Cast AutoAttack : 56278, 56478
+    Dmg AutoAttack : 56278, 56378
+    Cast AutoAttack : 57266, 57466
+    Dmg AutoAttack : 57266, 57366
+    Cast AutoAttack : 58253, 58453
+    Dmg AutoAttack : 58253, 58353
+    Cast AutoAttack : 59240, 59440
+    Dmg AutoAttack : 59240, 59340
+```
+
+[2m2026-06-17T03:16:40.455763Z[0m [32m INFO[0m [2mlol_champion_simulation[0m[2m:[0m Simulation complete.

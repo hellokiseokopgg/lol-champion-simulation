@@ -19,6 +19,11 @@ pub trait RuneEffect: Debug {
     /// Called when the champion deals damage to an enemy.
     /// Returns a list of rune events (like stack changes or healing).
     fn on_damage_dealt(&mut self, time: SimTime, amount: f64, is_ability: bool) -> Vec<RuneEvent>;
+
+    /// Called periodically to allow runes to emit expiration events.
+    fn on_tick(&mut self, time: SimTime) -> Vec<RuneEvent> {
+        Vec::new() // Default empty implementation
+    }
 }
 
 /// Manages the dynamic rune effects for a champion during simulation.
@@ -52,6 +57,15 @@ impl RuneManager {
         let mut events = Vec::new();
         for effect in &mut self.effects {
             events.extend(effect.on_damage_dealt(time, amount, is_ability));
+        }
+        events
+    }
+
+    /// Ticks the runes to check for expiration.
+    pub fn on_tick(&mut self, time: SimTime) -> Vec<RuneEvent> {
+        let mut events = Vec::new();
+        for effect in &mut self.effects {
+            events.extend(effect.on_tick(time));
         }
         events
     }
@@ -97,7 +111,10 @@ impl RuneEffect for Conqueror {
         let mut events = Vec::new();
         
         // Expiration check
-        if *time.0 - self.last_stack_time > 6.0 {
+        if *time.0 - self.last_stack_time > 5.0 {
+            if self.stacks > 0 {
+                events.push(RuneEvent::StacksChanged { name: "Conqueror".to_string(), stacks: 0 });
+            }
             self.stacks = 0;
         }
 
@@ -124,6 +141,18 @@ impl RuneEffect for Conqueror {
             });
         }
 
+        events
+    }
+
+    fn on_tick(&mut self, time: SimTime) -> Vec<RuneEvent> {
+        let mut events = Vec::new();
+        if self.stacks > 0 && *time.0 - self.last_stack_time > 5.0 {
+            self.stacks = 0;
+            events.push(RuneEvent::StacksChanged {
+                name: "Conqueror".to_string(),
+                stacks: 0,
+            });
+        }
         events
     }
 }
@@ -173,6 +202,9 @@ impl RuneEffect for LethalTempo {
         let mut events = Vec::new();
         // Expiration check
         if *time.0 - self.last_stack_time > 6.0 {
+            if self.stacks > 0 {
+                events.push(RuneEvent::StacksChanged { name: "Lethal Tempo".to_string(), stacks: 0 });
+            }
             self.stacks = 0;
         }
 
@@ -190,6 +222,18 @@ impl RuneEffect for LethalTempo {
             }
         }
 
+        events
+    }
+
+    fn on_tick(&mut self, time: SimTime) -> Vec<RuneEvent> {
+        let mut events = Vec::new();
+        if self.stacks > 0 && *time.0 - self.last_stack_time > 6.0 {
+            self.stacks = 0;
+            events.push(RuneEvent::StacksChanged {
+                name: "Lethal Tempo".to_string(),
+                stacks: 0,
+            });
+        }
         events
     }
 }

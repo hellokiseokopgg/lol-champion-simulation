@@ -1,0 +1,233 @@
+[2m2026-06-17T03:13:54.327282Z[0m [32m INFO[0m [2mlol_champion_simulation[0m[2m:[0m Initializing LoL Champion Simulation Engine...
+[2m2026-06-17T03:13:54.327541Z[0m [32m INFO[0m [2mlol_champion_simulation[0m[2m:[0m Matchup: Garen vs Dummy
+[2m2026-06-17T03:13:54.327660Z[0m [32m INFO[0m [2mlol_champion_simulation[0m[2m:[0m Iterations: 100
+[2m2026-06-17T03:13:54.328258Z[0m [32m INFO[0m [2mlol_data::loader[0m[2m:[0m Loaded champion data for Garen
+[2m2026-06-17T03:13:54.328449Z[0m [32m INFO[0m [2mlol_data::loader[0m[2m:[0m Loaded 8 runes
+[2m2026-06-17T03:13:54.328815Z[0m [32m INFO[0m [2mlol_data::loader[0m[2m:[0m Loaded 6 items
+
+Optimal APL:
+actions+=/AutoAttack
+
+
+--- Combat Simulation Report ---
+Combat Duration: 59.80s
+--------------------------------
+Champion: "Garen"
+  Items: Stridebreaker, Mortal Reminder, Phantom Dancer
+  Total Damage: 12883.2
+  Damage Taken: 0.0
+  DPS: 215.4
+  Ability Breakdown:
+    AutoAttack: 12883.2 (100.0%)
+--------------------------------
+Champion: "Dummy"
+  Items: None
+  Total Damage: 0.0
+  Damage Taken: 12883.2
+  DPS: 0.0
+  Ability Breakdown:
+--------------------------------
+
+
+```mermaid
+gantt
+    title Combat Skill Timeline
+    dateFormat x
+    axisFormat %S.%L
+
+    section Garen
+    Cast AutoAttack : 0, 200
+    Dmg AutoAttack : 0, 100
+    Effect 정복자 (2스택) : 0, 150
+    Cast AutoAttack : 649, 849
+    Dmg AutoAttack : 649, 749
+    Effect 정복자 (4스택) : 649, 799
+    Cast AutoAttack : 1300, 1500
+    Dmg AutoAttack : 1300, 1400
+    Effect 정복자 (6스택) : 1300, 1450
+    Cast AutoAttack : 1950, 2150
+    Dmg AutoAttack : 1950, 2050
+    Effect 정복자 (8스택) : 1950, 2100
+    Cast AutoAttack : 2600, 2800
+    Dmg AutoAttack : 2600, 2700
+    Effect 정복자 (10스택) : 2600, 2750
+    Cast AutoAttack : 3250, 3450
+    Dmg AutoAttack : 3250, 3350
+    Effect 정복자 (12스택) : 3250, 3400
+    Cast AutoAttack : 3900, 4100
+    Dmg AutoAttack : 3900, 4000
+    Cast AutoAttack : 4550, 4750
+    Dmg AutoAttack : 4550, 4650
+    Cast AutoAttack : 5199, 5399
+    Dmg AutoAttack : 5199, 5299
+    Cast AutoAttack : 5849, 6049
+    Dmg AutoAttack : 5849, 5949
+    Cast AutoAttack : 6499, 6699
+    Dmg AutoAttack : 6499, 6599
+    Cast AutoAttack : 7149, 7349
+    Dmg AutoAttack : 7149, 7249
+    Cast AutoAttack : 7799, 7999
+    Dmg AutoAttack : 7799, 7899
+    Cast AutoAttack : 8449, 8649
+    Dmg AutoAttack : 8449, 8549
+    Cast AutoAttack : 9099, 9299
+    Dmg AutoAttack : 9099, 9199
+    Cast AutoAttack : 9749, 9949
+    Dmg AutoAttack : 9749, 9849
+    Cast AutoAttack : 10399, 10599
+    Dmg AutoAttack : 10399, 10499
+    Cast AutoAttack : 11049, 11249
+    Dmg AutoAttack : 11049, 11149
+    Cast AutoAttack : 11699, 11899
+    Dmg AutoAttack : 11699, 11799
+    Cast AutoAttack : 12349, 12549
+    Dmg AutoAttack : 12349, 12449
+    Cast AutoAttack : 12999, 13199
+    Dmg AutoAttack : 12999, 13099
+    Cast AutoAttack : 13649, 13849
+    Dmg AutoAttack : 13649, 13749
+    Cast AutoAttack : 14299, 14499
+    Dmg AutoAttack : 14299, 14399
+    Cast AutoAttack : 14949, 15149
+    Dmg AutoAttack : 14949, 15049
+    Cast AutoAttack : 15599, 15799
+    Dmg AutoAttack : 15599, 15699
+    Cast AutoAttack : 16249, 16449
+    Dmg AutoAttack : 16249, 16349
+    Cast AutoAttack : 16899, 17099
+    Dmg AutoAttack : 16899, 16999
+    Cast AutoAttack : 17549, 17749
+    Dmg AutoAttack : 17549, 17649
+    Cast AutoAttack : 18199, 18399
+    Dmg AutoAttack : 18199, 18299
+    Cast AutoAttack : 18850, 19050
+    Dmg AutoAttack : 18850, 18950
+    Cast AutoAttack : 19500, 19700
+    Dmg AutoAttack : 19500, 19600
+    Cast AutoAttack : 20150, 20350
+    Dmg AutoAttack : 20150, 20250
+    Cast AutoAttack : 20800, 21000
+    Dmg AutoAttack : 20800, 20900
+    Cast AutoAttack : 21450, 21650
+    Dmg AutoAttack : 21450, 21550
+    Cast AutoAttack : 22100, 22300
+    Dmg AutoAttack : 22100, 22200
+    Cast AutoAttack : 22750, 22950
+    Dmg AutoAttack : 22750, 22850
+    Cast AutoAttack : 23400, 23600
+    Dmg AutoAttack : 23400, 23500
+    Cast AutoAttack : 24050, 24250
+    Dmg AutoAttack : 24050, 24150
+    Cast AutoAttack : 24700, 24900
+    Dmg AutoAttack : 24700, 24800
+    Cast AutoAttack : 25350, 25550
+    Dmg AutoAttack : 25350, 25450
+    Cast AutoAttack : 26000, 26200
+    Dmg AutoAttack : 26000, 26100
+    Cast AutoAttack : 26650, 26850
+    Dmg AutoAttack : 26650, 26750
+    Cast AutoAttack : 27300, 27500
+    Dmg AutoAttack : 27300, 27400
+    Cast AutoAttack : 27950, 28150
+    Dmg AutoAttack : 27950, 28050
+    Cast AutoAttack : 28600, 28800
+    Dmg AutoAttack : 28600, 28700
+    Cast AutoAttack : 29250, 29450
+    Dmg AutoAttack : 29250, 29350
+    Cast AutoAttack : 29900, 30100
+    Dmg AutoAttack : 29900, 30000
+    Cast AutoAttack : 30550, 30750
+    Dmg AutoAttack : 30550, 30650
+    Cast AutoAttack : 31200, 31400
+    Dmg AutoAttack : 31200, 31300
+    Cast AutoAttack : 31850, 32050
+    Dmg AutoAttack : 31850, 31950
+    Cast AutoAttack : 32500, 32700
+    Dmg AutoAttack : 32500, 32600
+    Cast AutoAttack : 33150, 33350
+    Dmg AutoAttack : 33150, 33250
+    Cast AutoAttack : 33800, 34000
+    Dmg AutoAttack : 33800, 33900
+    Cast AutoAttack : 34450, 34650
+    Dmg AutoAttack : 34450, 34550
+    Cast AutoAttack : 35100, 35300
+    Dmg AutoAttack : 35100, 35200
+    Cast AutoAttack : 35750, 35950
+    Dmg AutoAttack : 35750, 35850
+    Cast AutoAttack : 36400, 36600
+    Dmg AutoAttack : 36400, 36500
+    Cast AutoAttack : 37050, 37250
+    Dmg AutoAttack : 37050, 37150
+    Cast AutoAttack : 37700, 37900
+    Dmg AutoAttack : 37700, 37800
+    Cast AutoAttack : 38350, 38550
+    Dmg AutoAttack : 38350, 38450
+    Cast AutoAttack : 39000, 39200
+    Dmg AutoAttack : 39000, 39100
+    Cast AutoAttack : 39650, 39850
+    Dmg AutoAttack : 39650, 39750
+    Cast AutoAttack : 40300, 40500
+    Dmg AutoAttack : 40300, 40400
+    Cast AutoAttack : 40950, 41150
+    Dmg AutoAttack : 40950, 41050
+    Cast AutoAttack : 41600, 41800
+    Dmg AutoAttack : 41600, 41700
+    Cast AutoAttack : 42250, 42450
+    Dmg AutoAttack : 42250, 42350
+    Cast AutoAttack : 42900, 43100
+    Dmg AutoAttack : 42900, 43000
+    Cast AutoAttack : 43550, 43750
+    Dmg AutoAttack : 43550, 43650
+    Cast AutoAttack : 44200, 44400
+    Dmg AutoAttack : 44200, 44300
+    Cast AutoAttack : 44850, 45050
+    Dmg AutoAttack : 44850, 44950
+    Cast AutoAttack : 45500, 45700
+    Dmg AutoAttack : 45500, 45600
+    Cast AutoAttack : 46150, 46350
+    Dmg AutoAttack : 46150, 46250
+    Cast AutoAttack : 46800, 47000
+    Dmg AutoAttack : 46800, 46900
+    Cast AutoAttack : 47450, 47650
+    Dmg AutoAttack : 47450, 47550
+    Cast AutoAttack : 48100, 48300
+    Dmg AutoAttack : 48100, 48200
+    Cast AutoAttack : 48750, 48950
+    Dmg AutoAttack : 48750, 48850
+    Cast AutoAttack : 49400, 49600
+    Dmg AutoAttack : 49400, 49500
+    Cast AutoAttack : 50050, 50250
+    Dmg AutoAttack : 50050, 50150
+    Cast AutoAttack : 50700, 50900
+    Dmg AutoAttack : 50700, 50800
+    Cast AutoAttack : 51350, 51550
+    Dmg AutoAttack : 51350, 51450
+    Cast AutoAttack : 52000, 52200
+    Dmg AutoAttack : 52000, 52100
+    Cast AutoAttack : 52650, 52850
+    Dmg AutoAttack : 52650, 52750
+    Cast AutoAttack : 53300, 53500
+    Dmg AutoAttack : 53300, 53400
+    Cast AutoAttack : 53950, 54150
+    Dmg AutoAttack : 53950, 54050
+    Cast AutoAttack : 54600, 54800
+    Dmg AutoAttack : 54600, 54700
+    Cast AutoAttack : 55250, 55450
+    Dmg AutoAttack : 55250, 55350
+    Cast AutoAttack : 55900, 56100
+    Dmg AutoAttack : 55900, 56000
+    Cast AutoAttack : 56550, 56750
+    Dmg AutoAttack : 56550, 56650
+    Cast AutoAttack : 57200, 57400
+    Dmg AutoAttack : 57200, 57300
+    Cast AutoAttack : 57850, 58050
+    Dmg AutoAttack : 57850, 57950
+    Cast AutoAttack : 58500, 58700
+    Dmg AutoAttack : 58500, 58600
+    Cast AutoAttack : 59150, 59350
+    Dmg AutoAttack : 59150, 59250
+    Cast AutoAttack : 59800, 60000
+    Dmg AutoAttack : 59800, 59900
+```
+
+[2m2026-06-17T03:13:54.331508Z[0m [32m INFO[0m [2mlol_champion_simulation[0m[2m:[0m Simulation complete.

@@ -98,16 +98,27 @@ impl SimContext {
         for event in rune_events {
             match event {
                 crate::rune_manager::RuneEvent::StacksChanged { name, stacks } => {
-                    let buff_name = if name == "Conqueror" {
-                        format!("정복자 ({}스택)", stacks)
-                    } else if name == "Lethal Tempo" {
-                        format!("치명적 속도 ({}스택)", stacks)
-                    } else {
-                        format!("{} ({}스택)", name, stacks)
-                    };
-                    
-                    if let Some(recorder) = &self.recorder {
-                        recorder.borrow_mut().record_buff_apply(self.current_time, actor.clone(), buff_name);
+                    if stacks > 0 {
+                        let buff_name = if name == "Conqueror" {
+                            format!("정복자 ({}스택)", stacks)
+                        } else if name == "Lethal Tempo" {
+                            format!("치명적 속도 ({}스택)", stacks)
+                        } else {
+                            format!("{} ({}스택)", name, stacks)
+                        };
+                        
+                        if let Some(recorder) = &self.recorder {
+                            recorder.borrow_mut().record_buff_apply(self.current_time, actor.clone(), buff_name);
+                        }
+
+                        // Schedule an expiration check event
+                        let duration = if name == "Conqueror" { 5.0 } else if name == "Lethal Tempo" { 6.0 } else { 0.0 };
+                        if duration > 0.0 {
+                            self.new_events.push((
+                                duration + 0.001, // Slightly after expiration
+                                Box::new(RuneExpireCheckEvent { target: actor.clone() }),
+                            ));
+                        }
                     }
                 }
                 crate::rune_manager::RuneEvent::Healed { amount } => {
@@ -144,6 +155,58 @@ impl SimEvent for DeathEvent {
 
     fn name(&self) -> &str {
         "DeathEvent"
+    }
+}
+
+/// Event representing a periodic check to see if a rune effect has expired.
+pub struct RuneExpireCheckEvent {
+    pub target: crate::types::ChampionId,
+}
+
+impl SimEvent for RuneExpireCheckEvent {
+    fn execute(&self, ctx: &mut SimContext, _event_manager: &mut EventManager) {
+        let events = if let Some(champ_ref) = ctx.champions.get(&self.target) {
+            let mut champ = champ_ref.borrow_mut();
+            champ.state_mut().rune_manager.on_tick(ctx.current_time)
+        } else {
+            return;
+        };
+
+        for event in events {
+            match event {
+                crate::rune_manager::RuneEvent::StacksChanged { name, stacks } => {
+                    if let Some(recorder) = &ctx.recorder {
+                        if stacks == 0 {
+                            // Determine which stack counts were previously active to remove them visually
+                            for old_stacks in 1..=12 {
+                                let old_buff_name = if name == "Conqueror" {
+                                    format!("정복자 ({}스택)", old_stacks)
+                                } else if name == "Lethal Tempo" {
+                                    format!("치명적 속도 ({}스택)", old_stacks)
+                                } else {
+                                    format!("{} ({}스택)", name, old_stacks)
+                                };
+                                recorder.borrow_mut().record_buff_expire(ctx.current_time, self.target.clone(), old_buff_name);
+                            }
+                        } else {
+                            let buff_name = if name == "Conqueror" {
+                                format!("정복자 ({}스택)", stacks)
+                            } else if name == "Lethal Tempo" {
+                                format!("치명적 속도 ({}스택)", stacks)
+                            } else {
+                                format!("{} ({}스택)", name, stacks)
+                            };
+                            recorder.borrow_mut().record_buff_apply(ctx.current_time, self.target.clone(), buff_name);
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+
+    fn name(&self) -> &str {
+        "RuneExpireCheckEvent"
     }
 }
 

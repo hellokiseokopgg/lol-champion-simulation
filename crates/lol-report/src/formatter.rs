@@ -65,6 +65,9 @@ impl Formatter {
                 CombatEvent::BuffApply { target, .. } => {
                     actor_events.entry(target.clone()).or_insert_with(Vec::new).push(event.clone());
                 }
+                CombatEvent::BuffExpire { target, .. } => {
+                    actor_events.entry(target.clone()).or_insert_with(Vec::new).push(event.clone());
+                }
                 _ => {}
             }
         }
@@ -100,6 +103,11 @@ impl Formatter {
                             last_buff_times.insert(localized.clone(), time.as_f64());
                             out.push_str(&format!("    Effect {} : {}, {}\n", localized, ms, ms + 150));
                         }
+                    }
+                    CombatEvent::BuffExpire { time, buff_name, .. } => {
+                        let ms = (time.as_f64() * 1000.0) as u64;
+                        let localized = translator.translate_buff(&buff_name);
+                        out.push_str(&format!("    Effect {} 만료 : {}, {}\n", localized, ms, ms + 150));
                     }
                     _ => {}
                 }
