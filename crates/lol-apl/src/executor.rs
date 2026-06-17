@@ -20,6 +20,11 @@ impl AplExecutor {
                 continue;
             }
 
+            // Check champion specific cast restrictions (e.g. Garen cannot AutoAttack during E)
+            if !champion.can_cast(action.slot, ctx.current_time) {
+                continue;
+            }
+
             // Check specific conditional expressions if they exist
             if let Some(cond) = &action.condition {
                 if !cond.evaluate(ctx, champion, target) {

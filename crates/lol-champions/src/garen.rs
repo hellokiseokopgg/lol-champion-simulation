@@ -118,6 +118,16 @@ impl ChampionInstance for GarenInstance {
         let is_dead = self.state.health.reduce(amount);
         lol_core::types::TakeDamageResult { actual_damage: amount, is_dead }
     }
+
+    fn can_cast(&self, slot: lol_core::types::AbilitySlot, time: lol_core::types::SimTime) -> bool {
+        if slot == lol_core::types::AbilitySlot::AutoAttack {
+            // Garen cannot auto attack while spinning (E)
+            if self.state.buffs.has_buff_by_name("Judgment", time) {
+                return false;
+            }
+        }
+        true
+    }
 }
 
 // -----------------------------------------------------------------------------

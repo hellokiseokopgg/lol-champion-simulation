@@ -112,6 +112,12 @@ pub trait ChampionInstance {
         let state = self.state_mut();
         state.health.add(amount);
     }
+
+    /// Checks if the champion can currently cast the specified ability.
+    /// Used for champion-specific restrictions (e.g. Garen cannot AutoAttack during E).
+    fn can_cast(&self, _slot: crate::types::AbilitySlot, _time: crate::types::SimTime) -> bool {
+        true
+    }
 }
 
 /// A factory trait for generating instances of a specific champion.
