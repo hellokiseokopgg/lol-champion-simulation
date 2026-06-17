@@ -49,6 +49,8 @@ pub enum CombatEvent {
 pub struct DataCollector {
     pub events: Vec<CombatEvent>,
     pub champion_items: std::collections::HashMap<ChampionId, Vec<(String, String)>>,
+    // (id, name, tree)
+    pub champion_runes: std::collections::HashMap<ChampionId, Vec<(String, String, String)>>,
 }
 
 impl DataCollector {
@@ -56,6 +58,7 @@ impl DataCollector {
         Self {
             events: Vec::new(),
             champion_items: std::collections::HashMap::new(),
+            champion_runes: std::collections::HashMap::new(),
         }
     }
 
@@ -76,6 +79,10 @@ impl DataCollector {
             amount,
             is_crit,
         });
+    }
+
+    pub fn record_rune_equipped(&mut self, champion: ChampionId, rune_id: String, rune_name: String, rune_tree: String) {
+        self.champion_runes.entry(champion).or_insert_with(Vec::new).push((rune_id, rune_name, rune_tree));
     }
 
     pub fn record_cast(&mut self, time: SimTime, source: ChampionId, ability: AbilitySlot) {

@@ -7,6 +7,7 @@ pub mod event;
 pub mod item;
 pub mod resource;
 pub mod rune;
+pub mod rune_manager;
 pub mod sim;
 pub mod stats;
 pub mod types;

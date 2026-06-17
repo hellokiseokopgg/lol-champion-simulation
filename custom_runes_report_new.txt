@@ -1,0 +1,374 @@
+[2m2026-06-17T03:05:07.650899Z[0m [32m INFO[0m [2mlol_champion_simulation[0m[2m:[0m Initializing LoL Champion Simulation Engine...
+[2m2026-06-17T03:05:07.650980Z[0m [32m INFO[0m [2mlol_champion_simulation[0m[2m:[0m Matchup: Garen vs Dummy
+[2m2026-06-17T03:05:07.651044Z[0m [32m INFO[0m [2mlol_champion_simulation[0m[2m:[0m Iterations: 100
+[2m2026-06-17T03:05:07.651448Z[0m [32m INFO[0m [2mlol_data::loader[0m[2m:[0m Loaded champion data for Garen
+[2m2026-06-17T03:05:07.651540Z[0m [32m INFO[0m [2mlol_data::loader[0m[2m:[0m Loaded 8 runes
+[2m2026-06-17T03:05:07.651778Z[0m [32m INFO[0m [2mlol_data::loader[0m[2m:[0m Loaded 6 items
+
+Optimal APL:
+items=6631,3033,3046
+runes=8010,9111,9104,8299,8473,8451
+actions+=/R
+actions+=/AutoAttack
+actions+=/Q
+actions+=/Item:6631
+actions+=/E
+
+
+--- Combat Simulation Report ---
+Combat Duration: 59.96s
+--------------------------------
+Champion: "Garen"
+  Items: Stridebreaker, Mortal Reminder, Phantom Dancer
+  Total Damage: 23382.1
+  Damage Taken: 0.0
+  DPS: 389.9
+  Ability Breakdown:
+    AutoAttack: 11310.3 (48.4%)
+    E: 8959.3 (38.3%)
+    Q: 2439.5 (10.4%)
+    Item(6631): 523.0 (2.2%)
+    R: 150.0 (0.6%)
+--------------------------------
+Champion: "Dummy"
+  Items: None
+  Total Damage: 0.0
+  Damage Taken: 23382.1
+  DPS: 0.0
+  Ability Breakdown:
+--------------------------------
+
+
+```mermaid
+gantt
+    title Combat Skill Timeline
+    dateFormat x
+    axisFormat %S.%L
+
+    section Garen
+    Cast R : 0, 200
+    Dmg R : 500, 600
+    Effect 정복자 (2스택) : 500, 650
+    Cast AutoAttack : 500, 700
+    Dmg AutoAttack : 500, 600
+    Effect 정복자 (4스택) : 500, 650
+    Cast Q : 750, 950
+    Effect 결정적 일격 : 750, 900
+    Cast AutoAttack : 1000, 1200
+    Dmg Q : 1000, 1100
+    Effect 정복자 (6스택) : 1000, 1150
+    Cast Item(6631) : 1250, 1450
+    Dmg Item(6631) : 1250, 1350
+    Effect 정복자 (8스택) : 1250, 1400
+    Effect 비장한 걸음 : 1250, 1400
+    Cast AutoAttack : 1500, 1700
+    Dmg AutoAttack : 1500, 1600
+    Effect 정복자 (10스택) : 1500, 1650
+    Cast E : 1750, 1950
+    Effect 심판 : 1750, 1900
+    Dmg E : 1750, 1850
+    Effect 정복자 (12스택) : 1750, 1900
+    Dmg E : 1937, 2037
+    Dmg E : 2125, 2225
+    Dmg E : 2312, 2412
+    Dmg E : 2500, 2600
+    Dmg E : 2687, 2787
+    Dmg E : 2875, 2975
+    Dmg E : 3062, 3162
+    Dmg E : 3250, 3350
+    Dmg E : 3437, 3537
+    Dmg E : 3625, 3725
+    Dmg E : 3812, 3912
+    Dmg E : 4000, 4100
+    Dmg E : 4187, 4287
+    Dmg E : 4375, 4475
+    Dmg E : 4562, 4662
+    Cast AutoAttack : 4799, 4999
+    Dmg AutoAttack : 4799, 4899
+    Cast AutoAttack : 5349, 5549
+    Dmg AutoAttack : 5349, 5449
+    Cast AutoAttack : 5899, 6099
+    Dmg AutoAttack : 5899, 5999
+    Cast AutoAttack : 6449, 6649
+    Dmg AutoAttack : 6449, 6549
+    Cast AutoAttack : 6999, 7199
+    Dmg AutoAttack : 6999, 7099
+    Cast AutoAttack : 7549, 7749
+    Dmg AutoAttack : 7549, 7649
+    Cast AutoAttack : 8099, 8299
+    Dmg AutoAttack : 8099, 8199
+    Cast AutoAttack : 8649, 8849
+    Dmg AutoAttack : 8649, 8749
+    Cast Q : 8899, 9099
+    Effect 결정적 일격 : 8899, 9049
+    Cast AutoAttack : 9149, 9349
+    Dmg Q : 9149, 9249
+    Cast AutoAttack : 9699, 9899
+    Dmg AutoAttack : 9699, 9799
+    Cast AutoAttack : 10249, 10449
+    Dmg AutoAttack : 10249, 10349
+    Cast AutoAttack : 10799, 10999
+    Dmg AutoAttack : 10799, 10899
+    Cast E : 11049, 11249
+    Effect 심판 : 11049, 11199
+    Dmg E : 11049, 11149
+    Dmg E : 11237, 11337
+    Dmg E : 11424, 11524
+    Dmg E : 11612, 11712
+    Dmg E : 11799, 11899
+    Dmg E : 11987, 12087
+    Dmg E : 12174, 12274
+    Dmg E : 12362, 12462
+    Dmg E : 12549, 12649
+    Dmg E : 12737, 12837
+    Dmg E : 12924, 13024
+    Dmg E : 13112, 13212
+    Dmg E : 13299, 13399
+    Dmg E : 13487, 13587
+    Dmg E : 13674, 13774
+    Dmg E : 13862, 13962
+    Cast AutoAttack : 14099, 14299
+    Dmg AutoAttack : 14099, 14199
+    Cast AutoAttack : 14649, 14849
+    Dmg AutoAttack : 14649, 14749
+    Cast AutoAttack : 15199, 15399
+    Dmg AutoAttack : 15199, 15299
+    Cast AutoAttack : 15749, 15949
+    Dmg AutoAttack : 15749, 15849
+    Cast AutoAttack : 16299, 16499
+    Dmg AutoAttack : 16299, 16399
+    Cast Item(6631) : 16549, 16749
+    Dmg Item(6631) : 16549, 16649
+    Effect 비장한 걸음 : 16549, 16699
+    Cast AutoAttack : 16799, 16999
+    Dmg AutoAttack : 16799, 16899
+    Cast Q : 17049, 17249
+    Effect 결정적 일격 : 17049, 17199
+    Cast AutoAttack : 17299, 17499
+    Dmg Q : 17299, 17399
+    Cast AutoAttack : 17849, 18049
+    Dmg AutoAttack : 17849, 17949
+    Cast AutoAttack : 18399, 18599
+    Dmg AutoAttack : 18399, 18499
+    Cast AutoAttack : 18949, 19149
+    Dmg AutoAttack : 18949, 19049
+    Cast AutoAttack : 19499, 19699
+    Dmg AutoAttack : 19499, 19599
+    Cast AutoAttack : 20050, 20250
+    Dmg AutoAttack : 20050, 20150
+    Cast E : 20300, 20500
+    Effect 심판 : 20300, 20450
+    Dmg E : 20300, 20400
+    Dmg E : 20487, 20587
+    Dmg E : 20675, 20775
+    Dmg E : 20862, 20962
+    Dmg E : 21050, 21150
+    Dmg E : 21237, 21337
+    Dmg E : 21425, 21525
+    Dmg E : 21612, 21712
+    Dmg E : 21800, 21900
+    Dmg E : 21987, 22087
+    Dmg E : 22175, 22275
+    Dmg E : 22362, 22462
+    Dmg E : 22550, 22650
+    Dmg E : 22737, 22837
+    Dmg E : 22925, 23025
+    Dmg E : 23112, 23212
+    Cast AutoAttack : 23350, 23550
+    Dmg AutoAttack : 23350, 23450
+    Cast AutoAttack : 23900, 24100
+    Dmg AutoAttack : 23900, 24000
+    Cast AutoAttack : 24450, 24650
+    Dmg AutoAttack : 24450, 24550
+    Cast AutoAttack : 25000, 25200
+    Dmg AutoAttack : 25000, 25100
+    Cast Q : 25250, 25450
+    Effect 결정적 일격 : 25250, 25400
+    Cast AutoAttack : 25500, 25700
+    Dmg Q : 25500, 25600
+    Cast AutoAttack : 26050, 26250
+    Dmg AutoAttack : 26050, 26150
+    Cast AutoAttack : 26600, 26800
+    Dmg AutoAttack : 26600, 26700
+    Cast AutoAttack : 27150, 27350
+    Dmg AutoAttack : 27150, 27250
+    Cast AutoAttack : 27700, 27900
+    Dmg AutoAttack : 27700, 27800
+    Cast AutoAttack : 28250, 28450
+    Dmg AutoAttack : 28250, 28350
+    Cast AutoAttack : 28800, 29000
+    Dmg AutoAttack : 28800, 28900
+    Cast AutoAttack : 29350, 29550
+    Dmg AutoAttack : 29350, 29450
+    Cast E : 29600, 29800
+    Effect 심판 : 29600, 29750
+    Dmg E : 29600, 29700
+    Dmg E : 29787, 29887
+    Dmg E : 29975, 30075
+    Dmg E : 30162, 30262
+    Dmg E : 30350, 30450
+    Dmg E : 30537, 30637
+    Dmg E : 30725, 30825
+    Dmg E : 30912, 31012
+    Dmg E : 31100, 31200
+    Dmg E : 31287, 31387
+    Dmg E : 31475, 31575
+    Cast Item(6631) : 31550, 31750
+    Dmg Item(6631) : 31550, 31650
+    Effect 비장한 걸음 : 31550, 31700
+    Dmg E : 31662, 31762
+    Dmg E : 31850, 31950
+    Dmg E : 32037, 32137
+    Dmg E : 32225, 32325
+    Dmg E : 32412, 32512
+    Cast AutoAttack : 32600, 32800
+    Dmg AutoAttack : 32600, 32700
+    Cast AutoAttack : 33150, 33350
+    Dmg AutoAttack : 33150, 33250
+    Cast Q : 33400, 33600
+    Effect 결정적 일격 : 33400, 33550
+    Cast AutoAttack : 33650, 33850
+    Dmg Q : 33650, 33750
+    Cast AutoAttack : 34200, 34400
+    Dmg AutoAttack : 34200, 34300
+    Cast AutoAttack : 34750, 34950
+    Dmg AutoAttack : 34750, 34850
+    Cast AutoAttack : 35300, 35500
+    Dmg AutoAttack : 35300, 35400
+    Cast AutoAttack : 35850, 36050
+    Dmg AutoAttack : 35850, 35950
+    Cast AutoAttack : 36400, 36600
+    Dmg AutoAttack : 36400, 36500
+    Cast AutoAttack : 36950, 37150
+    Dmg AutoAttack : 36950, 37050
+    Cast AutoAttack : 37500, 37700
+    Dmg AutoAttack : 37500, 37600
+    Cast AutoAttack : 38050, 38250
+    Dmg AutoAttack : 38050, 38150
+    Cast AutoAttack : 38600, 38800
+    Dmg AutoAttack : 38600, 38700
+    Cast E : 38850, 39050
+    Effect 심판 : 38850, 39000
+    Dmg E : 38850, 38950
+    Dmg E : 39037, 39137
+    Dmg E : 39225, 39325
+    Dmg E : 39412, 39512
+    Dmg E : 39600, 39700
+    Dmg E : 39787, 39887
+    Dmg E : 39975, 40075
+    Dmg E : 40162, 40262
+    Dmg E : 40350, 40450
+    Dmg E : 40537, 40637
+    Dmg E : 40725, 40825
+    Dmg E : 40912, 41012
+    Dmg E : 41100, 41200
+    Dmg E : 41287, 41387
+    Cast Q : 41400, 41600
+    Effect 결정적 일격 : 41400, 41550
+    Dmg E : 41475, 41575
+    Dmg E : 41662, 41762
+    Cast AutoAttack : 41850, 42050
+    Dmg Q : 41850, 41950
+    Cast AutoAttack : 42400, 42600
+    Dmg AutoAttack : 42400, 42500
+    Cast AutoAttack : 42950, 43150
+    Dmg AutoAttack : 42950, 43050
+    Cast AutoAttack : 43500, 43700
+    Dmg AutoAttack : 43500, 43600
+    Cast AutoAttack : 44050, 44250
+    Dmg AutoAttack : 44050, 44150
+    Cast AutoAttack : 44600, 44800
+    Dmg AutoAttack : 44600, 44700
+    Cast AutoAttack : 45150, 45350
+    Dmg AutoAttack : 45150, 45250
+    Cast AutoAttack : 45700, 45900
+    Dmg AutoAttack : 45700, 45800
+    Cast AutoAttack : 46250, 46450
+    Dmg AutoAttack : 46250, 46350
+    Cast Item(6631) : 46600, 46800
+    Dmg Item(6631) : 46600, 46700
+    Effect 비장한 걸음 : 46600, 46750
+    Cast AutoAttack : 46850, 47050
+    Dmg AutoAttack : 46850, 46950
+    Cast AutoAttack : 47400, 47600
+    Dmg AutoAttack : 47400, 47500
+    Cast E : 47850, 48050
+    Effect 심판 : 47850, 48000
+    Dmg E : 47850, 47950
+    Dmg E : 48037, 48137
+    Dmg E : 48225, 48325
+    Dmg E : 48412, 48512
+    Dmg E : 48600, 48700
+    Dmg E : 48787, 48887
+    Dmg E : 48975, 49075
+    Dmg E : 49162, 49262
+    Dmg E : 49350, 49450
+    Cast Q : 49400, 49600
+    Effect 결정적 일격 : 49400, 49550
+    Dmg E : 49537, 49637
+    Dmg E : 49725, 49825
+    Dmg E : 49912, 50012
+    Dmg E : 50100, 50200
+    Dmg E : 50287, 50387
+    Dmg E : 50475, 50575
+    Dmg E : 50662, 50762
+    Cast AutoAttack : 50850, 51050
+    Dmg Q : 50850, 50950
+    Cast AutoAttack : 51400, 51600
+    Dmg AutoAttack : 51400, 51500
+    Cast AutoAttack : 51950, 52150
+    Dmg AutoAttack : 51950, 52050
+    Cast AutoAttack : 52500, 52700
+    Dmg AutoAttack : 52500, 52600
+    Cast AutoAttack : 53050, 53250
+    Dmg AutoAttack : 53050, 53150
+    Cast AutoAttack : 53600, 53800
+    Dmg AutoAttack : 53600, 53700
+    Cast AutoAttack : 54150, 54350
+    Dmg AutoAttack : 54150, 54250
+    Cast AutoAttack : 54700, 54900
+    Dmg AutoAttack : 54700, 54800
+    Cast AutoAttack : 55250, 55450
+    Dmg AutoAttack : 55250, 55350
+    Cast AutoAttack : 55800, 56000
+    Dmg AutoAttack : 55800, 55900
+    Cast AutoAttack : 56350, 56550
+    Dmg AutoAttack : 56350, 56450
+    Cast AutoAttack : 56900, 57100
+    Dmg AutoAttack : 56900, 57000
+    Cast E : 57150, 57350
+    Effect 심판 : 57150, 57300
+    Dmg E : 57150, 57250
+    Dmg E : 57337, 57437
+    Cast Q : 57400, 57600
+    Effect 결정적 일격 : 57400, 57550
+    Dmg E : 57525, 57625
+    Dmg E : 57712, 57812
+    Dmg E : 57900, 58000
+    Dmg E : 58087, 58187
+    Dmg E : 58275, 58375
+    Dmg E : 58462, 58562
+    Dmg E : 58650, 58750
+    Dmg E : 58837, 58937
+    Dmg E : 59025, 59125
+    Dmg E : 59212, 59312
+    Dmg E : 59400, 59500
+    Dmg E : 59587, 59687
+    Dmg E : 59775, 59875
+    Dmg E : 59962, 60062
+    section Dummy
+    Effect 제압의 가르기 : 1250, 1400
+    Effect 심판의 방어력 감소 : 2687, 2837
+    Effect 심판의 방어력 감소 : 11987, 12137
+    Effect 제압의 가르기 : 16549, 16699
+    Effect 심판의 방어력 감소 : 21237, 21387
+    Effect 심판의 방어력 감소 : 30537, 30687
+    Effect 제압의 가르기 : 31550, 31700
+    Effect 심판의 방어력 감소 : 39787, 39937
+    Effect 제압의 가르기 : 46600, 46750
+    Effect 심판의 방어력 감소 : 48787, 48937
+    Effect 심판의 방어력 감소 : 58087, 58237
+```
+
+[2m2026-06-17T03:05:07.656396Z[0m [32m INFO[0m [2mlol_champion_simulation[0m[2m:[0m Saved HTML report to report.html
+[2m2026-06-17T03:05:07.656406Z[0m [32m INFO[0m [2mlol_champion_simulation[0m[2m:[0m Simulation complete.

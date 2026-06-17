@@ -112,6 +112,7 @@ EventManager::run()
 
 ## Testing
 
+- **UI 및 리포트 시뮬레이션 검증**: 특별한 명시가 없는 한 항상 **Dummy**를 타겟(`-b Dummy`)으로 사용하여 시뮬레이션 및 리포트를 생성/검증할 것.
 - `cargo test --workspace` — 전체 테스트
 - 각 공식(데미지, 스탯 성장, 관통)에 대한 유닛 테스트 필수
 - 챔피언 모듈은 "known damage" 시나리오 테스트 포함

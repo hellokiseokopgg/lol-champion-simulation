@@ -37,7 +37,7 @@ impl ChampionInstance for DummyInstance {
         &mut self.state
     }
 
-    fn update_stats(&mut self) {
+    fn update_stats(&mut self, time: lol_core::types::SimTime) {
         let level = self.state.level as f64;
         let growth_multiplier = (level - 1.0) * (0.7025 + 0.0175 * (level - 1.0));
         let mut new_base = self.state.base_stats.clone();
@@ -50,18 +50,18 @@ impl ChampionInstance for DummyInstance {
         let bonus = self.state.rune_stats.clone() + self.state.item_stats.clone();
         self.state.stats.recalculate_initial(&bonus);
 
-        let buffs_stats = self.state.buffs.aggregate_stats();
-        self.state.stats.recalculate_current(&buffs_stats);
+        let mut total_bonus = self.state.buffs.aggregate_stats();
+        let level = self.state.level;
+        total_bonus = total_bonus + self.state.rune_manager.get_bonus_stats(time, &self.state.base_stats, level);
+        self.state.stats.recalculate_current(&total_bonus);
     }
     
     fn get_ability(&self, _slot: lol_core::types::AbilitySlot) -> Option<&dyn lol_core::ability::Ability> {
         None
     }
     
-    fn take_damage(&mut self, amount: f64) -> bool {
+    fn take_damage(&mut self, amount: f64) -> lol_core::types::TakeDamageResult {
         self.state.health.reduce(amount);
-        // Target Dummy never dies, so it always returns false, 
-        // or we can say if health reaches 0, it doesn't matter.
-        false 
+        lol_core::types::TakeDamageResult { actual_damage: amount, is_dead: false }
     }
 }

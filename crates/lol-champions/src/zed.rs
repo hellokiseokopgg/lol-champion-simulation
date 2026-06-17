@@ -27,16 +27,19 @@ pub struct ZedInstance {
 impl ChampionInstance for ZedInstance {
     fn state(&self) -> &ChampionState { &self.state }
     fn state_mut(&mut self) -> &mut ChampionState { &mut self.state }
-    fn update_stats(&mut self) {
-        let buffs_stats = self.state.buffs.aggregate_stats();
-        self.state.stats.recalculate_current(&buffs_stats);
+    fn update_stats(&mut self, time: lol_core::types::SimTime) {
+        let mut total_bonus = self.state.buffs.aggregate_stats();
+        let level = self.state.level;
+        total_bonus = total_bonus + self.state.rune_manager.get_bonus_stats(time, &self.state.base_stats, level);
+        self.state.stats.recalculate_current(&total_bonus);
     }
     
     fn get_ability(&self, _slot: lol_core::types::AbilitySlot) -> Option<&dyn lol_core::ability::Ability> {
         None
     }
     
-    fn take_damage(&mut self, amount: f64) -> bool {
-        self.state.health.reduce(amount)
+    fn take_damage(&mut self, amount: f64) -> lol_core::types::TakeDamageResult {
+        let is_dead = self.state.health.reduce(amount);
+        lol_core::types::TakeDamageResult { actual_damage: amount, is_dead }
     }
 }

@@ -33,6 +33,7 @@
     "id": "grasp_of_the_undying",
     "name": "Grasp of the Undying",
     "tree": "Resolve",
+    "icon": "8437",
     "stats": {
       "hp": 5.0
     }

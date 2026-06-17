@@ -13,12 +13,17 @@ pub struct Resource {
 
 impl Resource {
     /// Creates a new resource with a specific max value and type. Starts full.
-    pub fn new(max: f64, resource_type: ResourceType) -> Self {
+    pub fn new(max_amount: f64, resource_type: ResourceType) -> Self {
         Self {
-            current: max,
-            max,
+            current: max_amount,
+            max: max_amount,
             resource_type,
         }
+    }
+
+    /// Adds amount to the current resource, capped at max.
+    pub fn add(&mut self, amount: f64) {
+        self.current = (self.current + amount).min(self.max);
     }
 
     /// Consumes a given amount of the resource. Returns true if fully successful, false if it had to be capped at 0.

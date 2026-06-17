@@ -11,12 +11,14 @@ pub struct ActionPriority {
 pub struct ActionPriorityList {
     pub actions: Vec<ActionPriority>,
     pub items: Option<Vec<String>>,
+    pub runes: Option<Vec<String>>,
 }
 
 impl ActionPriorityList {
     pub fn parse(input: &str) -> Result<Self, String> {
         let mut actions = Vec::new();
         let mut items = None;
+        let mut runes = None;
 
         for line in input.lines() {
             let line = line.trim();
@@ -27,9 +29,16 @@ impl ActionPriorityList {
             // Expected format: actions+=/Q,if=condition
             // Or just: actions+=/Q
             // Or items: items=6631,3033
+            // Or runes: runes=conqueror,triumph
             if line.starts_with("items=") {
                 let items_str = &line["items=".len()..];
                 items = Some(items_str.split(',').map(|s| s.trim().to_string()).collect());
+                continue;
+            }
+
+            if line.starts_with("runes=") {
+                let runes_str = &line["runes=".len()..];
+                runes = Some(runes_str.split(',').map(|s| s.trim().to_string()).collect());
                 continue;
             }
 
@@ -66,6 +75,6 @@ impl ActionPriorityList {
             actions.push(ActionPriority { slot, condition });
         }
 
-        Ok(Self { actions, items })
+        Ok(Self { actions, items, runes })
     }
 }

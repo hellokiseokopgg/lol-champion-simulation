@@ -12,6 +12,15 @@ pub enum DamageType {
     True,
 }
 
+/// The result of processing and applying damage.
+#[derive(Debug, Clone, Copy)]
+pub struct TakeDamageResult {
+    /// The actual damage applied to the target's health.
+    pub actual_damage: f64,
+    /// Whether the target is dead after this damage.
+    pub is_dead: bool,
+}
+
 /// Represents the slot of an ability for a champion.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum AbilitySlot {

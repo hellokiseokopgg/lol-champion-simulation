@@ -9,6 +9,9 @@ pub struct RuneData {
     pub name: String,
     /// The rune tree (e.g., "Precision", "Domination").
     pub tree: String,
+    /// The ID of the icon to be used for display.
+    #[serde(default)]
+    pub icon: String,
     /// Static stats provided by the rune (if any).
     #[serde(default)]
     pub stats: RuneStats,

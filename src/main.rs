@@ -56,6 +56,10 @@ enum Commands {
         /// Comma-separated list of Item IDs to equip
         #[arg(long, value_delimiter = ',')]
         items: Option<Vec<String>>,
+
+        /// Comma-separated list of Rune IDs to equip (e.g., conqueror,triumph)
+        #[arg(long, value_delimiter = ',')]
+        runes: Option<Vec<String>>,
     },
 }
 
@@ -67,7 +71,7 @@ fn main() {
     let cli = Cli::parse();
 
     match &cli.command {
-        Commands::Simulate { champion_a, champion_b, iterations, html_out, lang, optimize, apl, items } => {
+        Commands::Simulate { champion_a, champion_b, iterations, html_out, lang, optimize, apl, items, runes } => {
             let champion_b = champion_b.clone().unwrap_or_else(|| "Dummy".to_string());
             info!("Initializing LoL Champion Simulation Engine...");
             info!("Matchup: {} vs {}", champion_a, champion_b);
@@ -189,20 +193,35 @@ fn main() {
 
                 let mut rune_page_a = lol_core::rune::RunePage::default();
                 let mut runes_meta_a = Vec::new();
-                if let Some(r) = all_runes.iter().find(|r| r.id == "conqueror") {
-                    rune_page_a.keystone = Box::new(DataRune { name: r.name.clone(), icon: r.icon.clone(), tree: r.tree.clone() });
-                    runes_meta_a.push((r.icon.clone(), r.name.clone(), r.tree.clone()));
-                }
-                for rune_id in ["triumph", "legend_alacrity", "last_stand"] {
-                    if let Some(r) = all_runes.iter().find(|r| r.id == rune_id) {
-                        rune_page_a.primary_runes.push(Box::new(DataRune { name: r.name.clone(), icon: r.icon.clone(), tree: r.tree.clone() }));
+
+                let equipped_runes = if let Some(r) = &parsed_apl.runes {
+                    r.clone()
+                } else if let Some(r) = runes {
+                    r.clone()
+                } else {
+                    vec!["conqueror".to_string(), "triumph".to_string(), "legend_alacrity".to_string(), "last_stand".to_string(), "bone_plating".to_string(), "overgrowth".to_string()]
+                };
+
+                if let Some(keystone_id) = equipped_runes.get(0) {
+                    if let Some(r) = all_runes.iter().find(|r| r.id == *keystone_id || r.icon == *keystone_id) {
+                        rune_page_a.keystone = Box::new(DataRune { name: r.name.clone(), icon: r.icon.clone(), tree: r.tree.clone() });
                         runes_meta_a.push((r.icon.clone(), r.name.clone(), r.tree.clone()));
                     }
                 }
-                for rune_id in ["bone_plating", "overgrowth"] {
-                    if let Some(r) = all_runes.iter().find(|r| r.id == rune_id) {
-                        rune_page_a.secondary_runes.push(Box::new(DataRune { name: r.name.clone(), icon: r.icon.clone(), tree: r.tree.clone() }));
-                        runes_meta_a.push((r.icon.clone(), r.name.clone(), r.tree.clone()));
+                for i in 1..=3 {
+                    if let Some(rune_id) = equipped_runes.get(i) {
+                        if let Some(r) = all_runes.iter().find(|r| r.id == *rune_id || r.icon == *rune_id) {
+                            rune_page_a.primary_runes.push(Box::new(DataRune { name: r.name.clone(), icon: r.icon.clone(), tree: r.tree.clone() }));
+                            runes_meta_a.push((r.icon.clone(), r.name.clone(), r.tree.clone()));
+                        }
+                    }
+                }
+                for i in 4..=5 {
+                    if let Some(rune_id) = equipped_runes.get(i) {
+                        if let Some(r) = all_runes.iter().find(|r| r.id == *rune_id || r.icon == *rune_id) {
+                            rune_page_a.secondary_runes.push(Box::new(DataRune { name: r.name.clone(), icon: r.icon.clone(), tree: r.tree.clone() }));
+                            runes_meta_a.push((r.icon.clone(), r.name.clone(), r.tree.clone()));
+                        }
                     }
                 }
 
