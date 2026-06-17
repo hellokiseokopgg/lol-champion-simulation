@@ -261,6 +261,7 @@ impl crate::ability::Ability for StridebreakerActive {
         }
 
         ctx.trigger_on_physical_damage(actor, target, &damage_result);
+        ctx.trigger_on_damage_dealt(actor, damage_result.final_damage, true);
 
         ctx.apply_buff(target, Box::new(HaltingSlashDebuff));
         ctx.apply_buff(actor, Box::new(HeroicGaitBuff));
@@ -334,9 +335,9 @@ mod tests {
     impl crate::champion::ChampionInstance for DummyChampionInstance {
         fn state(&self) -> &ChampionState { &self.state }
         fn state_mut(&mut self) -> &mut ChampionState { &mut self.state }
-        fn update_stats(&mut self) {}
+        fn update_stats(&mut self, time: crate::types::SimTime) {}
         fn get_ability(&self, _slot: crate::types::AbilitySlot) -> Option<&dyn crate::ability::Ability> { None }
-        fn take_damage(&mut self, amount: f64) -> bool { self.state.health.reduce(amount) }
+        fn take_damage(&mut self, amount: f64) -> crate::types::TakeDamageResult { let is_dead = self.state.health.reduce(amount); crate::types::TakeDamageResult { actual_damage: amount, is_dead } }
     }
 
     #[test]

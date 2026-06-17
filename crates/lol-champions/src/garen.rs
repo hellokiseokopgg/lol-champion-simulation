@@ -29,6 +29,13 @@ impl ChampionModule for GarenModule {
         
         let mut state = ChampionState::new(config.level, base_stats, config.growth_stats.clone(), lol_core::types::ResourceType::None, rune_stats, item_stats, item_effects);
         
+        let keystone_name = config.rune_page.keystone.name();
+        if keystone_name == "Conqueror" {
+            state.rune_manager.add_effect(Box::new(lol_core::rune_manager::Conqueror::new(true)));
+        } else if keystone_name == "Lethal Tempo" {
+            state.rune_manager.add_effect(Box::new(lol_core::rune_manager::LethalTempo::new(true)));
+        }
+        
         // Initialize abilities to rank 5 for testing (except R to 3)
         if let Some(q) = state.abilities.get_state_mut(AbilitySlot::Q) { q.level = 5; }
         if let Some(w) = state.abilities.get_state_mut(AbilitySlot::W) { w.level = 5; }
@@ -74,7 +81,7 @@ impl ChampionInstance for GarenInstance {
         &mut self.state
     }
 
-    fn update_stats(&mut self) {
+    fn update_stats(&mut self, time: lol_core::types::SimTime) {
         // 1. Recalculate base stats using growth logic
         // Formula: Stat = Base + Growth * (Level - 1) * (0.7025 + 0.0175 * (Level - 1))
         let level = self.state.level as f64;
@@ -97,16 +104,19 @@ impl ChampionInstance for GarenInstance {
         self.state.stats.recalculate_initial(&bonus);
 
         // 3. Recalculate current stats (Initial + Buffs)
-        let buffs_stats = self.state.buffs.aggregate_stats();
-        self.state.stats.recalculate_current(&buffs_stats);
+        let mut total_bonus = self.state.buffs.aggregate_stats();
+        let level = self.state.level;
+        total_bonus = total_bonus + self.state.rune_manager.get_bonus_stats(time, &self.state.base_stats, level);
+        self.state.stats.recalculate_current(&total_bonus);
     }
     
     fn get_ability(&self, slot: lol_core::types::AbilitySlot) -> Option<&dyn lol_core::ability::Ability> {
         self.abilities.iter().find(|a| a.slot() == slot).map(|a| a.as_ref())
     }
     
-    fn take_damage(&mut self, amount: f64) -> bool {
-        self.state.health.reduce(amount)
+    fn take_damage(&mut self, amount: f64) -> lol_core::types::TakeDamageResult {
+        let is_dead = self.state.health.reduce(amount);
+        lol_core::types::TakeDamageResult { actual_damage: amount, is_dead }
     }
 }
 
@@ -327,9 +337,13 @@ impl Ability for GarenAutoAttack {
         
         ctx.trigger_on_hit(actor, target, &damage_result);
         ctx.trigger_on_physical_damage(actor, target, &damage_result);
+        
+        // Trigger rune events based on the damage dealt
+        let is_ability = slot_to_record != AbilitySlot::AutoAttack;
+        ctx.trigger_on_damage_dealt(actor, damage_result.final_damage, is_ability);
 
         if let Some(d) = ctx.champions.get(target) {
-            let is_dead = d.borrow_mut().take_damage(damage_result.final_damage);
+            let is_dead = d.borrow_mut().take_damage(damage_result.final_damage).is_dead;
             if is_dead {
                 ctx.new_events.push((0.0, Box::new(lol_core::event::DeathEvent { target: target.clone() })));
             }
@@ -392,11 +406,11 @@ impl SimEvent for JudgmentTickEvent {
                 false,
             );
         }
-
         ctx.trigger_on_physical_damage(&self.attacker, &self.defender, &damage_result);
+        ctx.trigger_on_damage_dealt(&self.attacker, damage_result.final_damage, true);
 
         if let Some(d) = ctx.champions.get(&self.defender) {
-            let is_dead = d.borrow_mut().take_damage(damage_result.final_damage);
+            let is_dead = d.borrow_mut().take_damage(damage_result.final_damage).is_dead;
             if is_dead {
                 ctx.new_events.push((0.0, Box::new(lol_core::event::DeathEvent { target: self.defender.clone() })));
             }
@@ -466,9 +480,11 @@ impl SimEvent for DemacianJusticeEvent {
                 false,
             );
         }
+        
+        ctx.trigger_on_damage_dealt(&self.attacker, damage_result.final_damage, true);
 
         if let Some(d) = ctx.champions.get(&self.defender) {
-            let is_dead = d.borrow_mut().take_damage(damage_result.final_damage);
+            let is_dead = d.borrow_mut().take_damage(damage_result.final_damage).is_dead;
             if is_dead {
                 ctx.new_events.push((0.0, Box::new(lol_core::event::DeathEvent { target: self.defender.clone() })));
             }

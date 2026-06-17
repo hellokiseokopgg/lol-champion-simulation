@@ -50,6 +50,8 @@ pub struct ChampionState {
     pub abilities: AbilitySlotManager,
     /// Item effect management.
     pub items: crate::item::ItemManager,
+    /// Manages dynamic rune effects.
+    pub rune_manager: crate::rune_manager::RuneManager,
 }
 
 impl ChampionState {
@@ -76,6 +78,7 @@ impl ChampionState {
             buffs: BuffManager::new(),
             abilities: AbilitySlotManager::new(),
             items: item_manager,
+            rune_manager: crate::rune_manager::RuneManager::new(),
         }
     }
 
@@ -90,13 +93,25 @@ pub trait ChampionInstance {
     fn state_mut(&mut self) -> &mut ChampionState;
     
     /// Triggers a full recalculation of stats based on base, items, runes, and buffs.
-    fn update_stats(&mut self);
+    fn update_stats(&mut self, time: crate::types::SimTime);
     
     /// Returns a reference to the ability in the given slot, if it exists.
     fn get_ability(&self, slot: crate::types::AbilitySlot) -> Option<&dyn crate::ability::Ability>;
     
-    /// Applies damage to the champion's health pool. Returns true if the champion is dead.
-    fn take_damage(&mut self, amount: f64) -> bool;
+    /// Applies damage to the champion's health pool. Returns the detailed damage result.
+    fn take_damage(&mut self, amount: f64) -> crate::types::TakeDamageResult;
+
+    /// Called when this champion deals damage. Routes to RuneManager and other passives.
+    fn on_damage_dealt(&mut self, time: crate::types::SimTime, amount: f64, is_ability: bool) -> Vec<crate::rune_manager::RuneEvent> {
+        let state = self.state_mut();
+        state.rune_manager.on_damage_dealt(time, amount, is_ability)
+    }
+
+    /// Heals the champion.
+    fn heal(&mut self, amount: f64) {
+        let state = self.state_mut();
+        state.health.add(amount);
+    }
 }
 
 /// A factory trait for generating instances of a specific champion.

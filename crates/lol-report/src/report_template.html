@@ -800,21 +800,63 @@
         "Mortal Reminder": "3033"
     };
 
-    function getItemId(champ, name) {
+    const BUFF_TO_SPELL = {
+        "결정적 일격": "GarenQ",
+        "용기": "GarenW",
+        "심판": "GarenE",
+        "심판의 방어력 감소": "GarenE",
+        "데마시아의 정의": "GarenR",
+        "인내심": "GarenPassive",
+        "Decisive Strike": "GarenQ",
+        "Courage": "GarenW",
+        "Judgment": "GarenE",
+        "Judgment Shred": "GarenE",
+        "Demacian Justice": "GarenR",
+        "Perseverance": "GarenPassive"
+    };
+
+    function getIconData(champ, name) {
+        // 1. Check if it's an Item Actives/Passives from name format
         if (name.startsWith("Item(")) {
             const match = name.match(/Item\((\d+)\)/);
-            if (match) return match[1];
+            if (match) return { type: 'item', id: match[1] };
         }
 
+        // 2. Check BUFF_TO_ITEM mapping
         let itemId = BUFF_TO_ITEM[name];
-        if (itemId) return itemId;
+        if (itemId) return { type: 'item', id: itemId };
         
-        // Fallback
+        // 3. Fallback: Check itemsData
         if (typeof itemsData !== 'undefined' && itemsData[champ]) {
             for (const item of itemsData[champ]) {
-                if (item.name === name) return item.id;
+                if (item.name === name) return { type: 'item', id: item.id };
             }
         }
+
+        // 4. Check equipped Runes
+        if (typeof runesData !== 'undefined' && runesData[champ]) {
+            for (const rune of runesData[champ]) {
+                if (name.includes(rune.name)) {
+                    return { type: 'rune', id: rune.id };
+                }
+                if (rune.name === "Conqueror" && name.includes("정복자")) {
+                    return { type: 'rune', id: rune.id };
+                }
+                if (rune.name === "Lethal Tempo" && name.includes("치명적 속도")) {
+                    return { type: 'rune', id: rune.id };
+                }
+            }
+        }
+
+        // 5. Check Champion Skills and Passives
+        let spellId = BUFF_TO_SPELL[name];
+        if (spellId) {
+            if (spellId.includes("Passive")) {
+                return { type: 'passive', id: spellId };
+            }
+            return { type: 'spell', id: spellId };
+        }
+
         return null;
     }
 
@@ -897,9 +939,17 @@
             if (cast.ability === "AutoAttack") {
                 node.style.backgroundImage = `url('https://opgg-static.akamaized.net/meta/images/lol/16.12.1/item/1036.png?image=q_auto:good,f_webp,w_64,h_64&v=1612')`;
             } else {
-                const itemId = getItemId(cast.source, cast.ability);
-                if (itemId) {
-                    node.style.backgroundImage = `url('https://opgg-static.akamaized.net/meta/images/lol/16.12.1/item/${itemId}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612')`;
+                const iconData = getIconData(cast.source, cast.ability);
+                if (iconData) {
+                    if (iconData.type === 'item') {
+                        node.style.backgroundImage = `url('https://opgg-static.akamaized.net/meta/images/lol/16.12.1/item/${iconData.id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612')`;
+                    } else if (iconData.type === 'rune') {
+                        node.style.backgroundImage = `url('https://opgg-static.akamaized.net/meta/images/lol/14.22.1/perk/${iconData.id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612')`;
+                    } else if (iconData.type === 'spell') {
+                        node.style.backgroundImage = `url('https://opgg-static.akamaized.net/meta/images/lol/16.12.1/spell/${iconData.id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612')`;
+                    } else if (iconData.type === 'passive') {
+                        node.style.backgroundImage = `url('https://opgg-static.akamaized.net/meta/images/lol/16.12.1/passive/${iconData.id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612')`;
+                    }
                 } else {
                     node.style.backgroundImage = `url('https://opgg-static.akamaized.net/meta/images/lol/16.12.1/spell/${cast.source}${cast.ability}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612')`;
                 }
@@ -960,11 +1010,20 @@
             node.style.justifyContent = 'center';
             node.style.overflow = 'hidden';
             
-            const itemId = getItemId(buff.target, buff.buff_name) || getItemId(buff.source, buff.buff_name);
-            if (itemId) {
-                const iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/item/${itemId}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
+            const iconData = getIconData(buff.target, buff.buff_name) || getIconData(buff.source, buff.buff_name);
+            if (iconData) {
+                let iconUrl = '';
+                if (iconData.type === 'item') {
+                    iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/item/${iconData.id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
+                } else if (iconData.type === 'rune') {
+                    iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/14.22.1/perk/${iconData.id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
+                } else if (iconData.type === 'spell') {
+                    iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/spell/${iconData.id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
+                } else if (iconData.type === 'passive') {
+                    iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/passive/${iconData.id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
+                }
                 node.style.backgroundColor = 'transparent';
-                node.style.border = '1px solid #10b981'; // Green border for items
+                node.style.border = iconData.type === 'item' ? '1px solid #10b981' : (iconData.type === 'rune' ? '1px solid #eab308' : '1px solid #3b82f6');
                 node.innerHTML = `<img src="${iconUrl}" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';"><span style="display:none; color: #d8b4fe; font-size: 12px; font-weight: bold;">E</span>`;
             } else {
                 node.innerHTML = '<span style="color: #d8b4fe; font-size: 12px; font-weight: bold;">E</span>';
@@ -1203,46 +1262,39 @@
             let details = '';
             let color = 'var(--text-main)';
 
+            let iconHtml = '';
+            let iconData = null;
+            if (e.type === 'cast' || e.type === 'damage') {
+                iconData = getIconData(e.source, e.ability);
+            } else if (e.type === 'buff_apply' || e.type === 'buff_expire') {
+                iconData = getIconData(e.target, e.buff_name);
+            }
+
+            if (iconData) {
+                let iconUrl = '';
+                if (iconData.type === 'item') iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/item/${iconData.id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
+                else if (iconData.type === 'rune') iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/14.22.1/perk/${iconData.id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
+                else if (iconData.type === 'spell') iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/spell/${iconData.id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
+                else if (iconData.type === 'passive') iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/passive/${iconData.id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
+                iconHtml = `<img src="${iconUrl}" style="width:16px; height:16px; vertical-align:middle; border-radius:3px; margin-right:4px;" onerror="this.style.display='none';">`;
+            }
+
             if (e.type === 'cast') {
                 eventType = 'Cast';
-                const itemId = getItemId(e.source, e.ability);
-                if (itemId) {
-                    const iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/item/${itemId}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
-                    details = `Used <img src="${iconUrl}" style="width:16px; height:16px; vertical-align:middle; border-radius:3px; margin-right:4px;" onerror="this.style.display='none';"> <strong style="color:var(--color-green);">${e.ability}</strong>`;
-                } else {
-                    details = `Used <strong style="color:var(--color-green);">${e.ability}</strong>`;
-                }
+                details = `Used ${iconHtml} <strong style="color:var(--color-green);">${e.ability}</strong>`;
             } else if (e.type === 'damage') {
                 eventType = 'Damage';
-                const itemId = getItemId(e.source, e.ability);
-                if (itemId) {
-                    const iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/item/${itemId}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
-                    details = `<img src="${iconUrl}" style="width:16px; height:16px; vertical-align:middle; border-radius:3px; margin-right:4px;" onerror="this.style.display='none';"> <strong style="color:var(--color-cyan);">${e.ability}</strong> hit for <strong style="color:#f87171;">${e.amount.toFixed(1)}</strong>`;
-                } else {
-                    details = `<strong style="color:var(--color-cyan);">${e.ability}</strong> hit for <strong style="color:#f87171;">${e.amount.toFixed(1)}</strong>`;
-                }
+                details = `${iconHtml} <strong style="color:var(--color-cyan);">${e.ability}</strong> hit for <strong style="color:#f87171;">${e.amount.toFixed(1)}</strong>`;
             } else if (e.type === 'death') {
                 eventType = 'Death';
                 details = `Died`;
                 color = '#f87171';
             } else if (e.type === 'buff_apply') {
                 eventType = 'Buff Apply';
-                const itemId = getItemId(e.target, e.buff_name);
-                if (itemId) {
-                    const iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/item/${itemId}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
-                    details = `<img src="${iconUrl}" style="width:16px; height:16px; vertical-align:middle; border-radius:3px; margin-right:4px;" onerror="this.style.display='none';"> Gained <strong style="color:#a855f7;">${e.buff_name}</strong>`;
-                } else {
-                    details = `Gained <strong style="color:#a855f7;">${e.buff_name}</strong>`;
-                }
+                details = `${iconHtml} Gained <strong style="color:#a855f7;">${e.buff_name}</strong>`;
             } else if (e.type === 'buff_expire') {
                 eventType = 'Buff Expire';
-                const itemId = getItemId(e.target, e.buff_name);
-                if (itemId) {
-                    const iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/item/${itemId}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
-                    details = `<img src="${iconUrl}" style="width:16px; height:16px; vertical-align:middle; border-radius:3px; margin-right:4px;" onerror="this.style.display='none';"> Lost <strong style="color:var(--text-muted);">${e.buff_name}</strong>`;
-                } else {
-                    details = `Lost <strong style="color:var(--text-muted);">${e.buff_name}</strong>`;
-                }
+                details = `${iconHtml} Lost <strong style="color:var(--text-muted);">${e.buff_name}</strong>`;
             } else {
                 return; // Skip resource updates for log to keep it clean
             }

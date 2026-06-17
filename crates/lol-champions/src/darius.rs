@@ -110,9 +110,10 @@ impl Ability for DariusQ {
         }
 
         ctx.trigger_on_physical_damage(actor, target, &damage_result);
+        ctx.trigger_on_damage_dealt(actor, damage_result.final_damage, true);
 
         if let Some(d) = ctx.champions.get(target) {
-            let is_dead = d.borrow_mut().take_damage(damage_result.final_damage);
+            let is_dead = d.borrow_mut().take_damage(damage_result.final_damage).is_dead;
             if is_dead {
                 ctx.new_events.push((0.0, Box::new(lol_core::event::DeathEvent { target: target.clone() })));
             }
@@ -188,7 +189,7 @@ impl Ability for DariusR {
         }
 
         if let Some(d) = ctx.champions.get(target) {
-            let is_dead = d.borrow_mut().take_damage(final_damage);
+            let is_dead = d.borrow_mut().take_damage(final_damage).is_dead;
             if is_dead {
                 ctx.new_events.push((0.0, Box::new(lol_core::event::DeathEvent { target: target.clone() })));
                 // Reset cooldown
@@ -248,9 +249,12 @@ impl Ability for DariusAutoAttack {
 
         ctx.trigger_on_hit(actor, target, &damage_result);
         ctx.trigger_on_physical_damage(actor, target, &damage_result);
+        
+        let is_ability = has_w_buff; // If W buff is used, it's considered an ability for Conqueror/Lethal Tempo stacks. For simplicity, we can pass has_w_buff.
+        ctx.trigger_on_damage_dealt(actor, damage_result.final_damage, is_ability);
 
         if let Some(d) = ctx.champions.get(target) {
-            let is_dead = d.borrow_mut().take_damage(damage_result.final_damage);
+            let is_dead = d.borrow_mut().take_damage(damage_result.final_damage).is_dead;
             if is_dead {
                 ctx.new_events.push((0.0, Box::new(lol_core::event::DeathEvent { target: target.clone() })));
             }
@@ -279,6 +283,12 @@ impl ChampionModule for DariusModule {
         }
 
         let mut state = ChampionState::new(config.level, config.base_stats.clone(), config.growth_stats.clone(), lol_core::types::ResourceType::Mana, rune_stats, item_stats, item_effects);
+        let keystone_name = config.rune_page.keystone.name();
+        if keystone_name == "Conqueror" {
+            state.rune_manager.add_effect(Box::new(lol_core::rune_manager::Conqueror::new(true)));
+        } else if keystone_name == "Lethal Tempo" {
+            state.rune_manager.add_effect(Box::new(lol_core::rune_manager::LethalTempo::new(true)));
+        }
         
         // Setup base stats slightly for simulation level
         state.stats.base.attack_speed_ratio = Some(0.625);
@@ -318,16 +328,19 @@ pub struct DariusInstance {
 impl ChampionInstance for DariusInstance {
     fn state(&self) -> &ChampionState { &self.state }
     fn state_mut(&mut self) -> &mut ChampionState { &mut self.state }
-    fn update_stats(&mut self) {
-        let buffs_stats = self.state.buffs.aggregate_stats();
-        self.state.stats.recalculate_current(&buffs_stats);
+    fn update_stats(&mut self, time: lol_core::types::SimTime) {
+        let mut total_bonus = self.state.buffs.aggregate_stats();
+        let level = self.state.level;
+        total_bonus = total_bonus + self.state.rune_manager.get_bonus_stats(time, &self.state.base_stats, level);
+        self.state.stats.recalculate_current(&total_bonus);
     }
     
     fn get_ability(&self, slot: AbilitySlot) -> Option<&dyn Ability> {
         self.abilities.iter().find(|a| a.slot() == slot).map(|a| a.as_ref())
     }
     
-    fn take_damage(&mut self, amount: f64) -> bool {
-        self.state.health.reduce(amount)
+    fn take_damage(&mut self, amount: f64) -> lol_core::types::TakeDamageResult {
+        let is_dead = self.state.health.reduce(amount);
+        lol_core::types::TakeDamageResult { actual_damage: amount, is_dead }
     }
 }

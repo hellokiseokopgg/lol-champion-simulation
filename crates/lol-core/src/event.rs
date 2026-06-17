@@ -43,7 +43,7 @@ impl SimContext {
         if let Some(champ_ref) = self.champions.get(target) {
             let mut champ = champ_ref.borrow_mut();
             champ.state_mut().buffs.apply_effect(effect, self.current_time);
-            champ.update_stats();
+            champ.update_stats(self.current_time);
         }
         
         if let Some(recorder) = &self.recorder {
@@ -87,6 +87,37 @@ impl SimContext {
             champ_ref.borrow_mut().state_mut().items = items;
         }
     }
+
+    pub fn trigger_on_damage_dealt(&mut self, actor: &crate::types::ChampionId, amount: f64, is_ability: bool) {
+        let rune_events = if let Some(champ_ref) = self.champions.get(actor) {
+            champ_ref.borrow_mut().on_damage_dealt(self.current_time, amount, is_ability)
+        } else {
+            return;
+        };
+
+        for event in rune_events {
+            match event {
+                crate::rune_manager::RuneEvent::StacksChanged { name, stacks } => {
+                    let buff_name = if name == "Conqueror" {
+                        format!("정복자 ({}스택)", stacks)
+                    } else if name == "Lethal Tempo" {
+                        format!("치명적 속도 ({}스택)", stacks)
+                    } else {
+                        format!("{} ({}스택)", name, stacks)
+                    };
+                    
+                    if let Some(recorder) = &self.recorder {
+                        recorder.borrow_mut().record_buff_apply(self.current_time, actor.clone(), buff_name);
+                    }
+                }
+                crate::rune_manager::RuneEvent::Healed { amount } => {
+                    if let Some(champ_ref) = self.champions.get(actor) {
+                        champ_ref.borrow_mut().heal(amount);
+                    }
+                }
+            }
+        }
+    }
 }
 
 /// Trait representing an event that occurs at a specific point in simulation time.
@@ -127,7 +158,7 @@ impl SimEvent for BuffExpireEvent {
         if let Some(champ_ref) = ctx.champions.get(&self.target) {
             let mut champ = champ_ref.borrow_mut();
             if champ.state_mut().buffs.remove_effect_if_expired(&self.buff_id, ctx.current_time) {
-                champ.update_stats();
+                champ.update_stats(ctx.current_time);
                 
                 if let Some(recorder) = &ctx.recorder {
                     recorder.borrow_mut().record_buff_expire(ctx.current_time, self.target.clone(), self.buff_id.0.clone());
@@ -154,7 +185,7 @@ impl SimEvent for ItemAcquisitionEvent {
         if let Some(champ_ref) = ctx.champions.get(&self.target) {
             let mut champ = champ_ref.borrow_mut();
             champ.state_mut().item_stats = champ.state().item_stats.clone() + self.item_stats.clone();
-            champ.update_stats();
+            champ.update_stats(ctx.current_time);
         }
         if let Some(recorder) = &ctx.recorder {
             recorder.borrow_mut().record_item_acquisition(ctx.current_time, self.target.clone(), self.item_id.clone(), self.item_name.clone());
@@ -195,7 +226,7 @@ impl SimEvent for DoTTickEvent {
         // We'll just apply raw damage directly to HP for now.
         if let Some(champ_ref) = ctx.champions.get(&self.target) {
             let mut champ = champ_ref.borrow_mut();
-            let is_dead = champ.take_damage(self.damage);
+            let is_dead = champ.take_damage(self.damage).is_dead;
             
             if let Some(recorder) = &ctx.recorder {
                 recorder.borrow_mut().record_damage(
