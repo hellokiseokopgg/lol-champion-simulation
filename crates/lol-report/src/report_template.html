@@ -1056,6 +1056,81 @@
             timelineContent.appendChild(node);
         });
 
+        // 2.6 Buff Expire Effects
+        const buffExpires = events.filter(e => e.type === "buff_expire");
+        
+        // Deduplicate expires happening at the same time for the same base buff name
+        const uniqueExpires = [];
+        const expireSeen = new Set();
+        buffExpires.forEach(b => {
+            const baseName = b.buff_name.replace(/\s\([0-9]+스택\)/, '');
+            const key = `${b.time.toFixed(3)}_${b.target}_${baseName}`;
+            if (!expireSeen.has(key)) {
+                expireSeen.add(key);
+                uniqueExpires.push({ ...b, display_name: baseName + " 만료" });
+            }
+        });
+
+        uniqueExpires.forEach(buff => {
+            const node = document.createElement('div');
+            node.className = 'event-icon';
+            node.style.width = '20px';
+            node.style.height = '20px';
+            node.style.borderRadius = '50%';
+            node.style.border = '2px solid #ef4444';
+            node.style.backgroundColor = '#7f1d1d';
+            node.style.display = 'flex';
+            node.style.alignItems = 'center';
+            node.style.justifyContent = 'center';
+            node.style.overflow = 'hidden';
+            node.style.opacity = '0.7';
+            node.style.filter = 'grayscale(100%)';
+            
+            const iconData = getIconData(buff.target, buff.buff_name) || getIconData(buff.source, buff.buff_name);
+            if (iconData) {
+                let iconUrl = '';
+                if (iconData.type === 'item') {
+                    iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/item/${iconData.id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
+                } else if (iconData.type === 'rune') {
+                    iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/14.22.1/perk/${iconData.id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
+                } else if (iconData.type === 'spell') {
+                    iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/spell/${iconData.id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
+                } else if (iconData.type === 'passive') {
+                    iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/passive/${iconData.id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
+                }
+                node.style.backgroundColor = 'transparent';
+                node.innerHTML = `<img src="${iconUrl}" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none';"><div style="position:absolute; width:100%; height:100%; background:rgba(239, 68, 68, 0.4); display:flex; align-items:center; justify-content:center; color:white; font-size:10px; font-weight:bold;">X</div>`;
+            } else {
+                node.innerHTML = '<span style="color: #ef4444; font-size: 10px; font-weight: bold;">X</span>';
+            }
+            
+            const x = buff.time * PX_PER_SEC + OFFSET_X;
+            
+            if (x - buffLastX < 16) {
+                buffCurrentY = (buffCurrentY === 120) ? 148 : 120;
+            } else {
+                buffCurrentY = 120;
+            }
+            buffLastX = x;
+
+            node.style.left = x + 'px';
+            node.style.top = buffCurrentY + 'px';
+            
+            node.addEventListener('mouseenter', (e) => {
+                tooltip.innerHTML = `<strong>${buff.display_name}</strong><br>Time: <span class="time">${buff.time.toFixed(3)}s</span><br>Target: ${buff.target}`;
+                tooltip.style.opacity = 1;
+                tooltip.style.left = (e.clientX + 15) + 'px';
+                tooltip.style.top = (e.clientY + 15) + 'px';
+            });
+            node.addEventListener('mousemove', (e) => {
+                tooltip.style.left = (e.clientX + 15) + 'px';
+                tooltip.style.top = (e.clientY + 15) + 'px';
+            });
+            node.addEventListener('mouseleave', () => tooltip.style.opacity = 0);
+
+            timelineContent.appendChild(node);
+        });
+
 
 
         // 3. SVG Resource Graph Background
