@@ -115,7 +115,12 @@ pub trait ChampionInstance {
 
     /// Checks if the champion can currently cast the specified ability.
     /// Used for champion-specific restrictions (e.g. Garen cannot AutoAttack during E).
-    fn can_cast(&self, _slot: crate::types::AbilitySlot, _time: crate::types::SimTime) -> bool {
+    fn can_cast(&self, slot: crate::types::AbilitySlot, time: crate::types::SimTime) -> bool {
+        if slot == crate::types::AbilitySlot::AutoAttack {
+            if self.state().buffs.prevents_basic_attacks(time) {
+                return false;
+            }
+        }
         true
     }
 }

@@ -190,6 +190,7 @@ impl StatusEffect for GarenEBuff {
     fn stat_modifiers(&self, _stacks: u32) -> StatBlock {
         StatBlock::new()
     }
+    fn prevents_basic_attacks(&self) -> bool { true }
 }
 
 // -----------------------------------------------------------------------------

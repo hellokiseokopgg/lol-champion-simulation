@@ -26,6 +26,9 @@ pub trait StatusEffect {
     
     /// Calculate stat modifiers this effect provides based on current stacks.
     fn stat_modifiers(&self, stacks: u32) -> StatBlock;
+
+    /// Whether this effect prevents the champion from using basic attacks.
+    fn prevents_basic_attacks(&self) -> bool { false }
 }
 
 /// Tracks an active instance of a status effect.
@@ -104,6 +107,23 @@ impl BuffManager {
         } else {
             false
         }
+    }
+
+    /// Checks if a buff is active by id.
+    pub fn get_stacks_by_id(&self, effect_id: &EffectId, current_time: SimTime) -> u32 {
+        if let Some(active) = self.active_effects.get(effect_id) {
+            if active.expiration_time > current_time {
+                return active.stacks;
+            }
+        }
+        0
+    }
+
+    /// Checks if any active buff prevents basic attacks.
+    pub fn prevents_basic_attacks(&self, current_time: SimTime) -> bool {
+        self.active_effects.values().any(|active| {
+            active.expiration_time > current_time && active.effect.prevents_basic_attacks()
+        })
     }
 
     /// Gets the number of stacks of a buff by name. Returns 0 if not found or expired.
