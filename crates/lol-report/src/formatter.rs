@@ -194,13 +194,13 @@ impl Formatter {
             dmg_b.partial_cmp(&dmg_a).unwrap_or(std::cmp::Ordering::Equal)
         });
 
-        for (i, (champ, items)) in sorted_champs.into_iter().enumerate() {
+        for (i, (champ, items)) in sorted_champs.iter().enumerate() {
             let items_list = items.iter().map(|(id, name)| {
                 let localized = translator.translate_buff(name);
                 format!("{{\"id\": \"{}\", \"name\": \"{}\"}}", id, localized)
             }).collect::<Vec<_>>().join(", ");
             json_items.push_str(&format!(r#"  "{}": [{}]"#, champ.0, items_list));
-            if i < collector.champion_items.len() - 1 {
+            if i < sorted_champs.len() - 1 {
                 json_items.push_str(",\n");
             } else {
                 json_items.push('\n');
@@ -208,10 +208,43 @@ impl Formatter {
         }
         json_items.push('}');
 
+        let mut json_runes = String::from("{\n");
+        let mut sorted_champs_runes: Vec<_> = collector.champion_runes.iter().collect();
+        sorted_champs_runes.sort_by(|a, b| {
+            let dmg_a = stats.champion_stats.get(a.0).map_or(0.0, |s| s.total_damage);
+            let dmg_b = stats.champion_stats.get(b.0).map_or(0.0, |s| s.total_damage);
+            dmg_b.partial_cmp(&dmg_a).unwrap_or(std::cmp::Ordering::Equal)
+        });
+
+        for (i, (champ, runes)) in sorted_champs_runes.iter().enumerate() {
+            let runes_list = runes.iter().map(|(id, name, tree)| {
+                let localized = translator.translate_buff(name);
+                let tree_id = match tree.as_str() {
+                    "Precision" => "8000",
+                    "Domination" => "8100",
+                    "Sorcery" => "8200",
+                    "Resolve" => "8400",
+                    "Inspiration" => "8300",
+                    _ => "8000"
+                };
+                format!("{{\"id\": \"{}\", \"name\": \"{}\", \"tree_id\": \"{}\"}}", id, localized, tree_id)
+            }).collect::<Vec<_>>().join(", ");
+            json_runes.push_str(&format!(r#"  "{}": [{}]"#, champ.0, runes_list));
+            if i < sorted_champs_runes.len() - 1 {
+                json_runes.push_str(",\n");
+            } else {
+                json_runes.push('\n');
+            }
+        }
+        json_runes.push('}');
+
         let template = include_str!("report_template.html");
+        let rune_trees_json = include_str!("runesReforged.json");
         template
             .replace("/* __EVENTS_JSON__ */", &json_events)
             .replace("<!-- __APL_SCRIPT__ -->", apl_script)
             .replace("/* __ITEMS_JSON__ */", &json_items)
+            .replace("/* __RUNES_JSON__ */", &json_runes)
+            .replace("/* __RUNE_TREES_JSON__ */", rune_trees_json)
     }
 }

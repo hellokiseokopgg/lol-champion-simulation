@@ -3,6 +3,17 @@ use lol_champions::ChampionRegistry;
 use lol_core::champion::ChampionConfig;
 use tracing::{info, Level};
 
+struct DataRune {
+    name: String,
+    icon: String,
+    tree: String,
+}
+impl lol_core::rune::RuneEffect for DataRune {
+    fn name(&self) -> &str { &self.name }
+    fn icon(&self) -> &str { &self.icon }
+    fn tree(&self) -> &str { &self.tree }
+}
+
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
@@ -109,6 +120,7 @@ fn main() {
             };
 
 
+            let all_runes = loader.load_all_runes().unwrap_or_default();
 
             let run_sim = |script: &str| -> (f64, std::rc::Rc<std::cell::RefCell<lol_report::collector::DataCollector>>) {
                 let parsed_apl = lol_apl::parser::ActionPriorityList::parse(script).unwrap();
@@ -175,10 +187,29 @@ fn main() {
                     ..Default::default()
                 };
 
+                let mut rune_page_a = lol_core::rune::RunePage::default();
+                let mut runes_meta_a = Vec::new();
+                if let Some(r) = all_runes.iter().find(|r| r.id == "conqueror") {
+                    rune_page_a.keystone = Box::new(DataRune { name: r.name.clone(), icon: r.icon.clone(), tree: r.tree.clone() });
+                    runes_meta_a.push((r.icon.clone(), r.name.clone(), r.tree.clone()));
+                }
+                for rune_id in ["triumph", "legend_alacrity", "last_stand"] {
+                    if let Some(r) = all_runes.iter().find(|r| r.id == rune_id) {
+                        rune_page_a.primary_runes.push(Box::new(DataRune { name: r.name.clone(), icon: r.icon.clone(), tree: r.tree.clone() }));
+                        runes_meta_a.push((r.icon.clone(), r.name.clone(), r.tree.clone()));
+                    }
+                }
+                for rune_id in ["bone_plating", "overgrowth"] {
+                    if let Some(r) = all_runes.iter().find(|r| r.id == rune_id) {
+                        rune_page_a.secondary_runes.push(Box::new(DataRune { name: r.name.clone(), icon: r.icon.clone(), tree: r.tree.clone() }));
+                        runes_meta_a.push((r.icon.clone(), r.name.clone(), r.tree.clone()));
+                    }
+                }
+
                 let config_a = lol_core::champion::ChampionConfig {
                     level: 18,
                     item_build: item_build_a,
-                    rune_page: lol_core::rune::RunePage::default(),
+                    rune_page: rune_page_a,
                     base_stats: base_stats_a,
                     growth_stats: growth_stats_a,
                 };
@@ -197,10 +228,29 @@ fn main() {
                     movement_speed: data_b.base_stats.move_speed as f64,
                     ..Default::default()
                 };
+                let mut rune_page_b = lol_core::rune::RunePage::default();
+                let mut runes_meta_b = Vec::new();
+                if let Some(r) = all_runes.iter().find(|r| r.id == "conqueror") {
+                    rune_page_b.keystone = Box::new(DataRune { name: r.name.clone(), icon: r.icon.clone(), tree: r.tree.clone() });
+                    runes_meta_b.push((r.icon.clone(), r.name.clone(), r.tree.clone()));
+                }
+                for rune_id in ["triumph", "legend_alacrity", "last_stand"] {
+                    if let Some(r) = all_runes.iter().find(|r| r.id == rune_id) {
+                        rune_page_b.primary_runes.push(Box::new(DataRune { name: r.name.clone(), icon: r.icon.clone(), tree: r.tree.clone() }));
+                        runes_meta_b.push((r.icon.clone(), r.name.clone(), r.tree.clone()));
+                    }
+                }
+                for rune_id in ["bone_plating", "overgrowth"] {
+                    if let Some(r) = all_runes.iter().find(|r| r.id == rune_id) {
+                        rune_page_b.secondary_runes.push(Box::new(DataRune { name: r.name.clone(), icon: r.icon.clone(), tree: r.tree.clone() }));
+                        runes_meta_b.push((r.icon.clone(), r.name.clone(), r.tree.clone()));
+                    }
+                }
+
                 let config_b = lol_core::champion::ChampionConfig {
                     level: 18,
                     item_build: lol_core::item::ItemBuild::new(),
-                    rune_page: lol_core::rune::RunePage::default(),
+                    rune_page: rune_page_b,
                     base_stats: base_stats_b,
                     growth_stats: growth_stats_b,
                 };
@@ -224,6 +274,13 @@ fn main() {
                 let collector = std::rc::Rc::new(std::cell::RefCell::new(lol_report::collector::DataCollector::new()));
                 collector.borrow_mut().champion_items.insert(id_a.clone(), items_a.clone());
                 collector.borrow_mut().champion_items.insert(id_b.clone(), items_b.clone());
+
+                for (icon, name, tree) in runes_meta_a {
+                    collector.borrow_mut().record_rune_equipped(id_a.clone(), icon, name, tree);
+                }
+                for (icon, name, tree) in runes_meta_b {
+                    collector.borrow_mut().record_rune_equipped(id_b.clone(), icon, name, tree);
+                }
 
                 let tick_event = lol_apl::executor::ActorTickEvent {
                     actor: id_a.clone(),

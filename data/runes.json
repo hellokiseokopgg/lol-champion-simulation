@@ -3,13 +3,31 @@
     "id": "conqueror",
     "name": "Conqueror",
     "tree": "Precision",
-    "stats": {}
+    "icon": "8010",
+    "stats": {
+      "stack_ad_base": 1.2,
+      "stack_ad_growth": 0.088,
+      "stack_ap_base": 2.0,
+      "stack_ap_growth": 0.147,
+      "max_stacks": 12,
+      "heal_ratio_melee": 0.08,
+      "heal_ratio_ranged": 0.05,
+      "duration_sec": 6.0
+    }
   },
   {
     "id": "lethal_tempo",
     "name": "Lethal Tempo",
     "tree": "Precision",
-    "stats": {}
+    "icon": "8008",
+    "stats": {
+      "max_stacks": 6,
+      "duration_sec": 6.0,
+      "melee_as_base": 0.05,
+      "melee_as_growth": 0.00647,
+      "ranged_as_base": 0.04,
+      "ranged_as_growth": 0.00235
+    }
   },
   {
     "id": "grasp_of_the_undying",
@@ -18,5 +36,35 @@
     "stats": {
       "hp": 5.0
     }
+  },
+  {
+    "id": "triumph",
+    "name": "Triumph",
+    "tree": "Precision",
+    "icon": "9111"
+  },
+  {
+    "id": "legend_alacrity",
+    "name": "Legend: Alacrity",
+    "tree": "Precision",
+    "icon": "9104"
+  },
+  {
+    "id": "last_stand",
+    "name": "Last Stand",
+    "tree": "Precision",
+    "icon": "8299"
+  },
+  {
+    "id": "bone_plating",
+    "name": "Bone Plating",
+    "tree": "Resolve",
+    "icon": "8473"
+  },
+  {
+    "id": "overgrowth",
+    "name": "Overgrowth",
+    "tree": "Resolve",
+    "icon": "8451"
   }
 ]

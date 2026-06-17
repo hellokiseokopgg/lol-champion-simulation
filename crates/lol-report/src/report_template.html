@@ -662,6 +662,8 @@
 <script>
     const events = /* __EVENTS_JSON__ */;
     const itemsData = /* __ITEMS_JSON__ */;
+    const runesData = /* __RUNES_JSON__ */;
+    const runeTreesData = /* __RUNE_TREES_JSON__ */;
     
     // UI Elements
     const timelineInner = document.getElementById('timelineInner');
@@ -686,17 +688,79 @@
                 ? 'https://raw.communitydragon.org/latest/game/assets/characters/practicetool_targetdummy/hud/practicetool_targetdummy_circle.png'
                 : `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/champion/${champ}.png?image=c_crop,h_103,w_103,x_9,y_9/q_auto:good,f_webp,w_160,h_160&v=1612`;
             
+            // Tree color mapping for glow effect
+            const treeColors = {
+                "8000": "rgba(234, 179, 65, 0.8)", // Precision (Yellow)
+                "8100": "rgba(220, 68, 68, 0.8)",   // Domination (Red)
+                "8200": "rgba(104, 114, 226, 0.8)", // Sorcery (Blue/Purple)
+                "8300": "rgba(73, 172, 184, 0.8)",  // Inspiration (Cyan)
+                "8400": "rgba(161, 215, 142, 0.8)"  // Resolve (Green)
+            };
+
+            let runePageHtml = '';
+            if (typeof runesData !== 'undefined' && runesData[champ] && runesData[champ].length > 0 && typeof runeTreesData !== 'undefined') {
+                const champRunes = runesData[champ];
+                const equippedIds = new Set(champRunes.map(r => parseInt(r.id)));
+                
+                // Determine primary and secondary trees based on equipped runes
+                let primaryTreeId = champRunes[0]?.tree_id;
+                let secondaryTreeId = champRunes.find(r => r.tree_id !== primaryTreeId)?.tree_id;
+
+                const primaryTree = runeTreesData.find(t => t.id == primaryTreeId);
+                const secondaryTree = runeTreesData.find(t => t.id == secondaryTreeId);
+
+                const renderTree = (tree, isSecondary) => {
+                    if (!tree) return '';
+                    let color = treeColors[tree.id] || "rgba(255,255,255,0.8)";
+                    
+                    let html = `<div style="display: flex; flex-direction: column; gap: 8px; align-items: center; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; border-top: 2px solid ${color};">`;
+                    html += `<div style="font-size: 12px; font-weight: bold; color: ${color}; margin-bottom: 4px;">${tree.name}</div>`;
+                    
+                    const slotsToRender = isSecondary ? tree.slots.slice(1) : tree.slots;
+                    
+                    slotsToRender.forEach((slot, slotIdx) => {
+                        html += `<div style="display: flex; gap: 12px; justify-content: center; align-items: center; width: 100%;">`;
+                        slot.runes.forEach(rune => {
+                            const isEquipped = equippedIds.has(rune.id);
+                            const size = (!isSecondary && slotIdx === 0) ? 42 : 32; // Keystones are larger
+                            const filter = isEquipped ? 'grayscale(0)' : 'grayscale(100%)';
+                            const opacity = isEquipped ? '1' : '0.3';
+                            const border = isEquipped ? `2px solid ${color}` : '1px solid transparent';
+                            const shadow = isEquipped ? `0 0 10px ${color}` : 'none';
+                            
+                            const iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/14.22.1/perk/${rune.id}.png?image=q_auto:good,f_webp,w_64,h_64`;
+                            
+                            html += `<div title="${rune.name}" style="width: ${size}px; height: ${size}px; border-radius: 50%; border: ${border}; box-shadow: ${shadow}; display: flex; align-items: center; justify-content: center; background: #000; overflow: hidden; transition: all 0.2s;">
+                                <img src="${iconUrl}" style="width: 100%; height: 100%; object-fit: cover; filter: ${filter}; opacity: ${opacity};">
+                            </div>`;
+                        });
+                        html += `</div>`;
+                        if (slotIdx < slotsToRender.length - 1) {
+                            html += `<div style="width: 60%; height: 1px; background: rgba(255,255,255,0.1); margin: 2px 0;"></div>`;
+                        }
+                    });
+                    
+                    html += `</div>`;
+                    return html;
+                };
+
+                runePageHtml = `<div style="display: flex; gap: 16px; margin-top: 16px;">
+                    ${renderTree(primaryTree, false)}
+                    ${renderTree(secondaryTree, true)}
+                </div>`;
+            }
+
             let html = `
-                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-                    <div style="width: 48px; height: 48px; border-radius: 50%; border: 2px solid #4b5563; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.4); background: #2a2b36; display: flex; align-items: center; justify-content: center;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; position: relative;">
+                    <div style="width: 48px; height: 48px; border-radius: 50%; border: 2px solid #4b5563; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.4); background: #2a2b36; display: flex; align-items: center; justify-content: center; position: relative; z-index: 2;">
                         <img src="${champImgUrl}" alt="${champ}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                         <span style="display: none; font-size: 14px; font-weight: bold; color: #e5e7eb;">${champ.substring(0, 2).toUpperCase()}</span>
                     </div>
-                    <h4 style="margin: 0; font-size: 16px;">${isDummy ? 'Target Dummy' : champ}</h4>
+                    <h4 style="margin: 0; font-size: 16px; z-index: 2;">${isDummy ? 'Target Dummy' : champ}</h4>
                 </div>
             `;
             if (items.length === 0) {
-                html += `<p style="font-size: 12px; color: var(--text-muted);">No items equipped.</p>`;
+                html += `<p style="font-size: 12px; color: var(--text-muted); margin-bottom: 0;">No items equipped.</p>`;
             } else {
                 html += `<div style="display: flex; gap: 8px; flex-wrap: wrap;">`;
                 items.forEach(item => {
@@ -708,6 +772,9 @@
                 });
                 html += `</div>`;
             }
+            
+            html += runePageHtml;
+
             col.innerHTML = html;
             itemsContainer.appendChild(col);
         }
