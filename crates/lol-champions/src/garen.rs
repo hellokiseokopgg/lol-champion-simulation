@@ -37,28 +37,7 @@ impl ChampionModule for GarenModule {
             item_effects,
         );
 
-        let keystone_name = config.rune_page.keystone.name();
-        if keystone_name == "Conqueror" {
-            state
-                .rune_manager
-                .add_effect(Box::new(lol_core::rune_manager::Conqueror::new(true)));
-        } else if keystone_name == "Lethal Tempo" {
-            state
-                .rune_manager
-                .add_effect(Box::new(lol_core::rune_manager::LethalTempo::new(true)));
-        } else if keystone_name == "Phase Rush" {
-            state
-                .rune_manager
-                .add_effect(Box::new(lol_core::rune_manager::PhaseRush::new(true)));
-        } else if keystone_name == "Electrocute" {
-            state
-                .rune_manager
-                .add_effect(Box::new(lol_core::rune_manager::Electrocute::new()));
-        } else if keystone_name == "Press the Attack" {
-            state
-                .rune_manager
-                .add_effect(Box::new(lol_core::rune_manager::PressTheAttack::new(true)));
-        }
+        state.rune_manager.register_runes(&config.rune_page, true);
 
         // Initialize abilities to rank 5 for testing (except R to 3)
         if let Some(q) = state.abilities.get_state_mut(AbilitySlot::Q) {
@@ -137,6 +116,7 @@ impl ChampionInstance for GarenInstance {
         new_base.attack_speed += as_ratio * bonus_as_from_growth;
 
         self.state.stats.base = new_base;
+        self.state.current_time = time;
 
         // 2. Recalculate initial stats (Base + Runes + Items)
         let bonus = self.state.rune_stats.clone() + self.state.item_stats.clone();
@@ -145,11 +125,16 @@ impl ChampionInstance for GarenInstance {
         // 3. Recalculate current stats (Initial + Buffs)
         let mut total_bonus = self.state.buffs.aggregate_stats();
         let level = self.state.level;
+        let hp_ratio = if self.state.stats.current.health > 0.0 {
+            self.state.health.current / self.state.stats.current.health
+        } else {
+            1.0
+        };
         total_bonus = total_bonus
             + self
                 .state
                 .rune_manager
-                .get_bonus_stats(time, &self.state.stats.base, level);
+                .get_bonus_stats(time, &self.state.stats.base, level, hp_ratio);
         self.state.stats.recalculate_current(&total_bonus);
     }
 
@@ -164,9 +149,41 @@ impl ChampionInstance for GarenInstance {
     }
 
     fn take_damage(&mut self, amount: f64) -> lol_core::types::TakeDamageResult {
-        let is_dead = self.state.health.reduce(amount);
+        let time = self.state.current_time;
+        let level = self.state.level;
+        let mut final_damage = amount;
+
+        // Check Bone Plating
+        let has_bp_buff = self.state.buffs.has_effect_by_id(&lol_core::types::EffectId("BonePlatingBuff".to_string()), time);
+        if has_bp_buff {
+            let blocked = 30.0 + (30.0 / 17.0) * (level as f64 - 1.0);
+            final_damage = (final_damage - blocked).max(0.0);
+            self.state.buffs.decrement_stacks(&lol_core::types::EffectId("BonePlatingBuff".to_string()));
+            println!("Garen's Bone Plating blocked {:.1} damage at time {:.3}", blocked, time.as_f64());
+        } else {
+            let has_bp_rune = self.state.rune_manager.has_rune("Bone Plating");
+            let on_cooldown = self.state.buffs.has_effect_by_id(&lol_core::types::EffectId("BonePlatingCooldown".to_string()), time);
+            if has_bp_rune && !on_cooldown {
+                self.state.buffs.apply_effect(
+                    Box::new(lol_core::buff::BonePlatingCooldown),
+                    time,
+                    0.0,
+                );
+                self.state.buffs.apply_effect(
+                    Box::new(lol_core::buff::BonePlatingBuff { level }),
+                    time,
+                    0.0,
+                );
+                let blocked = 30.0 + (30.0 / 17.0) * (level as f64 - 1.0);
+                final_damage = (final_damage - blocked).max(0.0);
+                self.state.buffs.decrement_stacks(&lol_core::types::EffectId("BonePlatingBuff".to_string()));
+                println!("Garen's Bone Plating blocked {:.1} damage at time {:.3}", blocked, time.as_f64());
+            }
+        }
+
+        let is_dead = self.state.health.reduce(final_damage);
         lol_core::types::TakeDamageResult {
-            actual_damage: amount,
+            actual_damage: final_damage,
             is_dead,
         }
     }
@@ -524,10 +541,11 @@ impl Ability for GarenAutoAttack {
             ctx.apply_buff(target, Box::new(GarenQSilence));
         }
 
+        let is_critical = attacker_stats.crit_chance >= 1.0;
         let damage_result = DamagePipeline::process(
             raw_damage,
             DamageType::Physical,
-            false,
+            is_critical,
             &attacker_stats,
             &defender_stats,
         );
@@ -539,7 +557,7 @@ impl Ability for GarenAutoAttack {
                 target.clone(),
                 slot_to_record,
                 damage_result.final_damage,
-                false,
+                is_critical,
             );
         }
 

@@ -57,6 +57,10 @@ pub struct StatBlock {
 
     /// Grievous Wounds percentage (0.0 to 1.0) reducing healing received
     pub grievous_wounds: f64,
+    /// Percentage damage amplification (e.g. 0.08 for 8%)
+    pub damage_amp_percent: f64,
+    /// Percentage health bonus (e.g. 0.035 for 3.5%)
+    pub health_percent_bonus: f64,
 }
 
 impl StatBlock {
@@ -112,6 +116,8 @@ impl StatBlock {
             windup_percent: self.windup_percent,
             windup_modifier: self.windup_modifier,
             grievous_wounds: self.grievous_wounds,
+            damage_amp_percent: self.damage_amp_percent,
+            health_percent_bonus: self.health_percent_bonus,
         }
     }
     pub fn apply_bonus(&self, bonus: &StatBlock) -> Self {
@@ -158,6 +164,8 @@ impl std::ops::Add for StatBlock {
             windup_percent: self.windup_percent.or(rhs.windup_percent),
             windup_modifier: self.windup_modifier.or(rhs.windup_modifier),
             grievous_wounds: f64::max(self.grievous_wounds, rhs.grievous_wounds),
+            damage_amp_percent: self.damage_amp_percent + rhs.damage_amp_percent,
+            health_percent_bonus: self.health_percent_bonus + rhs.health_percent_bonus,
         }
     }
 }
@@ -193,6 +201,9 @@ impl ThreeLayerStats {
     /// Re-calculates `current` stats by applying temporary buffs to the `initial` stats.
     pub fn recalculate_current(&mut self, buffs: &StatBlock) {
         self.current = self.initial.apply_bonus(buffs);
+
+        // Apply health percent bonus
+        self.current.health *= 1.0 + self.current.health_percent_bonus;
 
         // Apply % armor reduction
         if self.current.armor_reduction_percent > 0.0 {

@@ -335,6 +335,109 @@ impl ItemEffect for StridebreakerEffect {
     }
 }
 
+/// Status effect representing Grievous Wounds, reducing healing.
+pub struct GrievousWoundsBuff;
+
+impl crate::buff::StatusEffect for GrievousWoundsBuff {
+    fn id(&self) -> crate::types::EffectId {
+        crate::types::EffectId("GrievousWoundsBuff".into())
+    }
+
+    fn name(&self) -> &str {
+        "Grievous Wounds"
+    }
+
+    fn duration(&self) -> f64 {
+        3.0
+    }
+
+    fn refresh_behavior(&self) -> crate::buff::RefreshBehavior {
+        crate::buff::RefreshBehavior::RefreshDuration
+    }
+
+    fn max_stacks(&self) -> u32 {
+        1
+    }
+
+    fn stat_modifiers(&self, _stacks: u32) -> StatBlock {
+        let mut stats = StatBlock::new();
+        stats.grievous_wounds = 0.40;
+        stats
+    }
+}
+
+/// Item effect for Mortal Reminder, which applies Grievous Wounds on physical damage.
+pub struct MortalReminderEffect;
+
+impl ItemEffect for MortalReminderEffect {
+    fn name(&self) -> &str {
+        "Mortal Reminder"
+    }
+
+    fn on_physical_damage(
+        &self,
+        ctx: &mut SimContext,
+        _actor: &crate::types::ChampionId,
+        target: &crate::types::ChampionId,
+        _damage: &DamageResult,
+    ) {
+        ctx.apply_buff(target, Box::new(GrievousWoundsBuff));
+    }
+}
+
+/// Status effect representing Spectral Waltz from Phantom Dancer, granting movement speed and attack speed.
+pub struct SpectralWaltzBuff;
+
+impl crate::buff::StatusEffect for SpectralWaltzBuff {
+    fn id(&self) -> crate::types::EffectId {
+        crate::types::EffectId("SpectralWaltzBuff".into())
+    }
+
+    fn name(&self) -> &str {
+        "Spectral Waltz"
+    }
+
+    fn duration(&self) -> f64 {
+        3.0
+    }
+
+    fn refresh_behavior(&self) -> crate::buff::RefreshBehavior {
+        crate::buff::RefreshBehavior::AddStack
+    }
+
+    fn max_stacks(&self) -> u32 {
+        4
+    }
+
+    fn stat_modifiers(&self, stacks: u32) -> StatBlock {
+        let mut stats = StatBlock::new();
+        stats.movement_speed = 24.0 * stacks as f64;
+        if stacks >= 4 {
+            stats.attack_speed = 0.30;
+        }
+        stats
+    }
+}
+
+/// Item effect for Phantom Dancer, applying Spectral Waltz on basic attacks.
+pub struct PhantomDancerEffect;
+
+impl ItemEffect for PhantomDancerEffect {
+    fn name(&self) -> &str {
+        "Phantom Dancer"
+    }
+
+    fn on_hit(
+        &self,
+        sim: &mut SimContext,
+        actor: &crate::types::ChampionId,
+        _target: &crate::types::ChampionId,
+        _damage: &DamageResult,
+    ) {
+        sim.apply_buff(actor, Box::new(SpectralWaltzBuff));
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -498,5 +601,184 @@ mod tests {
             .aggregate_stats()
             .armor_reduction_percent;
         assert_eq!(armor_reduction_cap, 0.24);
+    }
+
+    #[test]
+    fn test_infinity_edge_crit_damage_scaling() {
+        let mut attacker_stats = StatBlock::new();
+        // IE adds 0.40 crit damage. Base is 1.75. So total is 2.15.
+        attacker_stats.crit_damage = 1.75 + 0.40;
+        let defender_stats = StatBlock::new();
+
+        let result = crate::damage::DamagePipeline::process(
+            100.0,
+            crate::types::DamageType::Physical,
+            true, // is_critical
+            &attacker_stats,
+            &defender_stats,
+        );
+
+        assert_eq!(result.raw_damage, 215.0);
+    }
+
+    #[test]
+    fn test_mortal_reminder_grievous_wounds() {
+        let mut sim = SimContext {
+            champions: std::collections::HashMap::new(),
+            current_time: crate::types::SimTime::new(0.0),
+            new_events: vec![],
+            is_simulation_over: false,
+            recorder: None,
+        };
+        let target_id = ChampionId("Target".into());
+        let mut target_state = ChampionState::new(
+            1,
+            StatBlock::new(),
+            StatBlock::new(),
+            ResourceType::None,
+            StatBlock::new(),
+            StatBlock::new(),
+            vec![],
+        );
+        target_state.stats.recalculate_current(&StatBlock::new());
+
+        sim.champions.insert(
+            target_id.clone(),
+            std::rc::Rc::new(std::cell::RefCell::new(Box::new(DummyChampionInstance {
+                state: target_state,
+            })
+                as Box<dyn crate::champion::ChampionInstance>)),
+        );
+
+        let actor_id = ChampionId("Actor".into());
+        let mr_effect = MortalReminderEffect;
+        let damage_result = crate::damage::DamageResult {
+            raw_damage: 10.0,
+            final_damage: 10.0,
+            mitigated_damage: 0.0,
+            is_critical: false,
+            damage_type: DamageType::Physical,
+        };
+
+        // Before hit, no Grievous Wounds
+        let grievous_wounds_before = sim
+            .champions
+            .get(&target_id)
+            .unwrap()
+            .borrow()
+            .state()
+            .buffs
+            .aggregate_stats()
+            .grievous_wounds;
+        assert_eq!(grievous_wounds_before, 0.0);
+
+        // Apply physical damage
+        mr_effect.on_physical_damage(&mut sim, &actor_id, &target_id, &damage_result);
+
+        // After hit, Grievous Wounds buff applied (value: 0.40)
+        let grievous_wounds_after = sim
+            .champions
+            .get(&target_id)
+            .unwrap()
+            .borrow()
+            .state()
+            .buffs
+            .aggregate_stats()
+            .grievous_wounds;
+        assert_eq!(grievous_wounds_after, 0.40);
+    }
+
+    #[test]
+    fn test_phantom_dancer_spectral_waltz() {
+        let mut sim = SimContext {
+            champions: std::collections::HashMap::new(),
+            current_time: crate::types::SimTime::new(0.0),
+            new_events: vec![],
+            is_simulation_over: false,
+            recorder: None,
+        };
+        let actor_id = ChampionId("Actor".into());
+        let mut actor_state = ChampionState::new(
+            1,
+            StatBlock::new(),
+            StatBlock::new(),
+            ResourceType::None,
+            StatBlock::new(),
+            StatBlock::new(),
+            vec![],
+        );
+        actor_state.stats.recalculate_current(&StatBlock::new());
+
+        sim.champions.insert(
+            actor_id.clone(),
+            std::rc::Rc::new(std::cell::RefCell::new(Box::new(DummyChampionInstance {
+                state: actor_state,
+            })
+                as Box<dyn crate::champion::ChampionInstance>)),
+        );
+
+        let target_id = ChampionId("Target".into());
+        let pd_effect = PhantomDancerEffect;
+        let damage_result = crate::damage::DamageResult {
+            raw_damage: 10.0,
+            final_damage: 10.0,
+            mitigated_damage: 0.0,
+            is_critical: false,
+            damage_type: DamageType::Physical,
+        };
+
+        // 1st stack
+        pd_effect.on_hit(&mut sim, &actor_id, &target_id, &damage_result);
+        let buffs_stats_1 = sim
+            .champions
+            .get(&actor_id)
+            .unwrap()
+            .borrow()
+            .state()
+            .buffs
+            .aggregate_stats();
+        assert_eq!(buffs_stats_1.movement_speed, 24.0);
+        assert_eq!(buffs_stats_1.attack_speed, 0.0);
+
+        // 2nd stack
+        pd_effect.on_hit(&mut sim, &actor_id, &target_id, &damage_result);
+        // 3rd stack
+        pd_effect.on_hit(&mut sim, &actor_id, &target_id, &damage_result);
+        let buffs_stats_3 = sim
+            .champions
+            .get(&actor_id)
+            .unwrap()
+            .borrow()
+            .state()
+            .buffs
+            .aggregate_stats();
+        assert_eq!(buffs_stats_3.movement_speed, 72.0);
+        assert_eq!(buffs_stats_3.attack_speed, 0.0);
+
+        // 4th stack (should grant bonus attack speed)
+        pd_effect.on_hit(&mut sim, &actor_id, &target_id, &damage_result);
+        let buffs_stats_4 = sim
+            .champions
+            .get(&actor_id)
+            .unwrap()
+            .borrow()
+            .state()
+            .buffs
+            .aggregate_stats();
+        assert_eq!(buffs_stats_4.movement_speed, 96.0);
+        assert_eq!(buffs_stats_4.attack_speed, 0.30);
+
+        // 5th hit (should not exceed 4 stacks)
+        pd_effect.on_hit(&mut sim, &actor_id, &target_id, &damage_result);
+        let buffs_stats_5 = sim
+            .champions
+            .get(&actor_id)
+            .unwrap()
+            .borrow()
+            .state()
+            .buffs
+            .aggregate_stats();
+        assert_eq!(buffs_stats_5.movement_speed, 96.0);
+        assert_eq!(buffs_stats_5.attack_speed, 0.30);
     }
 }

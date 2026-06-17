@@ -54,6 +54,8 @@ pub struct ChampionState {
     pub rune_manager: crate::rune_manager::RuneManager,
     /// The ability currently being cast.
     pub casting: Option<crate::types::AbilitySlot>,
+    /// The current time in the simulation.
+    pub current_time: crate::types::SimTime,
 }
 
 impl ChampionState {
@@ -90,6 +92,7 @@ impl ChampionState {
             items: item_manager,
             rune_manager: crate::rune_manager::RuneManager::new(),
             casting: None,
+            current_time: crate::types::SimTime::new(0.0),
         }
     }
 }

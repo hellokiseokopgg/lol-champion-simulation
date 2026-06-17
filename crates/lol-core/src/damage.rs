@@ -94,11 +94,26 @@ impl DamagePipeline {
         attacker_stats: &StatBlock,
         defender_stats: &StatBlock,
     ) -> DamageResult {
+        let mut final_raw_damage = raw_damage;
+        if is_critical {
+            let crit_mult = if attacker_stats.crit_damage > 0.0 {
+                attacker_stats.crit_damage
+            } else {
+                1.75
+            };
+            final_raw_damage *= crit_mult;
+        }
+
         if damage_type == DamageType::True {
+            let mut final_damage = final_raw_damage;
+            final_damage *= 1.0 + attacker_stats.damage_amp_percent;
+            if defender_stats.damage_reduction_percent < -0.19 {
+                final_damage *= 1.0 - defender_stats.damage_reduction_percent;
+            }
             return DamageResult {
-                raw_damage,
-                mitigated_damage: raw_damage,
-                final_damage: raw_damage,
+                raw_damage: final_raw_damage,
+                mitigated_damage: final_raw_damage,
+                final_damage,
                 damage_type,
                 is_critical,
             };
@@ -120,7 +135,7 @@ impl DamagePipeline {
 
         // Assume reduction is already applied to defender_stats or 0 for basic simulation.
         let eff_res = effective_resistance(defender_res, 0.0, 0.0, percent_pen, flat_pen);
-        let mitigated_damage = apply_resistance(raw_damage, eff_res);
+        let mitigated_damage = apply_resistance(final_raw_damage, eff_res);
 
         // Apply damage reduction
         let mut final_damage = mitigated_damage;
@@ -128,10 +143,13 @@ impl DamagePipeline {
             final_damage *= 1.0 - defender_stats.damage_reduction_percent;
         }
 
+        // Apply damage amplification
+        final_damage *= 1.0 + attacker_stats.damage_amp_percent;
+
         // Shield absorption would happen here in a fuller implementation.
 
         DamageResult {
-            raw_damage,
+            raw_damage: final_raw_damage,
             mitigated_damage,
             final_damage,
             damage_type,

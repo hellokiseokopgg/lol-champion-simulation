@@ -29,7 +29,7 @@ pub trait RuneEffect: Debug {
 
     /// Called when calculating current stats.
     /// The rune should check for expiration (using `time`) and return its bonus stats based on current stacks and level.
-    fn get_bonus_stats(&mut self, time: SimTime, base_stats: &StatBlock, level: u32) -> StatBlock;
+    fn get_bonus_stats(&mut self, time: SimTime, base_stats: &StatBlock, level: u32, hp_ratio: f64) -> StatBlock;
 
     /// Called when the champion deals damage to an enemy.
     /// Returns a list of rune events (like stack changes or healing).
@@ -46,6 +46,16 @@ pub trait RuneEffect: Debug {
     /// Called periodically to allow runes to emit expiration events.
     fn on_tick(&mut self, _time: SimTime) -> Vec<RuneEvent> {
         Vec::new() // Default empty implementation
+    }
+
+    /// Called when the champion gets a takedown.
+    fn on_takedown(
+        &mut self,
+        _time: SimTime,
+        _attacker_stats: &crate::stats::StatBlock,
+        _current_hp: f64,
+    ) -> Vec<RuneEvent> {
+        Vec::new()
     }
 }
 
@@ -72,10 +82,11 @@ impl RuneManager {
         time: SimTime,
         base_stats: &StatBlock,
         level: u32,
+        hp_ratio: f64,
     ) -> StatBlock {
         let mut total = StatBlock::new();
         for effect in &mut self.effects {
-            total = total + effect.get_bonus_stats(time, base_stats, level);
+            total = total + effect.get_bonus_stats(time, base_stats, level, hp_ratio);
         }
         total
     }
@@ -112,6 +123,59 @@ impl RuneManager {
         }
         events
     }
+
+    /// Dispatches the takedown event to all runes.
+    pub fn on_takedown(
+        &mut self,
+        time: SimTime,
+        attacker_stats: &crate::stats::StatBlock,
+        current_hp: f64,
+    ) -> Vec<RuneEvent> {
+        let mut events = Vec::new();
+        for effect in &mut self.effects {
+            events.extend(effect.on_takedown(time, attacker_stats, current_hp));
+        }
+        events
+    }
+
+    /// Registers dynamic effects from a RunePage.
+    pub fn register_runes(&mut self, rune_page: &crate::rune::RunePage, is_melee: bool) {
+        let keystone_name = rune_page.keystone.name();
+        self.add_rune_by_name(keystone_name, is_melee);
+
+        for r in &rune_page.primary_runes {
+            self.add_rune_by_name(r.name(), is_melee);
+        }
+
+        for r in &rune_page.secondary_runes {
+            self.add_rune_by_name(r.name(), is_melee);
+        }
+    }
+
+    /// Checks if a rune with the given name is equipped.
+    pub fn has_rune(&self, name: &str) -> bool {
+        self.effects.iter().any(|e| e.name().eq_ignore_ascii_case(name))
+    }
+
+    #[allow(clippy::collapsible_str_replace)]
+    fn add_rune_by_name(&mut self, name: &str, is_melee: bool) {
+        let normalized = name.to_lowercase().replace(':', "").replace('_', " ").replace('-', " ");
+        let normalized = normalized.trim();
+        match normalized {
+            "conqueror" => self.add_effect(Box::new(Conqueror::new(is_melee))),
+            "lethal tempo" => self.add_effect(Box::new(LethalTempo::new(is_melee))),
+            "phase rush" => self.add_effect(Box::new(PhaseRush::new(is_melee))),
+            "electrocute" => self.add_effect(Box::new(Electrocute::new())),
+            "press the attack" => self.add_effect(Box::new(PressTheAttack::new(is_melee))),
+            "grasp of the undying" => self.add_effect(Box::new(GraspOfTheUndying::new(is_melee))),
+            "triumph" => self.add_effect(Box::new(Triumph::new())),
+            "legend alacrity" => self.add_effect(Box::new(LegendAlacrity::new())),
+            "last stand" => self.add_effect(Box::new(LastStand::new())),
+            "bone plating" => self.add_effect(Box::new(BonePlatingRune::new())),
+            "overgrowth" => self.add_effect(Box::new(Overgrowth::new())),
+            _ => {}
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -142,7 +206,7 @@ impl RuneEffect for Conqueror {
         "Conqueror"
     }
 
-    fn get_bonus_stats(&mut self, time: SimTime, base_stats: &StatBlock, level: u32) -> StatBlock {
+    fn get_bonus_stats(&mut self, time: SimTime, base_stats: &StatBlock, level: u32, _hp_ratio: f64) -> StatBlock {
         let mut bonus = StatBlock::new();
         
         if self.is_adaptive_ad.is_none() {
@@ -262,7 +326,7 @@ impl RuneEffect for LethalTempo {
         "Lethal Tempo"
     }
 
-    fn get_bonus_stats(&mut self, time: SimTime, base_stats: &StatBlock, level: u32) -> StatBlock {
+    fn get_bonus_stats(&mut self, time: SimTime, base_stats: &StatBlock, level: u32, _hp_ratio: f64) -> StatBlock {
         // Expiration check
         if *time.0 - self.last_stack_time > 6.0 {
             self.stacks = 0;
@@ -367,6 +431,7 @@ impl RuneEffect for TasteOfBlood {
         _time: SimTime,
         base_stats: &StatBlock,
         _level: u32,
+        _hp_ratio: f64,
     ) -> StatBlock {
         self.base_ad = base_stats.attack_damage;
         StatBlock::new()
@@ -435,6 +500,7 @@ impl RuneEffect for Electrocute {
         _time: SimTime,
         base_stats: &StatBlock,
         _level: u32,
+        _hp_ratio: f64,
     ) -> StatBlock {
         self.base_ad = base_stats.attack_damage;
         StatBlock::new()
@@ -531,6 +597,7 @@ impl RuneEffect for PhaseRush {
         time: SimTime,
         _base_stats: &StatBlock,
         _level: u32,
+        _hp_ratio: f64,
     ) -> StatBlock {
         let mut stats = StatBlock::new();
         // If activated and within 3 seconds
@@ -648,6 +715,7 @@ impl RuneEffect for PressTheAttack {
         _time: SimTime,
         base_stats: &StatBlock,
         _level: u32,
+        _hp_ratio: f64,
     ) -> StatBlock {
         self.base_ad = base_stats.attack_damage;
         StatBlock::new()
@@ -725,7 +793,276 @@ impl RuneEffect for PressTheAttack {
     }
 }
 
+#[derive(Debug)]
+pub struct GraspOfTheUndying {
+    pub is_melee: bool,
+    pub permanent_hp: f64,
+    pub in_combat_since: Option<f64>,
+    pub last_combat_time: Option<f64>,
+}
 
+impl GraspOfTheUndying {
+    pub fn new(is_melee: bool) -> Self {
+        Self {
+            is_melee,
+            permanent_hp: 0.0,
+            in_combat_since: None,
+            last_combat_time: None,
+        }
+    }
+}
+
+impl RuneEffect for GraspOfTheUndying {
+    fn name(&self) -> &str {
+        "Grasp of the Undying"
+    }
+
+    fn get_bonus_stats(&mut self, _time: SimTime, _base_stats: &StatBlock, _level: u32, _hp_ratio: f64) -> StatBlock {
+        let mut stats = StatBlock::new();
+        stats.health = self.permanent_hp;
+        stats
+    }
+
+    #[allow(clippy::collapsible_if)]
+    fn on_damage_dealt(
+        &mut self,
+        time: SimTime,
+        _amount: f64,
+        is_ability: bool,
+        slot: crate::types::AbilitySlot,
+        attacker_stats: &crate::stats::StatBlock,
+        _level: u32,
+    ) -> Vec<RuneEvent> {
+        let mut events = Vec::new();
+        let current_time = time.as_f64();
+
+        if let Some(last_combat) = self.last_combat_time {
+            if current_time - last_combat > 5.0 {
+                self.in_combat_since = Some(current_time);
+            }
+        } else {
+            self.in_combat_since = Some(current_time);
+        }
+        self.last_combat_time = Some(current_time);
+
+        if let Some(start_time) = self.in_combat_since {
+            if current_time - start_time >= 4.0 && slot == crate::types::AbilitySlot::AutoAttack && !is_ability {
+                let max_health = attacker_stats.health;
+                let damage_pct = if self.is_melee { 0.035 } else { 0.021 };
+                let damage = max_health * damage_pct;
+
+                let heal_pct = if self.is_melee { 0.012 } else { 0.0072 };
+                let heal_amount = max_health * heal_pct;
+
+                let hp_gain = if self.is_melee { 5.0 } else { 3.0 };
+                self.permanent_hp += hp_gain;
+
+                self.in_combat_since = Some(current_time);
+
+                events.push(RuneEvent::DamageDealt {
+                    amount: damage,
+                    damage_type: crate::types::DamageType::Magic,
+                    slot: crate::types::AbilitySlot::GraspOfTheUndying,
+                });
+                events.push(RuneEvent::Healed { amount: heal_amount });
+            }
+        }
+
+        events
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct Triumph;
+
+impl Triumph {
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+impl RuneEffect for Triumph {
+    fn name(&self) -> &str {
+        "Triumph"
+    }
+
+    fn get_bonus_stats(&mut self, _time: SimTime, _base_stats: &StatBlock, _level: u32, _hp_ratio: f64) -> StatBlock {
+        StatBlock::new()
+    }
+
+    fn on_damage_dealt(
+        &mut self,
+        _time: SimTime,
+        _amount: f64,
+        _is_ability: bool,
+        _slot: crate::types::AbilitySlot,
+        _attacker_stats: &crate::stats::StatBlock,
+        _level: u32,
+    ) -> Vec<RuneEvent> {
+        Vec::new()
+    }
+
+    fn on_takedown(&mut self, _time: SimTime, attacker_stats: &crate::stats::StatBlock, current_hp: f64) -> Vec<RuneEvent> {
+        let max_hp = attacker_stats.health;
+        let missing_hp = (max_hp - current_hp).max(0.0);
+        let heal_amount = 0.025 * max_hp + 0.05 * missing_hp;
+        vec![RuneEvent::Healed { amount: heal_amount }]
+    }
+}
+
+#[derive(Debug)]
+pub struct LegendAlacrity {
+    pub stacks: u32,
+}
+
+impl LegendAlacrity {
+    pub fn new() -> Self {
+        Self { stacks: 10 }
+    }
+}
+
+impl Default for LegendAlacrity {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl RuneEffect for LegendAlacrity {
+    fn name(&self) -> &str {
+        "Legend: Alacrity"
+    }
+
+    fn get_bonus_stats(&mut self, _time: SimTime, _base_stats: &StatBlock, _level: u32, _hp_ratio: f64) -> StatBlock {
+        let mut stats = StatBlock::new();
+        let total_as_pct = 0.03 + 0.015 * (self.stacks as f64);
+        stats.attack_speed = total_as_pct;
+        stats
+    }
+
+    fn on_damage_dealt(
+        &mut self,
+        _time: SimTime,
+        _amount: f64,
+        _is_ability: bool,
+        _slot: crate::types::AbilitySlot,
+        _attacker_stats: &crate::stats::StatBlock,
+        _level: u32,
+    ) -> Vec<RuneEvent> {
+        Vec::new()
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct LastStand;
+
+impl LastStand {
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+impl RuneEffect for LastStand {
+    fn name(&self) -> &str {
+        "Last Stand"
+    }
+
+    fn get_bonus_stats(&mut self, _time: SimTime, _base_stats: &StatBlock, _level: u32, hp_ratio: f64) -> StatBlock {
+        let mut stats = StatBlock::new();
+        if hp_ratio <= 0.6 {
+            let t = (0.6 - hp_ratio).max(0.0) / (0.6 - 0.3);
+            let t = t.min(1.0);
+            let amp = 0.05 + 0.06 * t;
+            stats.damage_amp_percent = amp;
+        }
+        stats
+    }
+
+    fn on_damage_dealt(
+        &mut self,
+        _time: SimTime,
+        _amount: f64,
+        _is_ability: bool,
+        _slot: crate::types::AbilitySlot,
+        _attacker_stats: &crate::stats::StatBlock,
+        _level: u32,
+    ) -> Vec<RuneEvent> {
+        Vec::new()
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct BonePlatingRune;
+
+impl BonePlatingRune {
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+impl RuneEffect for BonePlatingRune {
+    fn name(&self) -> &str {
+        "Bone Plating"
+    }
+
+    fn get_bonus_stats(&mut self, _time: SimTime, _base_stats: &StatBlock, _level: u32, _hp_ratio: f64) -> StatBlock {
+        StatBlock::new()
+    }
+
+    fn on_damage_dealt(
+        &mut self,
+        _time: SimTime,
+        _amount: f64,
+        _is_ability: bool,
+        _slot: crate::types::AbilitySlot,
+        _attacker_stats: &crate::stats::StatBlock,
+        _level: u32,
+    ) -> Vec<RuneEvent> {
+        Vec::new()
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct Overgrowth;
+
+impl Overgrowth {
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+impl RuneEffect for Overgrowth {
+    fn name(&self) -> &str {
+        "Overgrowth"
+    }
+
+    fn get_bonus_stats(&mut self, time: SimTime, _base_stats: &StatBlock, _level: u32, _hp_ratio: f64) -> StatBlock {
+        let mut stats = StatBlock::new();
+        let seconds = time.as_f64();
+        let intervals = (seconds / 30.0).floor() as u32;
+        let minions = intervals * 6;
+
+        let flat_hp = (minions / 8) * 3;
+        stats.health = flat_hp as f64;
+
+        if minions >= 120 {
+            stats.health_percent_bonus = 0.035;
+        }
+
+        stats
+    }
+
+    fn on_damage_dealt(
+        &mut self,
+        _time: SimTime,
+        _amount: f64,
+        _is_ability: bool,
+        _slot: crate::types::AbilitySlot,
+        _attacker_stats: &crate::stats::StatBlock,
+        _level: u32,
+    ) -> Vec<RuneEvent> {
+        Vec::new()
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -739,7 +1076,7 @@ mod tests {
         base_stats.attack_damage = 80.0;
 
         // Caches base_ad
-        let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1);
+        let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1, 1.0);
 
         let mut attacker_stats = StatBlock::new();
         attacker_stats.attack_damage = 100.0; // 20 bonus AD
@@ -800,7 +1137,7 @@ mod tests {
         base_stats.attack_damage = 70.0;
 
         // Cache base_ad
-        let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1);
+        let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1, 1.0);
 
         let mut attacker_stats = StatBlock::new();
         attacker_stats.attack_damage = 120.0; // 50 bonus AD
@@ -879,7 +1216,7 @@ mod tests {
         base_stats.attack_damage = 80.0;
 
         // Caches base_ad
-        let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1);
+        let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1, 1.0);
 
         let mut attacker_stats = StatBlock::new();
         attacker_stats.attack_damage = 110.0; // 30 bonus AD
@@ -993,7 +1330,7 @@ mod tests {
         let mut base_stats = StatBlock::new();
         base_stats.attack_damage = 80.0;
         
-        let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1);
+        let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1, 1.0);
         
         let mut attacker_stats = StatBlock::new();
         attacker_stats.attack_damage = 110.0;
@@ -1044,5 +1381,143 @@ mod tests {
             }
         }
         assert!(healed);
+    }
+
+    #[test]
+    fn test_grasp_of_the_undying() {
+        let mut rune = GraspOfTheUndying::new(true); // Melee
+        let mut base_stats = StatBlock::new();
+        base_stats.health = 1000.0;
+
+        // Verify initial stats (0 bonus HP)
+        let bonus = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1, 1.0);
+        assert_eq!(bonus.health, 0.0);
+
+        // 1st attack at t=0.0: enters combat, does not trigger yet
+        let events = rune.on_damage_dealt(
+            SimTime::new(0.0),
+            10.0,
+            false,
+            AbilitySlot::AutoAttack,
+            &base_stats,
+            1,
+        );
+        assert!(events.is_empty());
+
+        // 2nd attack at t=4.0: triggers!
+        let events = rune.on_damage_dealt(
+            SimTime::new(4.0),
+            10.0,
+            false,
+            AbilitySlot::AutoAttack,
+            &base_stats,
+            1,
+        );
+        assert_eq!(events.len(), 2);
+
+        let mut damage_found = false;
+        let mut heal_found = false;
+        for event in events {
+            match event {
+                RuneEvent::DamageDealt { amount, damage_type, slot } => {
+                    // 3.5% of 1000 = 35
+                    assert_eq!(amount, 35.0);
+                    assert_eq!(damage_type, crate::types::DamageType::Magic);
+                    assert_eq!(slot, AbilitySlot::GraspOfTheUndying);
+                    damage_found = true;
+                }
+                RuneEvent::Healed { amount } => {
+                    // 1.2% of 1000 = 12
+                    assert_eq!(amount, 12.0);
+                    heal_found = true;
+                }
+                _ => {}
+            }
+        }
+        assert!(damage_found);
+        assert!(heal_found);
+
+        // Verify stats update (permanent +5 HP gained)
+        let bonus = rune.get_bonus_stats(SimTime::new(4.1), &base_stats, 1, 1.0);
+        assert_eq!(bonus.health, 5.0);
+    }
+
+    #[test]
+    fn test_triumph_healing() {
+        let mut rune = Triumph::new();
+        let mut base_stats = StatBlock::new();
+        base_stats.health = 1000.0;
+
+        // Trigger takedown at current_hp = 500 (missing = 500)
+        let events = rune.on_takedown(SimTime::new(0.0), &base_stats, 500.0);
+        assert_eq!(events.len(), 1);
+        match events[0] {
+            RuneEvent::Healed { amount } => {
+                // 2.5% of 1000 = 25
+                // 5% of 500 = 25
+                // Total = 50.0
+                assert_eq!(amount, 50.0);
+            }
+            _ => panic!("Expected Healed event"),
+        }
+    }
+
+    #[test]
+    fn test_legend_alacrity_stats() {
+        let mut rune = LegendAlacrity::new();
+        let base_stats = StatBlock::new();
+
+        // 10 stacks (default/initial) -> 3% + 1.5% * 10 = 18% AS
+        let bonus = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1, 1.0);
+        assert!((bonus.attack_speed - 0.18).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_last_stand_damage_amplification() {
+        let mut rune = LastStand::new();
+        let base_stats = StatBlock::new();
+
+        // Above 60% HP -> 0% amp
+        let bonus = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1, 0.70);
+        assert_eq!(bonus.damage_amp_percent, 0.0);
+
+        // Below 30% HP -> 11% amp (0.11)
+        let bonus = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1, 0.25);
+        assert!((bonus.damage_amp_percent - 0.11).abs() < 1e-5);
+
+        // At 45% HP -> 8% amp (0.08)
+        let bonus = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1, 0.45);
+        assert!((bonus.damage_amp_percent - 0.08).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_bone_plating_rune_name() {
+        let rune = BonePlatingRune::new();
+        assert_eq!(rune.name(), "Bone Plating");
+    }
+
+    #[test]
+    fn test_overgrowth_scaling() {
+        let mut rune = Overgrowth::new();
+        let base_stats = StatBlock::new();
+
+        // At t=0s: 0 minions -> +0 HP, 0% health percent
+        let bonus = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1, 1.0);
+        assert_eq!(bonus.health, 0.0);
+        assert_eq!(bonus.health_percent_bonus, 0.0);
+
+        // At t=40s: 1 interval (6 minions) -> 6/8 = 0 minions for flat, so +0 HP
+        let bonus = rune.get_bonus_stats(SimTime::new(40.0), &base_stats, 1, 1.0);
+        assert_eq!(bonus.health, 0.0);
+
+        // At t=60s: 2 intervals (12 minions) -> 12/8 = 1 group of 8 -> +3 flat HP
+        let bonus = rune.get_bonus_stats(SimTime::new(60.0), &base_stats, 1, 1.0);
+        assert_eq!(bonus.health, 3.0);
+
+        // At t=600s: 20 intervals (120 minions) -> 120/8 = 15 groups -> 15 * 3 = +45 flat HP
+        // And +3.5% health bonus
+        let bonus = rune.get_bonus_stats(SimTime::new(600.0), &base_stats, 1, 1.0);
+        assert_eq!(bonus.health, 45.0);
+        assert_eq!(bonus.health_percent_bonus, 0.035);
     }
 }

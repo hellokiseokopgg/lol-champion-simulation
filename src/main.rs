@@ -182,6 +182,7 @@ fn main() {
                     attack_delay_offset: data_a.base_stats.attack_delay_offset,
                     windup_percent: data_a.base_stats.windup_percent,
                     windup_modifier: data_a.base_stats.windup_modifier,
+                    crit_damage: 1.75,
                     ..Default::default()
                 };
                 let mut item_build_a = lol_core::item::ItemBuild::new();
@@ -316,6 +317,7 @@ fn main() {
                     attack_delay_offset: data_b.base_stats.attack_delay_offset,
                     windup_percent: data_b.base_stats.windup_percent,
                     windup_modifier: data_b.base_stats.windup_modifier,
+                    crit_damage: 1.75,
                     ..Default::default()
                 };
 

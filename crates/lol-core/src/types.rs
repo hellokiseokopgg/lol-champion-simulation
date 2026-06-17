@@ -42,6 +42,8 @@ pub enum AbilitySlot {
     Electrocute,
     /// Press the Attack rune effect
     PressTheAttack,
+    /// Grasp of the Undying rune effect
+    GraspOfTheUndying,
 }
 
 /// Represents the resource type a champion uses for their abilities.

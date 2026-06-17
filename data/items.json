@@ -23,7 +23,8 @@
     "cost": 3400,
     "stats": {
       "attack_damage": 65.0,
-      "crit_chance": 0.20
+      "crit_chance": 0.20,
+      "crit_damage": 0.40
     }
   },
   {

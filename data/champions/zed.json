@@ -1,26 +1,62 @@
 {
-    "id": "Zed",
+    "id": "zed",
     "name": "Zed",
     "base_stats": {
-        "health": 654.0,
-        "health_regen": 7.0,
-        "mana": 200.0,
-        "mana_regen": 50.0,
-        "attack_damage": 63.0,
-        "ability_power": 0.0,
+        "hp": 654.0,
+        "mp": 200.0,
+        "hp_regen": 7.0,
+        "mp_regen": 50.0,
         "armor": 32.0,
         "magic_resist": 32.0,
+        "attack_damage": 63.0,
         "attack_speed": 0.651,
-        "attack_speed_ratio": 0.651,
-        "movement_speed": 345.0,
-        "crit_chance": 0.0,
-        "crit_damage": 1.75,
-        "armor_pen_flat": 0.0,
-        "armor_pen_percent": 0.0,
-        "magic_pen_flat": 0.0,
-        "magic_pen_percent": 0.0,
-        "ability_haste": 0.0,
-        "life_steal": 0.0,
-        "omnivamp": 0.0
-    }
+        "attack_range": 125.0,
+        "move_speed": 345.0,
+        "attack_delay_offset": -0.04,
+        "attack_speed_ratio": 0.651
+    },
+    "growth_stats": {
+        "hp": 105.0,
+        "mp": 0.0,
+        "hp_regen": 0.65,
+        "mp_regen": 0.0,
+        "armor": 4.7,
+        "magic_resist": 2.05,
+        "attack_damage": 3.4,
+        "attack_speed": 0.033
+    },
+    "skills": [
+        {
+            "id": "zed_q",
+            "name": "Razor Shuriken",
+            "base_damage": [80.0, 115.0, 150.0, 185.0, 220.0],
+            "cooldowns": [6.0, 6.0, 6.0, 6.0, 6.0],
+            "ad_ratio": [1.1, 1.1, 1.1, 1.1, 1.1],
+            "ap_ratio": [0.0, 0.0, 0.0, 0.0, 0.0]
+        },
+        {
+            "id": "zed_w",
+            "name": "Living Shadow",
+            "base_damage": [0.0, 0.0, 0.0, 0.0, 0.0],
+            "cooldowns": [20.0, 18.5, 17.0, 15.5, 14.0],
+            "ad_ratio": [0.0, 0.0, 0.0, 0.0, 0.0],
+            "ap_ratio": [0.0, 0.0, 0.0, 0.0, 0.0]
+        },
+        {
+            "id": "zed_e",
+            "name": "Shadow Slash",
+            "base_damage": [65.0, 90.0, 115.0, 140.0, 165.0],
+            "cooldowns": [5.0, 4.75, 4.5, 4.25, 4.0],
+            "ad_ratio": [0.65, 0.65, 0.65, 0.65, 0.65],
+            "ap_ratio": [0.0, 0.0, 0.0, 0.0, 0.0]
+        },
+        {
+            "id": "zed_r",
+            "name": "Death Mark",
+            "base_damage": [0.0, 0.0, 0.0],
+            "cooldowns": [120.0, 100.0, 80.0],
+            "ad_ratio": [1.0, 1.0, 1.0],
+            "ap_ratio": [0.0, 0.0, 0.0]
+        }
+    ]
 }

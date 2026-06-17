@@ -58,13 +58,19 @@ impl ChampionInstance for DummyInstance {
         let bonus = self.state.rune_stats.clone() + self.state.item_stats.clone();
         self.state.stats.recalculate_initial(&bonus);
 
+        self.state.current_time = time;
         let mut total_bonus = self.state.buffs.aggregate_stats();
         let level = self.state.level;
+        let hp_ratio = if self.state.stats.current.health > 0.0 {
+            self.state.health.current / self.state.stats.current.health
+        } else {
+            1.0
+        };
         total_bonus = total_bonus
             + self
                 .state
                 .rune_manager
-                .get_bonus_stats(time, &self.state.stats.base, level);
+                .get_bonus_stats(time, &self.state.stats.base, level, hp_ratio);
         self.state.stats.recalculate_current(&total_bonus);
     }
 

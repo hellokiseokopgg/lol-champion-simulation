@@ -11,7 +11,7 @@ fn test_electrocute_cooldown_by_level() {
     {
         let mut rune = Electrocute::new();
         let base_stats = StatBlock::new();
-        let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1);
+        let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1, 1.0);
 
         // Trigger Electrocute at t=0.0
         let attacker_stats = StatBlock::new();
@@ -108,7 +108,7 @@ fn test_electrocute_cooldown_by_level() {
     {
         let mut rune = Electrocute::new();
         let base_stats = StatBlock::new();
-        let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 18);
+        let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 18, 1.0);
 
         // Trigger at t=0.0
         let attacker_stats = StatBlock::new();
@@ -262,7 +262,7 @@ fn test_pta_damage_amplification_types() {
 fn test_electrocute_same_slot_overwrite() {
     let mut rune = Electrocute::new();
     let base_stats = StatBlock::new();
-    let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1);
+    let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1, 1.0);
     let attacker_stats = StatBlock::new();
 
     // Sequence: AA (t=0.0) -> Q (t=1.0) -> AA (t=2.0)
@@ -309,7 +309,7 @@ fn test_electrocute_same_slot_overwrite() {
 fn test_electrocute_window_duration_boundary() {
     let mut rune = Electrocute::new();
     let base_stats = StatBlock::new();
-    let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1);
+    let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1, 1.0);
     let attacker_stats = StatBlock::new();
 
     // Test window boundary: 3.15s (current implementation uses 3.15s limit)
@@ -387,7 +387,7 @@ fn test_electrocute_window_duration_boundary() {
 fn test_pta_stack_decay_boundary() {
     let mut rune = lol_core::rune_manager::PressTheAttack::new(true);
     let base_stats = StatBlock::new();
-    let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1);
+    let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1, 1.0);
     let attacker_stats = StatBlock::new();
 
     // Hit 1: AA at t=0.0
@@ -432,7 +432,7 @@ fn test_pta_stack_decay_boundary() {
 fn test_pta_exposure_reset_and_immediate_stacking() {
     let mut rune = lol_core::rune_manager::PressTheAttack::new(true);
     let base_stats = StatBlock::new();
-    let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1);
+    let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1, 1.0);
     let attacker_stats = StatBlock::new();
 
     // Trigger PTA at t=0.0
@@ -503,7 +503,7 @@ fn test_electrocute_adaptive_damage_type() {
     // Case 1: bonus AD (50) > AP (40) -> Physical
     {
         let mut rune = Electrocute::new();
-        let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1);
+        let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1, 1.0);
         attacker_stats.attack_damage = 130.0; // 50 bonus AD
         attacker_stats.ability_power = 40.0; // 40 AP
         let _ = rune.on_damage_dealt(
@@ -542,7 +542,7 @@ fn test_electrocute_adaptive_damage_type() {
     // Case 2: bonus AD (40) < AP (50) -> Magic
     {
         let mut rune = Electrocute::new();
-        let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1);
+        let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1, 1.0);
         attacker_stats.attack_damage = 120.0; // 40 bonus AD
         attacker_stats.ability_power = 50.0; // 50 AP
         let _ = rune.on_damage_dealt(
@@ -581,7 +581,7 @@ fn test_electrocute_adaptive_damage_type() {
     // Case 3: bonus AD (50) == AP (50) -> Magic (fallback)
     {
         let mut rune = Electrocute::new();
-        let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1);
+        let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1, 1.0);
         attacker_stats.attack_damage = 130.0; // 50 bonus AD
         attacker_stats.ability_power = 50.0; // 50 AP
         let _ = rune.on_damage_dealt(
@@ -622,7 +622,7 @@ fn test_electrocute_adaptive_damage_type() {
 fn test_electrocute_item_ignored_sequence() {
     let mut rune = Electrocute::new();
     let base_stats = StatBlock::new();
-    let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1);
+    let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1, 1.0);
     let attacker_stats = StatBlock::new();
 
     // Hit 1: AA at t=0.0
@@ -679,7 +679,7 @@ fn test_electrocute_item_ignored_sequence() {
 fn test_electrocute_overwrite_and_trigger() {
     let mut rune = Electrocute::new();
     let base_stats = StatBlock::new();
-    let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1);
+    let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1, 1.0);
     let attacker_stats = StatBlock::new();
 
     // Hit 1: Q at t=0.0
@@ -736,7 +736,7 @@ fn test_pta_proc_damage_amplification() {
         attack_damage: 80.0,
         ..Default::default()
     };
-    let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1);
+    let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1, 1.0);
 
     let attacker_stats = StatBlock {
         attack_damage: 80.0,
@@ -823,7 +823,7 @@ fn test_pta_proc_damage_amplification() {
 fn test_pta_multiple_decays_and_triggers() {
     let mut rune = lol_core::rune_manager::PressTheAttack::new(true);
     let base_stats = StatBlock::new();
-    let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1);
+    let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1, 1.0);
     let attacker_stats = StatBlock::new();
 
     // 1. Attack 1 at t=0.0 -> stacks = 1
@@ -917,7 +917,7 @@ fn test_pta_multiple_decays_and_triggers() {
 fn test_electrocute_mid_cooldown_level_up() {
     let mut rune = Electrocute::new();
     let base_stats = StatBlock::new();
-    let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1);
+    let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1, 1.0);
     let attacker_stats = StatBlock::new();
 
     // Trigger Electrocute at t=0.0 (level 1)
@@ -1015,7 +1015,7 @@ fn test_electrocute_mid_cooldown_level_up() {
 fn test_electrocute_simultaneous_hits() {
     let mut rune = Electrocute::new();
     let base_stats = StatBlock::new();
-    let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1);
+    let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1, 1.0);
     let attacker_stats = StatBlock::new();
 
     // Hit 1: Q at t=1.0
@@ -1062,7 +1062,7 @@ fn test_electrocute_negative_and_zero_cooldown_adversarial() {
     {
         let mut rune = Electrocute::new();
         let base_stats = StatBlock::new();
-        let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 0);
+        let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 0, 1.0);
         let attacker_stats = StatBlock::new();
 
         let _ = rune.on_damage_dealt(
@@ -1125,7 +1125,7 @@ fn test_electrocute_negative_and_zero_cooldown_adversarial() {
     {
         let mut rune = Electrocute::new();
         let base_stats = StatBlock::new();
-        let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 100);
+        let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 100, 1.0);
         let attacker_stats = StatBlock::new();
 
         // First trigger at t = 1.0
@@ -1193,7 +1193,7 @@ fn test_electrocute_negative_and_zero_cooldown_adversarial() {
 fn test_pta_ability_no_reset_and_decay() {
     let mut rune = lol_core::rune_manager::PressTheAttack::new(true);
     let base_stats = StatBlock::new();
-    let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1);
+    let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1, 1.0);
     let attacker_stats = StatBlock::new();
 
     // t = 0.0: AA -> stacks = 1, last_attack_time = 0.0
@@ -1238,7 +1238,7 @@ fn test_pta_zero_stat_magic_fallback() {
         attack_damage: 80.0,
         ..Default::default()
     };
-    let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1);
+    let _ = rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1, 1.0);
     let attacker_stats = StatBlock {
         attack_damage: 80.0, // bonus_ad = 80 - 80 = 0.0
         ability_power: 0.0,
@@ -1292,8 +1292,8 @@ fn test_pta_melee_vs_ranged_duration_and_amplification() {
     let mut ranged_rune = lol_core::rune_manager::PressTheAttack::new(false);
 
     let base_stats = StatBlock::new();
-    let _ = melee_rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1);
-    let _ = ranged_rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1);
+    let _ = melee_rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1, 1.0);
+    let _ = ranged_rune.get_bonus_stats(SimTime::new(0.0), &base_stats, 1, 1.0);
     let attacker_stats = StatBlock::new();
 
     // Trigger Melee

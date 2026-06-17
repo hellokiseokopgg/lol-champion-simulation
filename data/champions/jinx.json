@@ -24,5 +24,38 @@
         "attack_damage": 3.15,
         "attack_speed": 0.01
     },
-    "skills": []
+    "skills": [
+        {
+            "id": "jinx_q",
+            "name": "Switch Stance!",
+            "base_damage": [0.0, 0.0, 0.0, 0.0, 0.0],
+            "cooldowns": [0.9, 0.9, 0.9, 0.9, 0.9],
+            "ad_ratio": [0.0, 0.0, 0.0, 0.0, 0.0],
+            "ap_ratio": [0.0, 0.0, 0.0, 0.0, 0.0]
+        },
+        {
+            "id": "jinx_w",
+            "name": "Zap!",
+            "base_damage": [10.0, 60.0, 110.0, 160.0, 210.0],
+            "cooldowns": [8.0, 7.0, 6.0, 5.0, 4.0],
+            "ad_ratio": [1.6, 1.6, 1.6, 1.6, 1.6],
+            "ap_ratio": [0.0, 0.0, 0.0, 0.0, 0.0]
+        },
+        {
+            "id": "jinx_e",
+            "name": "Flame Chompers!",
+            "base_damage": [70.0, 120.0, 170.0, 220.0, 270.0],
+            "cooldowns": [24.0, 22.0, 20.0, 18.0, 16.0],
+            "ad_ratio": [0.0, 0.0, 0.0, 0.0, 0.0],
+            "ap_ratio": [1.0, 1.0, 1.0, 1.0, 1.0]
+        },
+        {
+            "id": "jinx_r",
+            "name": "Super Mega Death Rocket!",
+            "base_damage": [300.0, 450.0, 600.0],
+            "cooldowns": [75.0, 65.0, 55.0],
+            "ad_ratio": [1.5, 1.5, 1.5],
+            "ap_ratio": [0.0, 0.0, 0.0]
+        }
+    ]
 }

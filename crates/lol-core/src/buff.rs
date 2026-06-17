@@ -36,6 +36,11 @@ pub trait StatusEffect {
     fn prevents_basic_attacks(&self) -> bool {
         false
     }
+
+    /// The number of stacks this effect has when first applied.
+    fn initial_stacks(&self) -> u32 {
+        1
+    }
 }
 
 /// Tracks an active instance of a status effect.
@@ -72,6 +77,7 @@ impl BuffManager {
     ) {
         let id = effect.id();
         let mut duration = effect.duration();
+        let initial_stacks = effect.initial_stacks();
 
         // Apply Tenacity reduction if applicable
         if effect.cc_type().is_some_and(|cc| cc.affected_by_tenacity()) {
@@ -100,7 +106,7 @@ impl BuffManager {
                 ActiveEffect {
                     effect,
                     expiration_time,
-                    stacks: 1,
+                    stacks: initial_stacks,
                 },
             );
         }
@@ -169,6 +175,17 @@ impl BuffManager {
     /// Removes a specific effect entirely.
     pub fn remove_effect(&mut self, id: &EffectId) {
         self.active_effects.remove(id);
+    }
+
+    /// Decrements the stack count of an effect by 1. If the stack count becomes 0 or if stacks <= 1, removes the effect.
+    pub fn decrement_stacks(&mut self, id: &EffectId) {
+        if let std::collections::hash_map::Entry::Occupied(mut entry) = self.active_effects.entry(id.clone()) {
+            if entry.get().stacks > 1 {
+                entry.get_mut().stacks -= 1;
+            } else {
+                entry.remove();
+            }
+        }
     }
 
     /// Removes a specific effect if it has expired at the given time. Returns true if removed.
@@ -284,5 +301,60 @@ mod tests {
 
         manager.cleanup_expired(SimTime::new(5.1));
         assert_eq!(manager.get_stacks(&buff_id), 0);
+    }
+}
+
+/// Buff representing Bone Plating blocks
+#[derive(Debug, Clone)]
+pub struct BonePlatingBuff {
+    pub level: u32,
+}
+
+impl StatusEffect for BonePlatingBuff {
+    fn id(&self) -> EffectId {
+        EffectId("BonePlatingBuff".to_string())
+    }
+    fn name(&self) -> &str {
+        "Bone Plating"
+    }
+    fn duration(&self) -> f64 {
+        1.5
+    }
+    fn refresh_behavior(&self) -> RefreshBehavior {
+        RefreshBehavior::Ignore
+    }
+    fn max_stacks(&self) -> u32 {
+        3
+    }
+    fn initial_stacks(&self) -> u32 {
+        3
+    }
+    fn stat_modifiers(&self, _stacks: u32) -> StatBlock {
+        StatBlock::new()
+    }
+}
+
+/// Buff representing Bone Plating cooldown
+#[derive(Debug, Clone)]
+pub struct BonePlatingCooldown;
+
+impl StatusEffect for BonePlatingCooldown {
+    fn id(&self) -> EffectId {
+        EffectId("BonePlatingCooldown".to_string())
+    }
+    fn name(&self) -> &str {
+        "Bone Plating Cooldown"
+    }
+    fn duration(&self) -> f64 {
+        55.0
+    }
+    fn refresh_behavior(&self) -> RefreshBehavior {
+        RefreshBehavior::Ignore
+    }
+    fn max_stacks(&self) -> u32 {
+        1
+    }
+    fn stat_modifiers(&self, _stacks: u32) -> StatBlock {
+        StatBlock::new()
     }
 }

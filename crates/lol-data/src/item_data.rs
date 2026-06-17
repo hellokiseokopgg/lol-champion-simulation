@@ -36,6 +36,8 @@ pub struct ItemStats {
     #[serde(default)]
     pub crit_chance: f32,
     #[serde(default)]
+    pub crit_damage: f32,
+    #[serde(default)]
     pub move_speed_flat: f32,
     /// Movement speed percentage (e.g., 0.05 for 5%)
     #[serde(default)]
@@ -70,6 +72,7 @@ impl ItemData {
                 mana: self.stats.mp as f64,
                 attack_speed: self.stats.attack_speed as f64,
                 crit_chance: self.stats.crit_chance as f64,
+                crit_damage: self.stats.crit_damage as f64,
                 movement_speed: self.stats.move_speed_flat as f64,
                 ability_haste: self.stats.ability_haste as f64,
                 armor_pen_flat: self.stats.armor_pen_flat as f64,
@@ -86,6 +89,12 @@ impl ItemData {
                 }
                 if self.id == "6631" || self.id == "stridebreaker" {
                     effects.push(Box::new(lol_core::item::StridebreakerEffect));
+                }
+                if self.id == "3033" || self.id == "mortal_reminder" {
+                    effects.push(Box::new(lol_core::item::MortalReminderEffect));
+                }
+                if self.id == "3046" || self.id == "phantom_dancer" {
+                    effects.push(Box::new(lol_core::item::PhantomDancerEffect));
                 }
                 effects
             },

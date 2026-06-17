@@ -748,28 +748,7 @@ impl ChampionModule for DariusModule {
             item_stats,
             item_effects,
         );
-        let keystone_name = config.rune_page.keystone.name();
-        if keystone_name == "Conqueror" {
-            state
-                .rune_manager
-                .add_effect(Box::new(lol_core::rune_manager::Conqueror::new(true)));
-        } else if keystone_name == "Lethal Tempo" {
-            state
-                .rune_manager
-                .add_effect(Box::new(lol_core::rune_manager::LethalTempo::new(true)));
-        } else if keystone_name == "Phase Rush" {
-            state
-                .rune_manager
-                .add_effect(Box::new(lol_core::rune_manager::PhaseRush::new(true)));
-        } else if keystone_name == "Electrocute" {
-            state
-                .rune_manager
-                .add_effect(Box::new(lol_core::rune_manager::Electrocute::new()));
-        } else if keystone_name == "Press the Attack" {
-            state
-                .rune_manager
-                .add_effect(Box::new(lol_core::rune_manager::PressTheAttack::new(true)));
-        }
+        state.rune_manager.register_runes(&config.rune_page, true);
 
         if let Some(q) = state.abilities.get_state_mut(AbilitySlot::Q) {
             q.level = 5;
@@ -854,6 +833,7 @@ impl ChampionInstance for DariusInstance {
         new_base.armor_pen_percent += e_armor_pen;
 
         self.state.stats.base = new_base;
+        self.state.current_time = time;
 
         // 2. Recalculate initial stats
         let bonus = self.state.rune_stats.clone() + self.state.item_stats.clone();
@@ -862,11 +842,16 @@ impl ChampionInstance for DariusInstance {
         // 3. Recalculate current stats
         let mut total_bonus = self.state.buffs.aggregate_stats();
         let level_u32 = self.state.level;
+        let hp_ratio = if self.state.stats.current.health > 0.0 {
+            self.state.health.current / self.state.stats.current.health
+        } else {
+            1.0
+        };
         total_bonus = total_bonus
             + self
                 .state
                 .rune_manager
-                .get_bonus_stats(time, &self.state.stats.base, level_u32);
+                .get_bonus_stats(time, &self.state.stats.base, level_u32, hp_ratio);
         self.state.stats.recalculate_current(&total_bonus);
     }
 
@@ -878,9 +863,41 @@ impl ChampionInstance for DariusInstance {
     }
 
     fn take_damage(&mut self, amount: f64) -> lol_core::types::TakeDamageResult {
-        let is_dead = self.state.health.reduce(amount);
+        let time = self.state.current_time;
+        let level = self.state.level;
+        let mut final_damage = amount;
+
+        // Check Bone Plating
+        let has_bp_buff = self.state.buffs.has_effect_by_id(&lol_core::types::EffectId("BonePlatingBuff".to_string()), time);
+        if has_bp_buff {
+            let blocked = 30.0 + (30.0 / 17.0) * (level as f64 - 1.0);
+            final_damage = (final_damage - blocked).max(0.0);
+            self.state.buffs.decrement_stacks(&lol_core::types::EffectId("BonePlatingBuff".to_string()));
+            println!("Darius's Bone Plating blocked {:.1} damage at time {:.3}", blocked, time.as_f64());
+        } else {
+            let has_bp_rune = self.state.rune_manager.has_rune("Bone Plating");
+            let on_cooldown = self.state.buffs.has_effect_by_id(&lol_core::types::EffectId("BonePlatingCooldown".to_string()), time);
+            if has_bp_rune && !on_cooldown {
+                self.state.buffs.apply_effect(
+                    Box::new(lol_core::buff::BonePlatingCooldown),
+                    time,
+                    0.0,
+                );
+                self.state.buffs.apply_effect(
+                    Box::new(lol_core::buff::BonePlatingBuff { level }),
+                    time,
+                    0.0,
+                );
+                let blocked = 30.0 + (30.0 / 17.0) * (level as f64 - 1.0);
+                final_damage = (final_damage - blocked).max(0.0);
+                self.state.buffs.decrement_stacks(&lol_core::types::EffectId("BonePlatingBuff".to_string()));
+                println!("Darius's Bone Plating blocked {:.1} damage at time {:.3}", blocked, time.as_f64());
+            }
+        }
+
+        let is_dead = self.state.health.reduce(final_damage);
         lol_core::types::TakeDamageResult {
-            actual_damage: amount,
+            actual_damage: final_damage,
             is_dead,
         }
     }

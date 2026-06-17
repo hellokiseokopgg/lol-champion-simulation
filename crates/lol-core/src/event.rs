@@ -345,6 +345,44 @@ impl SimEvent for DeathEvent {
                 .borrow_mut()
                 .record_death(ctx.current_time, self.target.clone());
         }
+
+        // Trigger on_takedown for the killer
+        let killer_id = ctx.champions.keys().find(|&id| id != &self.target).cloned();
+        if let Some(killer_champ_ref) = killer_id.as_ref().and_then(|id| ctx.champions.get(id)) {
+            let killer_id = killer_id.clone().unwrap();
+            let mut killer_champ = killer_champ_ref.borrow_mut();
+                let killer_stats = killer_champ.state().stats.current.clone();
+                let current_hp = killer_champ.state().health.current;
+                
+                let rune_events = killer_champ.state_mut().rune_manager.on_takedown(
+                    ctx.current_time,
+                    &killer_stats,
+                    current_hp,
+                );
+                
+                for event in rune_events {
+                    if let crate::rune_manager::RuneEvent::Healed { amount } = event {
+                        let gw = killer_champ.state().stats.current.grievous_wounds;
+                        let actual_heal = amount * f64::max(0.0, 1.0 - gw);
+                        let max_hp = killer_champ.state().stats.current.health;
+                        
+                        killer_champ.state_mut().health.current += actual_heal;
+                        if killer_champ.state().health.current > max_hp {
+                            killer_champ.state_mut().health.current = max_hp;
+                        }
+
+                        if let Some(recorder) = &ctx.recorder {
+                            recorder.borrow_mut().record_heal(
+                                ctx.current_time,
+                                killer_id.clone(),
+                                killer_id.clone(),
+                                actual_heal,
+                            );
+                        }
+                    }
+                }
+            }
+
         ctx.is_simulation_over = true;
     }
 
@@ -667,6 +705,11 @@ impl EventManager {
             // Advance simulation time
             self.current_time = queued_event.time;
             ctx.current_time = self.current_time;
+
+            // Synchronize all champions' clocks to current simulation time
+            for champ_ref in ctx.champions.values() {
+                champ_ref.borrow_mut().state_mut().current_time = self.current_time;
+            }
 
             // Execute the event
             queued_event.event.execute(ctx, self);
