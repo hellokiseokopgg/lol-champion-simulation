@@ -40,9 +40,11 @@ impl SimContext {
         let buff_id = effect.id();
         let buff_name = effect.name().to_string();
         
+        let mut target_tenacity = 0.0;
         if let Some(champ_ref) = self.champions.get(target) {
             let mut champ = champ_ref.borrow_mut();
-            champ.state_mut().buffs.apply_effect(effect, self.current_time);
+            target_tenacity = champ.state().stats.current.tenacity;
+            champ.state_mut().buffs.apply_effect(effect, self.current_time, target_tenacity);
             champ.update_stats(self.current_time);
         }
         

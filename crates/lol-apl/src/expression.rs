@@ -7,6 +7,7 @@ pub enum Expression {
     CooldownReady(AbilitySlot),
     HealthPctLessThan(f64),
     TargetHealthPctLessThan(f64),
+    TargetCasting(AbilitySlot),
     HasBuff(String),
     NotHasBuff(String),
     BuffStacksGreaterThan(String, u32),
@@ -24,7 +25,6 @@ pub enum Expression {
 impl Expression {
     pub fn parse(input: &str) -> Result<Self, String> {
         let input = input.trim();
-        // A very simple parser that handles only flat expressions without parentheses
         if let Some((left, right)) = input.split_once('&') {
             return Ok(Expression::And(
                 Box::new(Self::parse(left)?),
@@ -38,7 +38,6 @@ impl Expression {
             ));
         }
 
-        // Parse base conditions
         if input.starts_with("cooldown.") && input.ends_with(".ready") {
             let slot_str = &input["cooldown.".len()..input.len() - ".ready".len()];
             let slot = match slot_str {
@@ -55,6 +54,24 @@ impl Expression {
                 _ => return Err(format!("Unknown ability slot in cooldown condition: {}", slot_str)),
             };
             return Ok(Expression::CooldownReady(slot));
+        }
+
+        if input.starts_with("target.casting.") {
+            let slot_str = &input["target.casting.".len()..];
+            let slot = match slot_str {
+                "Q" => AbilitySlot::Q,
+                "W" => AbilitySlot::W,
+                "E" => AbilitySlot::E,
+                "R" => AbilitySlot::R,
+                "AutoAttack" | "AA" => AbilitySlot::AutoAttack,
+                s if s.starts_with("Item:") => {
+                    let id_str = &s["Item:".len()..];
+                    let id = id_str.parse::<u32>().map_err(|_| format!("Invalid item ID in expression: {}", id_str))?;
+                    AbilitySlot::Item(id)
+                }
+                _ => return Err(format!("Unknown ability slot in casting condition: {}", slot_str)),
+            };
+            return Ok(Expression::TargetCasting(slot));
         }
 
         if input.starts_with("health.pct<") {
@@ -154,6 +171,9 @@ impl Expression {
                 } else {
                     false
                 }
+            }
+            Expression::TargetCasting(slot) => {
+                target.state().casting == Some(*slot)
             }
             Expression::HasBuff(name) => {
                 champion.state().buffs.has_buff_by_name(name, ctx.current_time)

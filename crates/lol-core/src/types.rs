@@ -94,6 +94,43 @@ pub struct AbilityId(pub String);
 #[serde(transparent)]
 pub struct EffectId(pub String);
 
+/// Defines the specific type of crowd control.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum CCType {
+    Stun,
+    Airborne,
+    Silence,
+    Root,
+    Slow,
+    Blind,
+}
+
+impl CCType {
+    /// Returns the broad classification (Hard or Soft) for this CC type.
+    pub fn class(&self) -> CCClass {
+        match self {
+            Self::Stun | Self::Airborne | Self::Silence => CCClass::Hard,
+            Self::Root | Self::Slow | Self::Blind => CCClass::Soft,
+        }
+    }
+
+    /// Returns whether this CC type is affected by Tenacity (duration reduction).
+    pub fn affected_by_tenacity(&self) -> bool {
+        match self {
+            // Airborne ignores tenacity.
+            Self::Airborne => false,
+            _ => true,
+        }
+    }
+}
+
+/// Defines the broad class of crowd control.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum CCClass {
+    Hard,
+    Soft,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

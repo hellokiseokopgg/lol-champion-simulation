@@ -27,6 +27,9 @@ pub trait StatusEffect {
     /// Calculate stat modifiers this effect provides based on current stacks.
     fn stat_modifiers(&self, stacks: u32) -> StatBlock;
 
+    /// The CC type of this effect, if any.
+    fn cc_type(&self) -> Option<crate::types::CCType> { None }
+
     /// Whether this effect prevents the champion from using basic attacks.
     fn prevents_basic_attacks(&self) -> bool { false }
 }
@@ -56,10 +59,18 @@ impl BuffManager {
         }
     }
 
-    /// Applies a status effect. Updates duration or stacks if it already exists according to its refresh behavior.
-    pub fn apply_effect(&mut self, effect: Box<dyn StatusEffect>, current_time: SimTime) {
+    /// Applies a status effect, taking the target's tenacity into account for CC effects.
+    pub fn apply_effect(&mut self, effect: Box<dyn StatusEffect>, current_time: SimTime, target_tenacity: f64) {
         let id = effect.id();
-        let duration = effect.duration();
+        let mut duration = effect.duration();
+
+        // Apply Tenacity reduction if applicable
+        if let Some(cc) = effect.cc_type() {
+            if cc.affected_by_tenacity() {
+                duration *= 1.0 - target_tenacity;
+            }
+        }
+
         let expiration_time = current_time + duration;
         
         if let Some(active) = self.active_effects.get_mut(&id) {
@@ -86,6 +97,18 @@ impl BuffManager {
                 },
             );
         }
+    }
+
+    /// Checks if the champion is currently affected by any Hard CC (Stun, Airborne, Silence).
+    pub fn has_hard_cc(&self, current_time: SimTime) -> bool {
+        self.active_effects.values().any(|active| {
+            if active.expiration_time > current_time {
+                if let Some(cc) = active.effect.cc_type() {
+                    return cc.class() == crate::types::CCClass::Hard;
+                }
+            }
+            false
+        })
     }
 
     /// Cleans up expired effects at the given simulation time.
@@ -203,17 +226,17 @@ mod tests {
             ad_per_stack: 10.0,
         });
 
-        manager.apply_effect(make_buff(), SimTime::new(0.0));
+        manager.apply_effect(make_buff(), SimTime::new(0.0), 0.0);
         assert_eq!(manager.get_stacks(&buff_id), 1);
         assert_eq!(manager.aggregate_stats().attack_damage, 10.0);
 
-        manager.apply_effect(make_buff(), SimTime::new(2.0));
+        manager.apply_effect(make_buff(), SimTime::new(2.0), 0.0);
         assert_eq!(manager.get_stacks(&buff_id), 2);
         assert_eq!(manager.aggregate_stats().attack_damage, 20.0);
 
         // Max stacks is 3
-        manager.apply_effect(make_buff(), SimTime::new(3.0));
-        manager.apply_effect(make_buff(), SimTime::new(4.0));
+        manager.apply_effect(make_buff(), SimTime::new(3.0), 0.0);
+        manager.apply_effect(make_buff(), SimTime::new(4.0), 0.0);
         assert_eq!(manager.get_stacks(&buff_id), 3);
         assert_eq!(manager.aggregate_stats().attack_damage, 30.0);
     }
@@ -231,7 +254,7 @@ mod tests {
             ad_per_stack: 10.0,
         });
 
-        manager.apply_effect(buff, SimTime::new(0.0));
+        manager.apply_effect(buff, SimTime::new(0.0), 0.0);
         
         manager.cleanup_expired(SimTime::new(4.0));
         assert_eq!(manager.get_stacks(&buff_id), 1);

@@ -52,6 +52,8 @@ pub struct ChampionState {
     pub items: crate::item::ItemManager,
     /// Manages dynamic rune effects.
     pub rune_manager: crate::rune_manager::RuneManager,
+    /// The ability currently being cast.
+    pub casting: Option<crate::types::AbilitySlot>,
 }
 
 impl ChampionState {
@@ -79,6 +81,7 @@ impl ChampionState {
             abilities: AbilitySlotManager::new(),
             items: item_manager,
             rune_manager: crate::rune_manager::RuneManager::new(),
+            casting: None,
         }
     }
 
@@ -116,6 +119,9 @@ pub trait ChampionInstance {
     /// Checks if the champion can currently cast the specified ability.
     /// Used for champion-specific restrictions (e.g. Garen cannot AutoAttack during E).
     fn can_cast(&self, slot: crate::types::AbilitySlot, time: crate::types::SimTime) -> bool {
+        if self.state().casting.is_some() {
+            return false;
+        }
         if slot == crate::types::AbilitySlot::AutoAttack {
             if self.state().buffs.prevents_basic_attacks(time) {
                 return false;

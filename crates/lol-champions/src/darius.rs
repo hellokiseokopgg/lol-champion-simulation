@@ -20,7 +20,9 @@ impl StatusEffect for DariusHemorrhage {
     fn stat_modifiers(&self, _stacks: u32) -> StatBlock { StatBlock::new() }
 }
 
-pub struct NoxianMight;
+pub struct NoxianMight {
+    pub level: u32,
+}
 impl StatusEffect for NoxianMight {
     fn id(&self) -> EffectId { EffectId("NoxianMight".into()) }
     fn name(&self) -> &str { "Noxian Might" }
@@ -28,8 +30,14 @@ impl StatusEffect for NoxianMight {
     fn refresh_behavior(&self) -> RefreshBehavior { RefreshBehavior::RefreshDuration }
     fn max_stacks(&self) -> u32 { 1 }
     fn stat_modifiers(&self, _stacks: u32) -> StatBlock {
+        let ad_bonus = match self.level {
+            1 => 30.0, 2 => 35.0, 3 => 40.0, 4 => 45.0, 5 => 50.0,
+            6 => 55.0, 7 => 60.0, 8 => 65.0, 9 => 70.0, 10 => 75.0,
+            11 => 85.0, 12 => 95.0, 13 => 105.0, 14 => 130.0, 15 => 155.0,
+            16 => 180.0, 17 => 205.0, _ => 230.0,
+        };
         let mut stats = StatBlock::new();
-        stats.attack_damage = 30.0; // Bonus AD from Noxian Might (simplified)
+        stats.attack_damage = ad_bonus;
         stats
     }
 }
@@ -44,28 +52,135 @@ impl StatusEffect for DariusWBuff {
     fn stat_modifiers(&self, _stacks: u32) -> StatBlock { StatBlock::new() }
 }
 
-pub struct DariusEPassive;
-impl StatusEffect for DariusEPassive {
-    fn id(&self) -> EffectId { EffectId("DariusEPassive".into()) }
-    fn name(&self) -> &str { "Apprehend Passive" }
-    fn duration(&self) -> f64 { 9999.0 }
-    fn refresh_behavior(&self) -> RefreshBehavior { RefreshBehavior::Ignore }
+pub struct DariusWSlow;
+impl StatusEffect for DariusWSlow {
+    fn id(&self) -> EffectId { EffectId("DariusWSlow".into()) }
+    fn name(&self) -> &str { "Crippling Strike Slow" }
+    fn duration(&self) -> f64 { 1.0 }
+    fn refresh_behavior(&self) -> RefreshBehavior { RefreshBehavior::RefreshDuration }
     fn max_stacks(&self) -> u32 { 1 }
-    fn stat_modifiers(&self, _stacks: u32) -> StatBlock {
-        let mut stats = StatBlock::new();
-        stats.armor_pen_percent = 0.15; // 15% armor pen
-        stats
+    fn stat_modifiers(&self, _stacks: u32) -> StatBlock { StatBlock::new() }
+    fn cc_type(&self) -> Option<lol_core::types::CCType> { Some(lol_core::types::CCType::Slow) }
+}
+
+pub struct DariusEPull;
+impl StatusEffect for DariusEPull {
+    fn id(&self) -> EffectId { EffectId("DariusEPull".into()) }
+    fn name(&self) -> &str { "Apprehend" }
+    fn duration(&self) -> f64 { 0.25 }
+    fn refresh_behavior(&self) -> RefreshBehavior { RefreshBehavior::RefreshDuration }
+    fn max_stacks(&self) -> u32 { 1 }
+    fn stat_modifiers(&self, _stacks: u32) -> StatBlock { StatBlock::new() }
+    fn cc_type(&self) -> Option<lol_core::types::CCType> { Some(lol_core::types::CCType::Airborne) }
+}
+
+fn get_hemorrhage_damage(level: u32, bonus_ad: f64) -> f64 {
+    let base = 13.0 + (30.0 - 13.0) / 17.0 * (level as f64 - 1.0);
+    base + (0.30 * bonus_ad)
+}
+
+pub struct HemorrhageTickEvent {
+    pub target: ChampionId,
+    pub attacker: ChampionId,
+    pub tick_count: u32,
+}
+
+impl lol_core::event::SimEvent for HemorrhageTickEvent {
+    fn execute(&self, ctx: &mut SimContext, _event_manager: &mut lol_core::event::EventManager) {
+        let (stacks, level, bonus_ad) = {
+            if let Some(t) = ctx.champions.get(&self.target) {
+                let stacks = t.borrow().state().buffs.get_stacks_by_name("Hemorrhage", ctx.current_time);
+                if stacks == 0 {
+                    return; // Buff expired
+                }
+                
+                let (lvl, ad) = if let Some(a) = ctx.champions.get(&self.attacker) {
+                    let champ = a.borrow();
+                    let a_state = champ.state();
+                    (a_state.level, a_state.stats.current.attack_damage - a_state.stats.base.attack_damage)
+                } else { (1, 0.0) };
+                
+                (stacks, lvl, ad)
+            } else { return; }
+        };
+
+        let total_damage_over_5s = get_hemorrhage_damage(level, bonus_ad) * (stacks as f64);
+        let tick_damage = total_damage_over_5s / 4.0; // Ticks every 1.25s (4 ticks over 5s)
+
+        let defender_stats = {
+            if let Some(d) = ctx.champions.get(&self.target) {
+                d.borrow().state().stats.current.clone()
+            } else { return; }
+        };
+
+        let attacker_stats = {
+            if let Some(a) = ctx.champions.get(&self.attacker) {
+                a.borrow().state().stats.current.clone()
+            } else { return; }
+        };
+
+        let damage_result = DamagePipeline::process(
+            tick_damage,
+            DamageType::Physical,
+            false,
+            &attacker_stats,
+            &defender_stats,
+        );
+
+        if let Some(recorder) = &ctx.recorder {
+            recorder.borrow_mut().record_damage(
+                ctx.current_time, self.attacker.clone(), self.target.clone(), AbilitySlot::Passive, damage_result.final_damage, false,
+            );
+        }
+
+        ctx.trigger_on_damage_dealt(&self.attacker, damage_result.final_damage, false);
+
+        if let Some(d) = ctx.champions.get(&self.target) {
+            let is_dead = d.borrow_mut().take_damage(damage_result.final_damage).is_dead;
+            if is_dead {
+                ctx.new_events.push((0.0, Box::new(lol_core::event::DeathEvent { target: self.target.clone() })));
+            } else {
+                // Schedule next tick if it hasn't expired
+                ctx.new_events.push((1.25, Box::new(HemorrhageTickEvent {
+                    target: self.target.clone(),
+                    attacker: self.attacker.clone(),
+                    tick_count: self.tick_count + 1,
+                })));
+            }
+        }
+    }
+
+    fn name(&self) -> &str {
+        "HemorrhageTickEvent"
     }
 }
 
 fn apply_hemorrhage(ctx: &mut SimContext, target: &ChampionId, attacker: &ChampionId) {
+    let was_active = if let Some(t) = ctx.champions.get(target) {
+        t.borrow().state().buffs.has_buff_by_name("Hemorrhage", ctx.current_time)
+    } else { false };
+
     ctx.apply_buff(target, Box::new(DariusHemorrhage));
     
     // Check if 5 stacks
     if let Some(t) = ctx.champions.get(target) {
         if t.borrow().state().buffs.get_stacks_by_name("Hemorrhage", ctx.current_time) == 5 {
-            ctx.apply_buff(attacker, Box::new(NoxianMight));
+            let attacker_level = {
+                if let Some(a) = ctx.champions.get(attacker) {
+                    a.borrow().state().level
+                } else { 1 }
+            };
+            ctx.apply_buff(attacker, Box::new(NoxianMight { level: attacker_level }));
         }
+    }
+    
+    if !was_active {
+        // Schedule first tick
+        ctx.new_events.push((1.25, Box::new(HemorrhageTickEvent {
+            target: target.clone(),
+            attacker: attacker.clone(),
+            tick_count: 1,
+        })));
     }
 }
 
@@ -78,12 +193,17 @@ pub struct DariusQ;
 impl Ability for DariusQ {
     fn slot(&self) -> AbilitySlot { AbilitySlot::Q }
     fn cast_time(&self) -> f64 { 0.75 }
-    fn base_cooldown(&self, _level: u32) -> f64 { 9.0 }
+    fn base_cooldown(&self, level: u32) -> f64 {
+        match level { 1 => 9.0, 2 => 8.0, 3 => 7.0, 4 => 6.0, _ => 5.0 }
+    }
     fn cost(&self, _level: u32) -> f64 { 30.0 }
     fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, target: &ChampionId) {
-        let attacker_stats = {
+        let (attacker_stats, q_level) = {
             if let Some(a) = ctx.champions.get(actor) {
-                a.borrow().state().stats.current.clone()
+                let champ = a.borrow();
+                let state = champ.state();
+                let q_lvl = state.abilities.get_state(AbilitySlot::Q).map(|s| s.level).unwrap_or(1);
+                (state.stats.current.clone(), q_lvl)
             } else { return; }
         };
 
@@ -93,7 +213,14 @@ impl Ability for DariusQ {
             } else { return; }
         };
 
-        let raw_damage = 50.0 + (attacker_stats.attack_damage * 1.05); // Decimate outer ring
+        let base_dmg = match q_level {
+            1 => 50.0, 2 => 80.0, 3 => 110.0, 4 => 140.0, _ => 170.0,
+        };
+        let ratio = match q_level {
+            1 => 1.0, 2 => 1.1, 3 => 1.2, 4 => 1.3, _ => 1.4,
+        };
+
+        let raw_damage = base_dmg + (attacker_stats.attack_damage * ratio);
         
         let damage_result = DamagePipeline::process(
             raw_damage,
@@ -119,7 +246,7 @@ impl Ability for DariusQ {
             }
         }
         
-        // Heal
+        // Heal 15% of missing health per champion hit (1 champion here)
         if let Some(a) = ctx.champions.get(actor) {
             let mut champ = a.borrow_mut();
             let missing_hp = champ.state().health.max - champ.state().health.current;
@@ -152,10 +279,12 @@ pub struct DariusE;
 impl Ability for DariusE {
     fn slot(&self) -> AbilitySlot { AbilitySlot::E }
     fn cast_time(&self) -> f64 { 0.25 }
-    fn base_cooldown(&self, _level: u32) -> f64 { 24.0 }
+    fn base_cooldown(&self, level: u32) -> f64 {
+        match level { 1 => 24.0, 2 => 21.0, 3 => 18.0, 4 => 15.0, _ => 12.0 }
+    }
     fn cost(&self, _level: u32) -> f64 { 45.0 }
-    fn execute(&self, _ctx: &mut SimContext, _actor: &ChampionId, _target: &ChampionId) {
-        // Apprehend pull effect (mostly CC, no damage)
+    fn execute(&self, ctx: &mut SimContext, _actor: &ChampionId, target: &ChampionId) {
+        ctx.apply_buff(target, Box::new(DariusEPull));
     }
     fn clone_box(&self) -> Box<dyn Ability> { Box::new(self.clone()) }
 }
@@ -164,13 +293,19 @@ impl Ability for DariusE {
 pub struct DariusR;
 impl Ability for DariusR {
     fn slot(&self) -> AbilitySlot { AbilitySlot::R }
-    fn cast_time(&self) -> f64 { 0.25 } // Fast animation
-    fn base_cooldown(&self, _level: u32) -> f64 { 120.0 }
+    fn cast_time(&self) -> f64 { 0.25 }
+    fn base_cooldown(&self, level: u32) -> f64 {
+        match level { 1 => 120.0, 2 => 100.0, _ => 80.0 }
+    }
     fn cost(&self, _level: u32) -> f64 { 100.0 }
     fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, target: &ChampionId) {
-        let attacker_stats = {
+        let (_attacker_stats, r_level, bonus_ad) = {
             if let Some(a) = ctx.champions.get(actor) {
-                a.borrow().state().stats.current.clone()
+                let champ = a.borrow();
+                let state = champ.state();
+                let r_lvl = state.abilities.get_state(AbilitySlot::R).map(|s| s.level).unwrap_or(1);
+                let bonus_ad = state.stats.current.attack_damage - state.stats.base.attack_damage;
+                (state.stats.current.clone(), r_lvl, bonus_ad)
             } else { return; }
         };
 
@@ -178,10 +313,14 @@ impl Ability for DariusR {
             d.borrow().state().buffs.get_stacks_by_name("Hemorrhage", ctx.current_time)
         } else { 0 };
 
-        let raw_damage = 100.0 + (attacker_stats.attack_damage * 0.75);
+        let base_dmg = match r_level {
+            1 => 150.0, 2 => 250.0, _ => 300.0,
+        };
+
+        let raw_damage = base_dmg + (bonus_ad * 0.75);
         let final_damage = raw_damage * (1.0 + (0.2 * stacks as f64)); // 20% more damage per stack
 
-        // True damage, ignores mitigation
+        // True damage
         if let Some(recorder) = &ctx.recorder {
             recorder.borrow_mut().record_damage(
                 ctx.current_time, actor.clone(), target.clone(), AbilitySlot::R, final_damage, false,
@@ -210,16 +349,25 @@ impl Ability for DariusAutoAttack {
     fn base_cooldown(&self, _level: u32) -> f64 { 1.0 }
     fn cost(&self, _level: u32) -> f64 { 0.0 }
     fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, target: &ChampionId) {
-        let mut has_w_buff = false;
-        let attacker_stats = {
+        let (attacker_stats, w_level) = {
             if let Some(a) = ctx.champions.get(actor) {
                 let mut champ = a.borrow_mut();
-                if champ.state().buffs.has_buff_by_name("Crippling Strike", ctx.current_time) {
-                    has_w_buff = true;
-                    champ.state_mut().buffs.remove_effect(&EffectId("DariusWBuff".into()));
-                }
-                champ.state().stats.current.clone()
+                let w_lvl = champ.state().abilities.get_state(AbilitySlot::W).map(|s| s.level).unwrap_or(1);
+                (champ.state().stats.current.clone(), w_lvl)
             } else { return; }
+        };
+        
+        let has_w_buff = {
+            if let Some(a) = ctx.champions.get(actor) {
+                let champ = a.borrow();
+                if champ.state().buffs.has_buff_by_name("Crippling Strike", ctx.current_time) {
+                    drop(champ);
+                    a.borrow_mut().state_mut().buffs.remove_effect(&EffectId("DariusWBuff".into()));
+                    true
+                } else {
+                    false
+                }
+            } else { false }
         };
 
         let defender_stats = {
@@ -230,7 +378,11 @@ impl Ability for DariusAutoAttack {
 
         let mut raw_damage = attacker_stats.attack_damage;
         if has_w_buff {
-            raw_damage += attacker_stats.attack_damage * 0.40; // 40% total AD bonus
+            let ratio = match w_level {
+                1 => 0.40, 2 => 0.45, 3 => 0.50, 4 => 0.55, _ => 0.60,
+            };
+            raw_damage += attacker_stats.attack_damage * ratio;
+            ctx.apply_buff(target, Box::new(DariusWSlow));
         }
 
         let damage_result = DamagePipeline::process(
@@ -250,7 +402,7 @@ impl Ability for DariusAutoAttack {
         ctx.trigger_on_hit(actor, target, &damage_result);
         ctx.trigger_on_physical_damage(actor, target, &damage_result);
         
-        let is_ability = has_w_buff; // If W buff is used, it's considered an ability for Conqueror/Lethal Tempo stacks. For simplicity, we can pass has_w_buff.
+        let is_ability = has_w_buff;
         ctx.trigger_on_damage_dealt(actor, damage_result.final_damage, is_ability);
 
         if let Some(d) = ctx.champions.get(target) {
@@ -290,32 +442,30 @@ impl ChampionModule for DariusModule {
             state.rune_manager.add_effect(Box::new(lol_core::rune_manager::LethalTempo::new(true)));
         }
         
-        // Setup base stats slightly for simulation level
-        state.stats.base.attack_speed_ratio = Some(0.625);
-        state.stats.base.attack_speed = 0.625;
-        state.stats.base.armor += 20.0;
-        state.stats.base.magic_resist += 20.0;
-        
-        // Passive armor pen
-        state.buffs.apply_effect(Box::new(DariusEPassive), lol_core::types::SimTime::new(0.0));
-        
-        let buffs_stats = state.buffs.aggregate_stats();
-        state.stats.recalculate_current(&buffs_stats);
-        
         if let Some(q) = state.abilities.get_state_mut(AbilitySlot::Q) { q.level = 5; }
         if let Some(w) = state.abilities.get_state_mut(AbilitySlot::W) { w.level = 5; }
         if let Some(e) = state.abilities.get_state_mut(AbilitySlot::E) { e.level = 5; }
         if let Some(r) = state.abilities.get_state_mut(AbilitySlot::R) { r.level = 3; }
 
+        let mut abilities: Vec<Box<dyn Ability>> = vec![
+            Box::new(DariusQ),
+            Box::new(DariusW),
+            Box::new(DariusE),
+            Box::new(DariusR),
+            Box::new(DariusAutoAttack),
+        ];
+
+        // Register active items dynamically
+        for effect in state.items.effects() {
+            if let Some(active) = effect.active_ability() {
+                state.abilities.register_ability(active.slot(), 1);
+                abilities.push(active);
+            }
+        }
+
         Box::new(DariusInstance {
             state,
-            abilities: vec![
-                Box::new(DariusQ),
-                Box::new(DariusW),
-                Box::new(DariusE),
-                Box::new(DariusR),
-                Box::new(DariusAutoAttack),
-            ],
+            abilities,
         })
     }
 }
@@ -329,9 +479,39 @@ impl ChampionInstance for DariusInstance {
     fn state(&self) -> &ChampionState { &self.state }
     fn state_mut(&mut self) -> &mut ChampionState { &mut self.state }
     fn update_stats(&mut self, time: lol_core::types::SimTime) {
+        // 1. Recalculate base stats using growth logic
+        let level = self.state.level as f64;
+        let growth_multiplier = (level - 1.0) * (0.7025 + 0.0175 * (level - 1.0));
+        let mut new_base = self.state.base_stats.clone();
+        new_base.health += self.state.growth_stats.health * growth_multiplier;
+        new_base.mana += self.state.growth_stats.mana * growth_multiplier;
+        new_base.health_regen += self.state.growth_stats.health_regen * growth_multiplier;
+        new_base.mana_regen += self.state.growth_stats.mana_regen * growth_multiplier;
+        new_base.armor += self.state.growth_stats.armor * growth_multiplier;
+        new_base.magic_resist += self.state.growth_stats.magic_resist * growth_multiplier;
+        new_base.attack_damage += self.state.growth_stats.attack_damage * growth_multiplier;
+        
+        let as_ratio = self.state.base_stats.attack_speed_ratio.unwrap_or(self.state.base_stats.attack_speed);
+        let bonus_as_from_growth = self.state.growth_stats.attack_speed * growth_multiplier;
+        new_base.attack_speed += as_ratio * bonus_as_from_growth;
+        
+        // Add E Passive Armor Pen
+        let e_level = self.state.abilities.get_state(AbilitySlot::E).map(|s| s.level).unwrap_or(1);
+        let e_armor_pen = match e_level {
+            1 => 0.15, 2 => 0.20, 3 => 0.25, 4 => 0.30, _ => 0.35,
+        };
+        new_base.armor_pen_percent += e_armor_pen;
+
+        self.state.stats.base = new_base;
+
+        // 2. Recalculate initial stats
+        let bonus = self.state.rune_stats.clone() + self.state.item_stats.clone();
+        self.state.stats.recalculate_initial(&bonus);
+
+        // 3. Recalculate current stats
         let mut total_bonus = self.state.buffs.aggregate_stats();
-        let level = self.state.level;
-        total_bonus = total_bonus + self.state.rune_manager.get_bonus_stats(time, &self.state.base_stats, level);
+        let level_u32 = self.state.level;
+        total_bonus = total_bonus + self.state.rune_manager.get_bonus_stats(time, &self.state.base_stats, level_u32);
         self.state.stats.recalculate_current(&total_bonus);
     }
     
@@ -342,5 +522,32 @@ impl ChampionInstance for DariusInstance {
     fn take_damage(&mut self, amount: f64) -> lol_core::types::TakeDamageResult {
         let is_dead = self.state.health.reduce(amount);
         lol_core::types::TakeDamageResult { actual_damage: amount, is_dead }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use lol_core::stats::StatBlock;
+
+    #[test]
+    fn test_hemorrhage_damage() {
+        // Level 1: Base 13
+        assert_eq!(get_hemorrhage_damage(1, 0.0), 13.0);
+        // Level 18: Base 30
+        assert_eq!(get_hemorrhage_damage(18, 0.0), 30.0);
+        // Level 18 + 100 Bonus AD -> 30 + 30 = 60
+        assert_eq!(get_hemorrhage_damage(18, 100.0), 60.0);
+    }
+
+    #[test]
+    fn test_noxian_might_bonus_ad() {
+        let might = NoxianMight { level: 18 };
+        let stats = might.stat_modifiers(1);
+        assert_eq!(stats.attack_damage, 230.0);
+
+        let might = NoxianMight { level: 1 };
+        let stats = might.stat_modifiers(1);
+        assert_eq!(stats.attack_damage, 30.0);
     }
 }

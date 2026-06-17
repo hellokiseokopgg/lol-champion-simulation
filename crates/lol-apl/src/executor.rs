@@ -40,6 +40,46 @@ impl AplExecutor {
     }
 }
 
+pub struct AbilityExecuteEvent {
+    pub actor: lol_core::types::ChampionId,
+    pub target: lol_core::types::ChampionId,
+    pub slot: AbilitySlot,
+}
+
+impl lol_core::event::SimEvent for AbilityExecuteEvent {
+    fn execute(&self, ctx: &mut SimContext, _event_manager: &mut lol_core::event::EventManager) {
+        let can_execute = if let Some(champ_ref) = ctx.champions.get(&self.actor) {
+            let champ = champ_ref.borrow();
+            champ.state().health.current > 0.0 
+                && champ.state().casting == Some(self.slot)
+                && !champ.state().buffs.has_hard_cc(ctx.current_time)
+        } else { false };
+        
+        if !can_execute {
+            if let Some(champ_ref) = ctx.champions.get(&self.actor) {
+                champ_ref.borrow_mut().state_mut().casting = None;
+            }
+            return;
+        }
+        
+        let ability_box: Option<Box<dyn lol_core::ability::Ability>> = {
+            let champ_ref = ctx.champions.get(&self.actor).unwrap();
+            let champ = champ_ref.borrow();
+            champ.get_ability(self.slot).map(|a| a.clone_box())
+        };
+
+        if let Some(ability) = ability_box {
+            ability.execute(ctx, &self.actor, &self.target);
+        }
+
+        if let Some(champ_ref) = ctx.champions.get(&self.actor) {
+            champ_ref.borrow_mut().state_mut().casting = None;
+        }
+    }
+
+    fn name(&self) -> &str { "AbilityExecute" }
+}
+
 pub struct ActorTickEvent {
     pub actor: lol_core::types::ChampionId,
     pub target: lol_core::types::ChampionId,
@@ -103,46 +143,46 @@ impl lol_core::event::SimEvent for ActorTickEvent {
         }
         
         if let Some(slot) = cast_slot {
-            // Execute the ability by temporarily grabbing the instance again
-            // We cannot hold `champ` borrow during `ability.execute(ctx)` because it might borrow `champions` internally.
-            // Wait, to call `ability.execute(ctx)` we need to get `&dyn Ability` without holding `champ_ref.borrow()` if possible,
-            // or `ability.execute` shouldn't touch `ctx.champions` mutably for the same actor.
-            // Actually, we can just push an AbilityCastEvent!
-
-            // Record cast (instant)
             if let Some(recorder) = &ctx.recorder {
                 recorder.borrow_mut().record_cast(ctx.current_time, self.actor.clone(), slot);
             }
 
-            // Let's invoke execute by grabbing the ability again. 
-            // We assume ability.execute() doesn't panic if it borrows other champions.
-            // It MUST NOT borrow `self.actor` mutably from `ctx.champions` if we hold it.
-            // But we don't hold it anymore! We dropped `champ`.
-            // Let's grab it, but wait: `get_ability` requires `&ChampionInstance`.
-            // So we do:
-            let ability_box: Option<Box<dyn lol_core::ability::Ability>> = {
-                let champ_ref = ctx.champions.get(&self.actor).unwrap();
-                let champ = champ_ref.borrow();
-                let champ_inst = champ.as_ref();
-                champ_inst.get_ability(slot).map(|a| a.clone_box())
-            };
-
-            if let Some(ability) = ability_box {
-                ability.execute(ctx, &self.actor, &self.target);
-            }
-
-            // Put it on cooldown
             if let Some(champ_ref) = ctx.champions.get(&self.actor) {
                 let mut champ = champ_ref.borrow_mut();
-                if let Some(state) = champ.as_mut().state_mut().abilities.get_state_mut(slot) {
+                champ.state_mut().casting = Some(slot);
+                if let Some(state) = champ.state_mut().abilities.get_state_mut(slot) {
                     state.cooldown.start_cooldown(ctx.current_time, base_cooldown);
                 }
             }
 
-            // Schedule the next ActorTickEvent after max(cast_time, GCD)
             let gcd = 0.25;
             let delay = cast_time.max(gcd);
             
+            if cast_time > 0.0 {
+                ctx.new_events.push((
+                    cast_time,
+                    Box::new(AbilityExecuteEvent {
+                        actor: self.actor.clone(),
+                        target: self.target.clone(),
+                        slot,
+                    }),
+                ));
+            } else {
+                let ability_box: Option<Box<dyn lol_core::ability::Ability>> = {
+                    let champ_ref = ctx.champions.get(&self.actor).unwrap();
+                    let champ = champ_ref.borrow();
+                    champ.get_ability(slot).map(|a| a.clone_box())
+                };
+
+                if let Some(ability) = ability_box {
+                    ability.execute(ctx, &self.actor, &self.target);
+                }
+
+                if let Some(champ_ref) = ctx.champions.get(&self.actor) {
+                    champ_ref.borrow_mut().state_mut().casting = None;
+                }
+            }
+
             ctx.new_events.push((
                 delay,
                 Box::new(ActorTickEvent {
@@ -152,8 +192,7 @@ impl lol_core::event::SimEvent for ActorTickEvent {
                 }),
             ));
         } else {
-            // No action available, find the shortest time until an APL action is ready
-            let mut wait_time = 0.1; // Default 100ms
+            let mut wait_time = 0.1;
             if let Some(champ_ref) = ctx.champions.get(&self.actor) {
                 let champ = champ_ref.borrow();
                 let mut min_cd: f64 = 10.0;
@@ -169,17 +208,15 @@ impl lol_core::event::SimEvent for ActorTickEvent {
                                 found = true;
                             }
                         } else {
-                            // Cooldown is ready, but action was skipped due to can_cast or condition.
-                            // We need to poll to catch when the condition becomes true.
                             polling_needed = true;
                         }
                     }
                 }
                 
                 if polling_needed {
-                    wait_time = 0.1; // Poll every 100ms
+                    wait_time = 0.1;
                 } else if found {
-                    wait_time = min_cd.max(0.001); // Precision down to 1ms
+                    wait_time = min_cd.max(0.001);
                 }
             }
             

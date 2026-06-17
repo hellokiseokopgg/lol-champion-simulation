@@ -152,6 +152,17 @@ impl StatusEffect for GarenQBuff {
     }
 }
 
+pub struct GarenQSilence;
+impl StatusEffect for GarenQSilence {
+    fn id(&self) -> EffectId { EffectId("GarenQSilence".into()) }
+    fn name(&self) -> &str { "Silence" }
+    fn duration(&self) -> f64 { 1.5 }
+    fn refresh_behavior(&self) -> RefreshBehavior { RefreshBehavior::RefreshDuration }
+    fn max_stacks(&self) -> u32 { 1 }
+    fn stat_modifiers(&self, _stacks: u32) -> StatBlock { StatBlock::new() }
+    fn cc_type(&self) -> Option<lol_core::types::CCType> { Some(lol_core::types::CCType::Silence) }
+}
+
 pub struct GarenWBuff;
 impl StatusEffect for GarenWBuff {
     fn id(&self) -> EffectId { EffectId("GarenW".into()) }
@@ -329,6 +340,8 @@ impl Ability for GarenAutoAttack {
             // Rank 5 Q bonus: 150 + 0.5 AD
             raw_damage += 150.0 + 0.5 * attacker_stats.attack_damage;
             slot_to_record = AbilitySlot::Q;
+            // Apply silence to target
+            ctx.apply_buff(target, Box::new(GarenQSilence));
         }
 
         let damage_result = DamagePipeline::process(

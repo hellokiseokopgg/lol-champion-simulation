@@ -47,6 +47,8 @@ pub struct StatBlock {
     pub armor_reduction_percent: f64,
     /// Percentage damage reduction (e.g., 0.3 for 30% reduction)
     pub damage_reduction_percent: f64,
+    /// Tenacity (CC duration reduction, e.g., 0.3 for 30%)
+    pub tenacity: f64,
 
     // Hidden Auto Attack timing metadata
     pub attack_delay_offset: Option<f64>,
@@ -100,6 +102,7 @@ impl StatBlock {
             omnivamp: self.omnivamp,
             armor_reduction_percent: self.armor_reduction_percent,
             damage_reduction_percent: self.damage_reduction_percent,
+            tenacity: self.tenacity,
             attack_delay_offset: self.attack_delay_offset,
             windup_percent: self.windup_percent,
             windup_modifier: self.windup_modifier,
@@ -109,16 +112,7 @@ impl StatBlock {
         let mut result = self.clone() + bonus.clone();
         
         // Attack Speed: Base_AS + AS_Ratio * Bonus_AS_Percent
-        // self.attack_speed is the flat AS (base + growth).
-        // bonus.attack_speed is the Bonus AS %.
-        // However, wait. If we just do self.attack_speed + as_ratio * bonus, what if we apply multiple bonuses sequentially?
-        // initial = base.apply_bonus(items);
-        // current = initial.apply_bonus(buffs);
-        // If we do this, `initial.attack_speed` becomes the new flat AS.
-        // Then `initial.apply_bonus(buffs)` will add `as_ratio * buffs.attack_speed` to `initial.attack_speed`.
-        // This works perfectly! Because AS bonuses are purely additive based on the unchanging AS_Ratio.
         let as_ratio = self.attack_speed_ratio.unwrap_or(self.attack_speed); // if ratio is not defined, it assumes base AS
-        // Note: the `+` operator already added `bonus.attack_speed` directly, which is wrong, so we overwrite it:
         result.attack_speed = self.attack_speed + (as_ratio * bonus.attack_speed);
         
         result
@@ -152,6 +146,7 @@ impl std::ops::Add for StatBlock {
             omnivamp: self.omnivamp + rhs.omnivamp,
             armor_reduction_percent: self.armor_reduction_percent + rhs.armor_reduction_percent,
             damage_reduction_percent: 1.0 - ((1.0 - self.damage_reduction_percent) * (1.0 - rhs.damage_reduction_percent)),
+            tenacity: 1.0 - ((1.0 - self.tenacity) * (1.0 - rhs.tenacity)),
             attack_delay_offset: self.attack_delay_offset.or(rhs.attack_delay_offset),
             windup_percent: self.windup_percent.or(rhs.windup_percent),
             windup_modifier: self.windup_modifier.or(rhs.windup_modifier),
