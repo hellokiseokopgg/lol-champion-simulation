@@ -34,6 +34,8 @@ impl ChampionModule for GarenModule {
             state.rune_manager.add_effect(Box::new(lol_core::rune_manager::Conqueror::new(true)));
         } else if keystone_name == "Lethal Tempo" {
             state.rune_manager.add_effect(Box::new(lol_core::rune_manager::LethalTempo::new(true)));
+        } else if keystone_name == "Phase Rush" {
+            state.rune_manager.add_effect(Box::new(lol_core::rune_manager::PhaseRush::new(true)));
         }
         
         // Initialize abilities to rank 5 for testing (except R to 3)
@@ -368,7 +370,7 @@ impl Ability for GarenAutoAttack {
         
         // Trigger rune events based on the damage dealt
         let is_ability = slot_to_record != AbilitySlot::AutoAttack;
-        ctx.trigger_on_damage_dealt(actor, damage_result.final_damage, is_ability);
+        ctx.trigger_on_damage_dealt(actor, damage_result.final_damage, is_ability, lol_core::types::AbilitySlot::E);
 
         if let Some(d) = ctx.champions.get(target) {
             let is_dead = d.borrow_mut().take_damage(damage_result.final_damage).is_dead;
@@ -435,7 +437,7 @@ impl SimEvent for JudgmentTickEvent {
             );
         }
         ctx.trigger_on_physical_damage(&self.attacker, &self.defender, &damage_result);
-        ctx.trigger_on_damage_dealt(&self.attacker, damage_result.final_damage, true);
+        ctx.trigger_on_damage_dealt(&self.attacker, damage_result.final_damage, true, lol_core::types::AbilitySlot::Q);
 
         if let Some(d) = ctx.champions.get(&self.defender) {
             let is_dead = d.borrow_mut().take_damage(damage_result.final_damage).is_dead;
@@ -509,7 +511,7 @@ impl SimEvent for DemacianJusticeEvent {
             );
         }
         
-        ctx.trigger_on_damage_dealt(&self.attacker, damage_result.final_damage, true);
+        ctx.trigger_on_damage_dealt(&self.attacker, damage_result.final_damage, true, lol_core::types::AbilitySlot::R);
 
         if let Some(d) = ctx.champions.get(&self.defender) {
             let is_dead = d.borrow_mut().take_damage(damage_result.final_damage).is_dead;

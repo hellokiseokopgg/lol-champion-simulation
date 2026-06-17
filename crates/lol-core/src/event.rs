@@ -90,9 +90,9 @@ impl SimContext {
         }
     }
 
-    pub fn trigger_on_damage_dealt(&mut self, actor: &crate::types::ChampionId, amount: f64, is_ability: bool) {
+    pub fn trigger_on_damage_dealt(&mut self, actor: &crate::types::ChampionId, amount: f64, is_ability: bool, slot: crate::types::AbilitySlot) {
         let rune_events = if let Some(champ_ref) = self.champions.get(actor) {
-            champ_ref.borrow_mut().on_damage_dealt(self.current_time, amount, is_ability)
+            champ_ref.borrow_mut().on_damage_dealt(self.current_time, amount, is_ability, slot)
         } else {
             return;
         };
@@ -106,7 +106,7 @@ impl SimContext {
                         } else if name == "Lethal Tempo" {
                             format!("치명적 속도 ({}스택)", stacks)
                         } else {
-                            format!("{} ({}스택)", name, stacks)
+                            name.clone()
                         };
                         
                         if let Some(recorder) = &self.recorder {
@@ -114,7 +114,7 @@ impl SimContext {
                         }
 
                         // Schedule an expiration check event
-                        let duration = if name == "Conqueror" { 5.0 } else if name == "Lethal Tempo" { 6.0 } else { 0.0 };
+                        let duration = if name == "Conqueror" { 5.0 } else if name == "Lethal Tempo" { 6.0 } else if name.contains("Phase Rush") { 3.0 } else { 0.0 };
                         if duration > 0.0 {
                             self.new_events.push((
                                 duration + 0.001, // Slightly after expiration
@@ -180,15 +180,18 @@ impl SimEvent for RuneExpireCheckEvent {
                     if let Some(recorder) = &ctx.recorder {
                         if stacks == 0 {
                             // Determine which stack counts were previously active to remove them visually
-                            for old_stacks in 1..=12 {
-                                let old_buff_name = if name == "Conqueror" {
-                                    format!("정복자 ({}스택)", old_stacks)
-                                } else if name == "Lethal Tempo" {
-                                    format!("치명적 속도 ({}스택)", old_stacks)
-                                } else {
-                                    format!("{} ({}스택)", name, old_stacks)
-                                };
-                                recorder.borrow_mut().record_buff_expire(ctx.current_time, self.target.clone(), old_buff_name);
+                            // Determine which stack counts were previously active to remove them visually
+                            if name == "Conqueror" || name == "Lethal Tempo" {
+                                for old_stacks in 1..=12 {
+                                    let old_buff_name = if name == "Conqueror" {
+                                        format!("정복자 ({}스택)", old_stacks)
+                                    } else {
+                                        format!("치명적 속도 ({}스택)", old_stacks)
+                                    };
+                                    recorder.borrow_mut().record_buff_expire(ctx.current_time, self.target.clone(), old_buff_name);
+                                }
+                            } else {
+                                recorder.borrow_mut().record_buff_expire(ctx.current_time, self.target.clone(), name.clone());
                             }
                         } else {
                             let buff_name = if name == "Conqueror" {
@@ -196,7 +199,7 @@ impl SimEvent for RuneExpireCheckEvent {
                             } else if name == "Lethal Tempo" {
                                 format!("치명적 속도 ({}스택)", stacks)
                             } else {
-                                format!("{} ({}스택)", name, stacks)
+                                name.clone()
                             };
                             recorder.borrow_mut().record_buff_apply(ctx.current_time, self.target.clone(), buff_name);
                         }

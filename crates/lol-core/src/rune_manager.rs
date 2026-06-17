@@ -18,7 +18,7 @@ pub trait RuneEffect: Debug {
     
     /// Called when the champion deals damage to an enemy.
     /// Returns a list of rune events (like stack changes or healing).
-    fn on_damage_dealt(&mut self, time: SimTime, amount: f64, is_ability: bool) -> Vec<RuneEvent>;
+    fn on_damage_dealt(&mut self, time: SimTime, amount: f64, is_ability: bool, slot: crate::types::AbilitySlot) -> Vec<RuneEvent>;
 
     /// Called periodically to allow runes to emit expiration events.
     fn on_tick(&mut self, time: SimTime) -> Vec<RuneEvent> {
@@ -53,10 +53,10 @@ impl RuneManager {
     }
 
     /// Dispatches the damage dealt event to all runes, returning any generated RuneEvents.
-    pub fn on_damage_dealt(&mut self, time: SimTime, amount: f64, is_ability: bool) -> Vec<RuneEvent> {
+    pub fn on_damage_dealt(&mut self, time: SimTime, amount: f64, is_ability: bool, slot: crate::types::AbilitySlot) -> Vec<RuneEvent> {
         let mut events = Vec::new();
         for effect in &mut self.effects {
-            events.extend(effect.on_damage_dealt(time, amount, is_ability));
+            events.extend(effect.on_damage_dealt(time, amount, is_ability, slot));
         }
         events
     }
@@ -107,7 +107,7 @@ impl RuneEffect for Conqueror {
         stats
     }
 
-    fn on_damage_dealt(&mut self, time: SimTime, amount: f64, is_ability: bool) -> Vec<RuneEvent> {
+    fn on_damage_dealt(&mut self, time: SimTime, amount: f64, is_ability: bool, _slot: crate::types::AbilitySlot) -> Vec<RuneEvent> {
         let mut events = Vec::new();
         
         // Expiration check
@@ -198,7 +198,7 @@ impl RuneEffect for LethalTempo {
         stats
     }
 
-    fn on_damage_dealt(&mut self, time: SimTime, _amount: f64, is_ability: bool) -> Vec<RuneEvent> {
+    fn on_damage_dealt(&mut self, time: SimTime, _amount: f64, is_ability: bool, _slot: crate::types::AbilitySlot) -> Vec<RuneEvent> {
         let mut events = Vec::new();
         // Expiration check
         if *time.0 - self.last_stack_time > 6.0 {
@@ -231,6 +231,116 @@ impl RuneEffect for LethalTempo {
             self.stacks = 0;
             events.push(RuneEvent::StacksChanged {
                 name: "Lethal Tempo".to_string(),
+                stacks: 0,
+            });
+        }
+        events
+    }
+}
+
+#[derive(Debug)]
+pub struct TasteOfBlood;
+
+impl RuneEffect for TasteOfBlood {
+    fn name(&self) -> &str { "Taste of Blood" }
+
+    fn get_bonus_stats(&mut self, _time: SimTime, _base_stats: &StatBlock, _level: u32) -> StatBlock {
+        StatBlock::new()
+    }
+
+    fn on_damage_dealt(&mut self, _time: SimTime, _amount: f64, _is_ability: bool, _slot: crate::types::AbilitySlot) -> Vec<RuneEvent> {
+        let mut events = Vec::new();
+        // Taste of Blood heals for 16-40 (+0.1 bonus AD) (+0.05 AP)
+        // Since we don't have full stats here easily, we'll just heal for a flat 30 for now
+        events.push(RuneEvent::Healed { amount: 30.0 });
+        events
+    }
+}
+
+#[derive(Debug)]
+pub struct PhaseRush {
+    pub is_melee: bool,
+    /// List of (timestamp, slot) for the recent hits.
+    pub recent_hits: std::collections::VecDeque<(f64, crate::types::AbilitySlot)>,
+    /// When Phase Rush was activated.
+    pub activation_time: f64,
+    pub is_active: bool,
+}
+
+impl PhaseRush {
+    pub fn new(is_melee: bool) -> Self {
+        Self {
+            is_melee,
+            recent_hits: std::collections::VecDeque::new(),
+            activation_time: -999.0,
+            is_active: false,
+        }
+    }
+}
+
+impl RuneEffect for PhaseRush {
+    fn name(&self) -> &str { "Phase Rush" }
+
+    fn get_bonus_stats(&mut self, time: SimTime, _base_stats: &StatBlock, _level: u32) -> StatBlock {
+        let mut stats = StatBlock::new();
+        // If activated and within 3 seconds
+        if *time.0 - self.activation_time <= 3.0 {
+            // Grants 25-40% MS based on level. We'll use 30% for now.
+            stats.movement_speed = 30.0; // Assume we add flat MS or have a multiplier later
+        }
+        stats
+    }
+
+    fn on_damage_dealt(&mut self, time: SimTime, _amount: f64, _is_ability: bool, slot: crate::types::AbilitySlot) -> Vec<RuneEvent> {
+        let current_time = *time.0;
+
+        // Clean up hits older than 4 seconds
+        while let Some(&(t, _)) = self.recent_hits.front() {
+            if current_time - t > 4.0 {
+                self.recent_hits.pop_front();
+            } else {
+                break;
+            }
+        }
+
+        // Check cooldown (15s)
+        if current_time - self.activation_time < 15.0 {
+            return Vec::new();
+        }
+
+        // Check if this slot is already in recent hits within the window
+        // For Phase Rush, it's 3 *separate* attacks or abilities.
+        let has_slot = self.recent_hits.iter().any(|&(_, s)| s == slot);
+        if !has_slot {
+            self.recent_hits.push_back((current_time, slot));
+            println!("Phase Rush hit: {:?}, total: {}", slot, self.recent_hits.len());
+        } else if slot == crate::types::AbilitySlot::AutoAttack {
+            // Auto attacks can proc Phase Rush multiple times
+            // Let's just allow it for AutoAttacks if it's a new hit (which this function call represents)
+            self.recent_hits.push_back((current_time, slot));
+            println!("Phase Rush AA hit: {:?}, total: {}", slot, self.recent_hits.len());
+        }
+
+        if self.recent_hits.len() >= 3 {
+            self.activation_time = current_time;
+            self.is_active = true;
+            self.recent_hits.clear();
+            return vec![RuneEvent::StacksChanged {
+                name: "Phase Rush Activated".to_string(),
+                stacks: 1,
+            }];
+        }
+
+        Vec::new()
+    }
+
+    fn on_tick(&mut self, time: SimTime) -> Vec<RuneEvent> {
+        let mut events = Vec::new();
+        // Check for expiration
+        if self.is_active && *time.0 - self.activation_time > 3.0 {
+            self.is_active = false;
+            events.push(RuneEvent::StacksChanged {
+                name: "Phase Rush Activated".to_string(),
                 stacks: 0,
             });
         }

@@ -7,12 +7,12 @@
     "stats": {
       "stack_ad_base": 1.2,
       "stack_ad_growth": 0.088,
-      "stack_ap_base": 2.0,
+      "stack_ap_base": 2,
       "stack_ap_growth": 0.147,
       "max_stacks": 12,
       "heal_ratio_melee": 0.08,
       "heal_ratio_ranged": 0.05,
-      "duration_sec": 6.0
+      "duration_sec": 6
     }
   },
   {
@@ -22,7 +22,7 @@
     "icon": "8008",
     "stats": {
       "max_stacks": 6,
-      "duration_sec": 6.0,
+      "duration_sec": 6,
       "melee_as_base": 0.05,
       "melee_as_growth": 0.00647,
       "ranged_as_base": 0.04,
@@ -35,7 +35,7 @@
     "tree": "Resolve",
     "icon": "8437",
     "stats": {
-      "hp": 5.0
+      "hp": 5
     }
   },
   {
@@ -67,5 +67,12 @@
     "name": "Overgrowth",
     "tree": "Resolve",
     "icon": "8451"
+  },
+  {
+    "id": "phase_rush",
+    "name": "Phase Rush",
+    "tree": "Sorcery",
+    "icon": "8230",
+    "stats": {}
   }
 ]

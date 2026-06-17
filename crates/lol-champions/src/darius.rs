@@ -133,7 +133,7 @@ impl lol_core::event::SimEvent for HemorrhageTickEvent {
             );
         }
 
-        ctx.trigger_on_damage_dealt(&self.attacker, damage_result.final_damage, false);
+        ctx.trigger_on_damage_dealt(&self.attacker, damage_result.final_damage, false, lol_core::types::AbilitySlot::AutoAttack);
 
         if let Some(d) = ctx.champions.get(&self.target) {
             let is_dead = d.borrow_mut().take_damage(damage_result.final_damage).is_dead;
@@ -237,7 +237,7 @@ impl Ability for DariusQ {
         }
 
         ctx.trigger_on_physical_damage(actor, target, &damage_result);
-        ctx.trigger_on_damage_dealt(actor, damage_result.final_damage, true);
+        ctx.trigger_on_damage_dealt(actor, damage_result.final_damage, true, lol_core::types::AbilitySlot::Q);
 
         if let Some(d) = ctx.champions.get(target) {
             let is_dead = d.borrow_mut().take_damage(damage_result.final_damage).is_dead;
@@ -403,7 +403,7 @@ impl Ability for DariusAutoAttack {
         ctx.trigger_on_physical_damage(actor, target, &damage_result);
         
         let is_ability = has_w_buff;
-        ctx.trigger_on_damage_dealt(actor, damage_result.final_damage, is_ability);
+        ctx.trigger_on_damage_dealt(actor, damage_result.final_damage, is_ability, lol_core::types::AbilitySlot::Passive);
 
         if let Some(d) = ctx.champions.get(target) {
             let is_dead = d.borrow_mut().take_damage(damage_result.final_damage).is_dead;
@@ -440,6 +440,8 @@ impl ChampionModule for DariusModule {
             state.rune_manager.add_effect(Box::new(lol_core::rune_manager::Conqueror::new(true)));
         } else if keystone_name == "Lethal Tempo" {
             state.rune_manager.add_effect(Box::new(lol_core::rune_manager::LethalTempo::new(true)));
+        } else if keystone_name == "Phase Rush" {
+            state.rune_manager.add_effect(Box::new(lol_core::rune_manager::PhaseRush::new(true)));
         }
         
         if let Some(q) = state.abilities.get_state_mut(AbilitySlot::Q) { q.level = 5; }

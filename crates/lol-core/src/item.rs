@@ -266,7 +266,7 @@ impl crate::ability::Ability for StridebreakerActive {
         }
 
         ctx.trigger_on_physical_damage(actor, target, &damage_result);
-        ctx.trigger_on_damage_dealt(actor, damage_result.final_damage, true);
+        ctx.trigger_on_damage_dealt(actor, damage_result.final_damage, true, self.slot());
 
         ctx.apply_buff(target, Box::new(HaltingSlashDebuff));
         ctx.apply_buff(actor, Box::new(HeroicGaitBuff));
