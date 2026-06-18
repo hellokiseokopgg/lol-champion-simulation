@@ -3,29 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LoL Champion 1v1 Simulation Report</title>
-    <!-- Chart.js Integration -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Combat Simulation Report</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
         :root {
-            --bg-page: #0b0c10;
-            --bg-panel: #1f2833;
-            --bg-input: #0b0c10;
+            --bg-page: #1a1b23;
+            --bg-panel: #21222d;
+            --bg-input: #1a1b23;
             --border-color: #303240;
-            --border-glow: rgba(69, 243, 255, 0.15);
-            --color-gold: #c5a059;
-            --color-cyan: #45f3ff;
-            --color-red: #ef4444;
-            --color-green: #10b981;
+            --text-main: #d1d5db;
+            --text-muted: #9ca3af;
+            --text-warning: #fbbf24;
+            --text-success: #4ade80;
             --color-purple: #a855f7;
-            --text-main: #e5e7eb;
-            --text-body: #d1d5db;
-            --text-muted: #8b949e;
-            --radius-md: 8px;
+            --color-orange: #f97316;
+            --color-cyan: rgba(34, 211, 238, 0.85);
+            --color-green: #84cc16;
+            --radius-md: 6px;
             --radius-sm: 4px;
-            --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            --font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             --icon-size: 28px;
         }
 
@@ -33,10 +28,10 @@
         
         body {
             background-color: var(--bg-page);
-            color: var(--text-body);
+            color: var(--text-main);
             font-family: var(--font-family);
             font-size: 13px;
-            padding: 24px;
+            padding: 20px;
             line-height: 1.5;
         }
 
@@ -45,217 +40,40 @@
             margin: 0 auto;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 16px;
         }
 
-        /* Header App Bar */
+        /* Top Nav & Alert */
         .top-nav {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 12px;
-            margin-bottom: 4px;
+            gap: 10px;
+            margin-bottom: 8px;
         }
-        .nav-title-group {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .nav-title {
-            font-weight: 800;
-            font-size: 18px;
-            color: #fff;
-            letter-spacing: -0.5px;
-            background: linear-gradient(135deg, #fff 0%, var(--color-gold) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
+        .nav-title { font-weight: 600; font-size: 15px; }
         .badge {
-            padding: 3px 8px;
+            padding: 2px 8px;
             border-radius: 12px;
             font-size: 10px;
-            font-weight: 700;
+            font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
-        .badge.blue { background: rgba(69, 243, 255, 0.1); color: var(--color-cyan); border: 1px solid rgba(69, 243, 255, 0.2); }
-        .badge.green { background: rgba(16, 185, 129, 0.1); color: var(--color-green); border: 1px solid rgba(16, 185, 129, 0.2); }
-        .badge.purple { background: rgba(168, 85, 247, 0.1); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.2); }
+        .badge.blue { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .badge.green { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+        .badge.purple { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
 
-        /* Alert Box */
         .alert-box {
-            background: rgba(197, 160, 89, 0.05);
-            border: 1px solid rgba(197, 160, 89, 0.15);
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid rgba(251, 191, 36, 0.2);
             padding: 12px 16px;
             border-radius: var(--radius-md);
-            color: var(--color-gold);
+            color: var(--text-warning);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 12px;
         }
-        .alert-link { color: var(--color-cyan); text-decoration: none; font-weight: 600; }
+        .alert-link { color: #60a5fa; text-decoration: none; font-weight: 500; }
         .alert-link:hover { text-decoration: underline; }
-
-        /* Matchup Header */
-        .matchup-container {
-            display: flex;
-            gap: 20px;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-        }
-        .champ-card {
-            background: var(--bg-panel);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-            padding: 20px;
-            flex: 1;
-            min-width: 320px;
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            position: relative;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        }
-        .champ-card.card-left {
-            border-left: 4px solid var(--color-cyan);
-        }
-        .champ-card.card-right {
-            flex-direction: row-reverse;
-            border-right: 4px solid var(--color-red);
-            text-align: right;
-        }
-        .champ-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
-        }
-        .champ-avatar-container {
-            position: relative;
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            border: 3px solid var(--border-color);
-            overflow: visible;
-            flex-shrink: 0;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-            transition: all 0.3s ease;
-        }
-        .champ-avatar-img {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            object-fit: cover;
-        }
-        .champ-winner-badge {
-            position: absolute;
-            bottom: -8px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--color-gold);
-            color: #0b0c10;
-            font-size: 9px;
-            font-weight: 800;
-            padding: 2px 8px;
-            border-radius: 10px;
-            border: 1.5px solid var(--bg-panel);
-            text-transform: uppercase;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-            white-space: nowrap;
-            display: none;
-            z-index: 10;
-        }
-        .champ-info {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-        .champ-name {
-            font-size: 20px;
-            font-weight: 800;
-            color: #fff;
-            margin: 0;
-        }
-        .champ-subtitle {
-            font-size: 11px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .hp-bar-outer {
-            width: 100%;
-            height: 14px;
-            background: rgba(0, 0, 0, 0.4);
-            border-radius: 7px;
-            overflow: hidden;
-            position: relative;
-            border: 1px solid var(--border-color);
-            margin-top: 4px;
-        }
-        .hp-bar-inner {
-            height: 100%;
-            width: 100%;
-            background: var(--color-green);
-            transition: width 0.1s ease, background-color 0.3s ease;
-        }
-        .hp-bar-text {
-            font-size: 9px;
-            font-weight: 800;
-            color: #fff;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.9);
-            white-space: nowrap;
-        }
-        .champ-metrics {
-            display: flex;
-            gap: 12px;
-            margin-top: 4px;
-        }
-        .champ-card.card-right .champ-metrics {
-            flex-direction: row-reverse;
-        }
-        .metric-item {
-            background: rgba(0,0,0,0.2);
-            padding: 6px 10px;
-            border-radius: var(--radius-sm);
-            flex: 1;
-            text-align: center;
-            border: 1px solid rgba(255,255,255,0.01);
-        }
-        .metric-value {
-            font-size: 14px;
-            font-weight: 700;
-            color: #fff;
-        }
-        .metric-label {
-            font-size: 9px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            margin-top: 1px;
-        }
-        .vs-badge {
-            font-size: 16px;
-            font-weight: 900;
-            font-style: italic;
-            color: var(--color-gold);
-            background: var(--bg-panel);
-            border: 2px solid var(--color-gold);
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 0 15px rgba(197, 160, 89, 0.2);
-            flex-shrink: 0;
-            z-index: 5;
-        }
 
         /* Inputs Grid */
         .input-row {
@@ -271,11 +89,8 @@
             min-width: 150px;
         }
         .input-group label {
-            font-size: 11px;
-            font-weight: 600;
+            font-size: 12px;
             color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
         .form-control {
             background: var(--bg-input);
@@ -286,9 +101,8 @@
             font-size: 13px;
             outline: none;
             width: 100%;
-            transition: border-color 0.2s ease;
         }
-        .form-control:focus { border-color: var(--color-gold); }
+        .form-control:focus { border-color: #60a5fa; }
         .input-with-suffix {
             display: flex;
             align-items: center;
@@ -305,15 +119,14 @@
             outline: none;
             width: 100%;
         }
-        .input-with-suffix span { color: var(--text-muted); font-size: 11px; font-weight: 600; }
+        .input-with-suffix span { color: var(--text-muted); font-size: 12px; }
 
-        /* Panels */
+        /* Simulation Options Panel */
         .panel {
             background: var(--bg-panel);
             border: 1px solid var(--border-color);
             border-radius: var(--radius-md);
             overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
         .panel-header {
             padding: 12px 16px;
@@ -321,91 +134,47 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: rgba(255,255,255,0.01);
+            background: rgba(255,255,255,0.02);
+            cursor: pointer;
         }
-        .panel-header-left { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13px; color: #fff; text-transform: uppercase; letter-spacing: 0.5px;}
+        .panel-header-left { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px;}
         .panel-header-right { display: flex; gap: 8px; }
         
         .panel-body {
-            padding: 16px;
+            padding: 20px;
+            display: flex;
+            gap: 40px;
         }
-
-        /* Charts Section Grid */
-        .charts-grid {
-            display: grid;
-            grid-template-columns: 2fr 1fr 1fr;
-            gap: 16px;
-        }
-        @media (max-width: 1100px) {
-            .charts-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-        .chart-container-wrapper {
-            position: relative;
-            height: 260px;
-            width: 100%;
-        }
-
-        /* Buttons styling */
-        .btn-outline {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid var(--border-color);
-            color: var(--text-body);
-            padding: 6px 14px;
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-            font-size: 11px;
-            font-weight: 600;
-            transition: all 0.2s ease;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .btn-outline:hover {
-            background: rgba(255,255,255,0.08);
-            border-color: var(--color-gold);
-            color: #fff;
-        }
-        .btn-outline.active {
-            background: var(--color-gold);
-            border-color: var(--color-gold);
-            color: #0b0c10;
-            box-shadow: 0 0 10px rgba(197, 160, 89, 0.3);
-        }
-
-        /* Simulation Options Panel */
         .col { flex: 1; display: flex; flex-direction: column; gap: 12px; }
-        .col h4 { font-size: 13px; font-weight: 700; margin-bottom: 4px; color: #fff; text-transform: uppercase; letter-spacing: 0.5px;}
-        .col p { font-size: 11px; color: var(--text-muted); margin-bottom: 8px; }
+        .col h4 { font-size: 14px; font-weight: 600; margin-bottom: 4px; color: #fff;}
+        .col p { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
         
         .purple-btn {
             background: var(--color-purple);
             color: #fff;
             border: none;
-            padding: 10px;
+            padding: 12px;
             border-radius: var(--radius-sm);
-            font-weight: 700;
-            font-size: 12px;
+            font-weight: 600;
+            font-size: 14px;
             cursor: pointer;
             margin-top: auto;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            transition: background 0.2s;
         }
         .purple-btn:hover { background: #b065f8; }
 
+        /* Sliders in Options */
         .slider-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            font-size: 11px;
+            font-size: 12px;
         }
-        .slider-row .val { font-weight: 700; }
-        .slider-row .val.green { color: var(--color-green); }
-        .slider-row .val.orange { color: var(--color-gold); }
+        .slider-row .val { font-weight: 600; }
+        .slider-row .val.green { color: var(--text-success); }
+        .slider-row .val.orange { color: var(--text-warning); }
         .slider-row .val.purple { color: #c084fc; }
-        .slider-row .val.red { color: var(--color-red); }
-
+        .slider-row .val.red { color: #f87171; }
+        
         /* Timeline Card */
         .timeline-header {
             padding: 12px 16px;
@@ -414,16 +183,27 @@
             align-items: center;
             border-bottom: 1px solid var(--border-color);
         }
-        .timeline-title { font-size: 13px; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: 0.5px;}
+        .timeline-title { font-size: 15px; font-weight: 600; color: #fff; }
         .timeline-controls {
             display: flex;
             align-items: center;
             gap: 16px;
-            font-size: 11px;
+            font-size: 12px;
             color: var(--text-muted);
         }
         .checkbox-group { display: flex; align-items: center; gap: 6px; cursor: pointer;}
         .checkbox-group input { accent-color: var(--color-green); cursor: pointer; }
+        
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .btn-outline:hover { background: rgba(255,255,255,0.05); }
 
         /* The Timeline Area */
         .timeline-body {
@@ -432,7 +212,6 @@
             overflow-x: auto;
             overflow-y: hidden;
             padding-bottom: 10px;
-            border-bottom: 1px solid var(--border-color);
         }
         .timeline-inner {
             position: relative;
@@ -463,7 +242,6 @@
             transform: translateX(-50%);
             font-size: 10px;
             color: var(--text-muted);
-            font-weight: 600;
         }
 
         /* Grid lines */
@@ -481,7 +259,7 @@
             top: 0;
             bottom: 0;
             width: 1px;
-            border-left: 1px dashed rgba(255,255,255,0.03);
+            border-left: 1px dashed rgba(255,255,255,0.05);
         }
 
         /* SVG Graph */
@@ -495,29 +273,27 @@
             pointer-events: none;
         }
 
-        /* Event Icons */
+        /* Icons */
         .event-icon {
             position: absolute;
             width: var(--icon-size);
             height: var(--icon-size);
             border-radius: 4px;
             background-size: cover;
-            background-position: center;
             border: 2px solid transparent;
             z-index: 10;
             transform: translateX(-50%);
-            box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
             cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .event-icon:hover {
             z-index: 100;
-            transform: translateX(-50%) scale(1.2);
             filter: brightness(1.2);
-            box-shadow: 0 0 10px var(--color-cyan);
+            box-shadow: 0 0 8px rgba(255,255,255,0.3);
         }
+        /* Border colors based on type */
         .event-icon.primary { border-color: var(--color-green); }
-        .event-icon.fallback { border-color: var(--color-gold); }
+        .event-icon.fallback { border-color: var(--text-warning); }
         .event-icon.instant { border-color: #3b82f6; }
         
         .resource-delta {
@@ -525,18 +301,17 @@
             bottom: -16px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 8px;
-            font-weight: 800;
+            font-size: 9px;
+            font-weight: bold;
             color: #fff;
-            background: rgba(0,0,0,0.75);
+            background: rgba(0,0,0,0.6);
             padding: 1px 4px;
             border-radius: 2px;
             white-space: nowrap;
             z-index: 11;
-            border: 0.5px solid rgba(255,255,255,0.1);
         }
         .resource-delta.positive { color: var(--color-cyan); }
-        .resource-delta.negative { color: var(--color-red); }
+        .resource-delta.negative { color: #f87171; }
 
         /* Scrubber */
         .scrubber {
@@ -544,10 +319,9 @@
             top: 20px;
             bottom: 0;
             width: 2px;
-            background: var(--color-gold);
+            background: var(--color-orange);
             z-index: 50;
             pointer-events: none;
-            transition: left 0.1s ease;
         }
         .scrubber-head {
             position: absolute;
@@ -555,32 +329,26 @@
             left: -5px;
             width: 12px;
             height: 12px;
-            background: var(--color-gold);
+            background: var(--color-orange);
             border-radius: 50%;
-            box-shadow: 0 0 8px var(--color-gold);
         }
         .scrubber-label {
             position: absolute;
-            bottom: 4px;
-            left: 8px;
-            font-size: 10px;
-            font-weight: 700;
-            color: var(--color-gold);
+            bottom: 0;
+            left: 5px;
+            font-size: 11px;
+            color: var(--text-muted);
             white-space: nowrap;
-            background: rgba(11, 12, 16, 0.85);
-            padding: 2px 6px;
-            border-radius: 3px;
-            border: 1px solid rgba(197, 160, 89, 0.3);
         }
 
         /* Legend */
         .legend-bar {
             padding: 12px 16px;
+            border-top: 1px solid var(--border-color);
             display: flex;
             flex-wrap: wrap;
             gap: 20px;
             align-items: center;
-            border-bottom: 1px solid var(--border-color);
         }
         .legend-item {
             display: flex;
@@ -588,7 +356,6 @@
             gap: 6px;
             font-size: 11px;
             color: var(--text-muted);
-            font-weight: 500;
         }
         .l-circle { width: 10px; height: 10px; border-radius: 50%; }
         .l-square { width: 10px; height: 10px; border-radius: 2px; }
@@ -596,36 +363,20 @@
         /* Playback Controls */
         .playback-bar {
             padding: 12px 16px;
+            border-top: 1px solid var(--border-color);
             display: flex;
             align-items: center;
             gap: 16px;
         }
-        .play-controls { display: flex; gap: 8px; align-items: center; }
-        .play-btn {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid var(--border-color);
-            color: var(--text-body);
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 12px;
-            transition: all 0.2s;
-        }
-        .play-btn:hover {
-            color: #fff;
-            border-color: var(--color-gold);
-            background: rgba(255,255,255,0.08);
-        }
+        .play-controls { display: flex; gap: 12px; align-items: center; }
+        .play-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px; }
+        .play-btn:hover { color: #fff; }
         .time-slider {
             flex: 1;
-            height: 6px;
+            height: 4px;
             appearance: none;
             background: var(--border-color);
-            border-radius: 3px;
+            border-radius: 2px;
             outline: none;
         }
         .time-slider::-webkit-slider-thumb {
@@ -633,26 +384,20 @@
             width: 14px;
             height: 14px;
             border-radius: 50%;
-            background: var(--color-gold);
+            background: var(--color-green);
             cursor: pointer;
-            box-shadow: 0 0 6px rgba(197, 160, 89, 0.6);
-            transition: transform 0.1s;
-        }
-        .time-slider::-webkit-slider-thumb:hover {
-            transform: scale(1.2);
         }
 
         /* Footer Stats */
         .card-footer {
-            padding: 12px 16px;
-            background: rgba(0, 0, 0, 0.2);
-            font-size: 12px;
+            padding: 16px;
             border-top: 1px solid var(--border-color);
-            color: var(--text-muted);
+            background: var(--bg-panel);
+            font-size: 14px;
         }
-        .card-footer strong { font-weight: 700; color: #fff; }
-        .f-green { color: var(--color-green) !important; }
-        .f-orange { color: var(--color-gold) !important; }
+        .card-footer strong { font-weight: 600; color: #fff; }
+        .f-green { color: var(--text-success) !important; }
+        .f-orange { color: var(--color-orange) !important; }
 
         /* Custom Range Slider for Zoom */
         input[type=range].zoom-slider {
@@ -665,96 +410,35 @@
         }
         input[type=range].zoom-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 12px;
-            height: 12px;
+            width: 14px;
+            height: 14px;
             border-radius: 50%;
-            background: var(--color-gold);
+            background: var(--color-green);
             cursor: pointer;
         }
 
         /* Combat Log Active Row */
         .active-log {
-            background: rgba(197, 160, 89, 0.08) !important;
-            border-left: 3px solid var(--color-gold) !important;
+            background: rgba(255, 255, 255, 0.05) !important;
+            border-left: 2px solid var(--color-orange);
         }
 
         .tooltip {
             position: fixed;
-            background: #111217;
+            background: #111;
             border: 1px solid var(--border-color);
-            padding: 10px 14px;
-            border-radius: var(--radius-md);
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
             font-size: 11px;
             color: #ccc;
             pointer-events: none;
             opacity: 0;
             z-index: 9999;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.8);
-            transition: opacity 0.15s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+            transition: opacity 0.1s;
         }
-        .tooltip strong { color: #fff; font-size: 12px; display: block; margin-bottom: 4px; }
-        .tooltip span.time { color: var(--color-cyan); font-weight: 700; }
+        .tooltip strong { color: #fff; font-size: 13px; display: block; margin-bottom: 4px; }
 
-        /* Tabs for items/runes */
-        .tabs-header {
-            display: flex;
-            border-bottom: 1px solid var(--border-color);
-            background: rgba(0,0,0,0.1);
-        }
-        .tab-btn {
-            background: transparent;
-            border: none;
-            color: var(--text-muted);
-            padding: 12px 20px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            border-bottom: 2px solid transparent;
-            transition: all 0.2s;
-        }
-        .tab-btn:hover { color: #fff; }
-        .tab-btn.active {
-            color: var(--color-gold);
-            border-bottom-color: var(--color-gold);
-        }
-        .tab-content {
-            display: none;
-            padding: 20px;
-        }
-        .tab-content.active {
-            display: block;
-        }
-
-        /* Focus outlines for accessibility */
-        input:focus-visible, button:focus-visible, select:focus-visible, textarea:focus-visible {
-            outline: 2px solid var(--color-gold) !important;
-            outline-offset: 2px;
-        }
-
-        /* Mobile responsiveness queries */
-        @media (max-width: 768px) {
-            .apl-options-container {
-                grid-template-columns: 1fr !important;
-            }
-            .options-grid {
-                flex-direction: column !important;
-                gap: 20px !important;
-            }
-            .input-row {
-                flex-direction: column !important;
-            }
-            .matchup-container {
-                flex-direction: column !important;
-            }
-            .champ-card {
-                width: 100% !important;
-            }
-            .vs-badge {
-                margin: 10px auto !important;
-            }
-        }
     </style>
 </head>
 <body>
@@ -763,181 +447,126 @@
 
     <!-- Top Nav -->
     <div class="top-nav">
-        <div class="nav-title-group">
-            <span class="nav-title">1v1 Combat Simulation Engine</span>
-            <span class="badge blue">Premium Report</span>
-        </div>
-        <div>
-            <span class="badge purple" id="simModeBadge">Deterministic</span>
-        </div>
+        <span class="nav-title">Rotation Preview</span>
+        <span class="badge blue">EXPERIMENTAL</span>
     </div>
 
-    <!-- Matchup Header -->
-    <div class="matchup-container">
-        <!-- Champion A Battle Card -->
-        <div class="champ-card card-left" id="champCardA">
-            <div class="champ-avatar-container">
-                <img src="" alt="" class="champ-avatar-img img-a" onerror="this.src='https://raw.communitydragon.org/latest/game/assets/characters/practicetool_targetdummy/hud/practicetool_targetdummy_circle.png'">
-                <div class="champ-winner-badge win-a">VICTORY</div>
-            </div>
-            <div class="champ-info">
-                <div class="champ-subtitle">Champion A</div>
-                <h2 class="champ-name name-a">Loading...</h2>
-                <div class="hp-bar-outer">
-                    <div class="hp-bar-inner hp-bar-a"></div>
-                    <div class="hp-bar-text hp-text-a">0 / 0 (100%)</div>
-                </div>
-                <div class="champ-metrics">
-                    <div class="metric-item">
-                        <div class="metric-value dmg-dealt-a">0</div>
-                        <div class="metric-label">Damage Dealt</div>
-                    </div>
-                    <div class="metric-item">
-                        <div class="metric-value dps-a">0.0</div>
-                        <div class="metric-label">DPS</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="vs-badge">VS</div>
-
-        <!-- Champion B Battle Card -->
-        <div class="champ-card card-right" id="champCardB">
-            <div class="champ-avatar-container">
-                <img src="" alt="" class="champ-avatar-img img-b" onerror="this.src='https://raw.communitydragon.org/latest/game/assets/characters/practicetool_targetdummy/hud/practicetool_targetdummy_circle.png'">
-                <div class="champ-winner-badge win-b">VICTORY</div>
-            </div>
-            <div class="champ-info">
-                <div class="champ-subtitle">Champion B</div>
-                <h2 class="champ-name name-b">Loading...</h2>
-                <div class="hp-bar-outer">
-                    <div class="hp-bar-inner hp-bar-b"></div>
-                    <div class="hp-bar-text hp-text-b">0 / 0 (100%)</div>
-                </div>
-                <div class="champ-metrics">
-                    <div class="metric-item">
-                        <div class="metric-value dmg-dealt-b">0</div>
-                        <div class="metric-label">Damage Dealt</div>
-                    </div>
-                    <div class="metric-item">
-                        <div class="metric-value dps-b">0.0</div>
-                        <div class="metric-label">DPS</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Alert Block -->
+    <!-- Alert -->
     <div class="alert-box">
         <div>
-            <span style="margin-right: 6px;">⚔️</span> 
-            <strong>Sequence flow simulator.</strong> Simulates step-by-step game mechanics, rune activations, item on-hits, and ability ratios.
+            <span style="margin-right: 6px;">⚠️</span> 
+            <strong>Sequence flow simulator, not a DPS sim.</strong> Midnight expansion only, Classic support coming soon. Resource tracking may not be fully accurate.
         </div>
-        <a href="#" class="alert-link">Simulation complete &rarr;</a>
+        <a href="#" class="alert-link">Got feedback? Help us improve &rarr;</a>
     </div>
 
-    <!-- Two-Column / APL & Option Config -->
-    <div class="apl-options-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 4px;">
+    <!-- Inputs Row 1 -->
+    <div class="input-row">
         <div class="input-group">
-            <label>Action Priority List (APL)</label>
-            <div class="form-control" style="font-family: monospace; font-size: 13px; color: var(--color-green); background: rgba(0,0,0,0.3); line-height: 1.4; white-space: pre-wrap; height: 120px; overflow-y: auto;"><!-- __APL_SCRIPT__ --></div>
+            <label>Duration</label>
+            <div class="input-with-suffix"><input type="text" value="60" disabled><span>s</span></div>
         </div>
-        <div class="input-row" style="flex: 1; align-content: flex-start;">
-            <div class="input-group">
-                <label>Combat Duration</label>
-                <div class="input-with-suffix"><input type="text" value="60" disabled id="infoDuration"><span>s</span></div>
-            </div>
-            <div class="input-group">
-                <label>Jitter Rate</label>
-                <div class="input-with-suffix"><input type="text" value="Realistic" disabled><span>mode</span></div>
-            </div>
-            <div class="input-group" style="width: 100%;">
-                <label>Simulation Status</label>
-                <input type="text" class="form-control" value="Success - Report Generated" disabled>
-            </div>
+        <div class="input-group">
+            <label>Haste %</label>
+            <input type="text" class="form-control" value="0" disabled>
+        </div>
+        <div class="input-group">
+            <label>MS Rate</label>
+            <div class="input-with-suffix"><input type="text" value="250" disabled><span>ms</span></div>
+        </div>
+        <div class="input-group">
+            <label>Trinket 1</label>
+            <select class="form-control" disabled><option>2 min</option></select>
+        </div>
+        <div class="input-group">
+            <label>Trinket 2</label>
+            <select class="form-control" disabled><option>2 min</option></select>
+        </div>
+        <div class="input-group">
+            <label>Form</label>
+            <select class="form-control" disabled><option>N/A</option></select>
         </div>
     </div>
 
-    <!-- Tabs for Runes and Items -->
-    <div class="panel">
-        <div class="tabs-header" role="tablist">
-            <button class="tab-btn active" role="tab" aria-selected="true" onclick="switchTab('tabItems', this)">Champions & Gear</button>
-            <button class="tab-btn" role="tab" aria-selected="false" onclick="switchTab('tabOptions', this)">Sim Settings</button>
+    <!-- Inputs Row 2 (APL Script) -->
+    <div class="input-group" style="width: 100%;">
+        <label>Action Priority List (APL)</label>
+        <div class="input-row">
+            <div class="form-control" style="flex: 1; min-height: 40px; font-family: monospace; font-size: 13px; color: var(--text-success); background: rgba(0,0,0,0.3); line-height: 1.4; white-space: pre-wrap;"><!-- __APL_SCRIPT__ --></div>
         </div>
-        <div id="tabItems" class="tab-content active">
-            <div id="itemsContainer" style="display: flex; gap: 40px; width: 100%; flex-wrap: wrap;">
+    </div>
+
+    <!-- Items Card -->
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-header-left">
+                <span style="font-weight:600; font-size:15px; display:flex; align-items:center; gap:8px;">
+                    Champions & Items
+                </span>
+            </div>
+        </div>
+        <div class="panel-body">
+            <div id="itemsContainer" style="display: flex; gap: 40px; width: 100%;">
                 <!-- Populated by JS -->
             </div>
         </div>
-        <div id="tabOptions" class="tab-content">
-            <div class="options-grid" style="display: flex; gap: 40px; flex-wrap: wrap; width: 100%;">
-                <div class="col">
-                    <h4>Proc Effects</h4>
-                    <p>Simulate items and runes procs using deterministic/random logic.</p>
-                    <div class="input-group">
-                        <label>Item Active Timing</label>
-                        <input type="text" class="form-control" value="ASAP" disabled>
-                    </div>
-                </div>
-                <div class="col">
-                    <h4>Variance Analysis</h4>
-                    <div class="slider-row">
-                        <span>Monte Carlo Iterations</span>
-                        <span class="val green">100</span>
-                    </div>
-                    <input type="range" aria-label="Monte Carlo Iterations" style="width:100%; accent-color: var(--color-green);" value="10" disabled>
-                </div>
-            </div>
-        </div>
     </div>
 
-    <!-- Data Visualization Dashboard -->
-    <div class="charts-grid">
-        <!-- Line Chart Panel -->
-        <div class="panel" style="display: flex; flex-direction: column;">
-            <div class="panel-header">
-                <div class="panel-header-left">
-                    <span>Performance Timeline</span>
-                </div>
-                <div class="panel-header-right">
-                    <button class="btn-outline active" id="btnChartDmg" onclick="toggleChartMode('damage')">Cumulative Damage</button>
-                    <button class="btn-outline" id="btnChartDps" onclick="toggleChartMode('dps')">Rolling DPS</button>
-                </div>
+    <!-- Simulation Options -->
+    <div class="panel">
+        <div class="panel-header" style="cursor: pointer;" onclick="const b=this.nextElementSibling; const i=this.querySelector('.toggle-icon'); if(b.style.display==='none'){b.style.display='flex'; i.innerHTML='&#9660;';}else{b.style.display='none'; i.innerHTML='&#9654;';}">
+            <div class="panel-header-left">
+                <span class="toggle-icon">&#9654;</span> Simulation Options <span class="badge" style="margin-left: 8px; background: #374151; color: #9ca3af; border: 1px dashed #4b5563;">TODO</span>
             </div>
-            <div class="panel-body" style="flex: 1; min-height: 300px; padding: 16px;">
-                <div class="chart-container-wrapper">
-                    <canvas id="combatChartCanvas"></canvas>
-                </div>
+            <div class="panel-header-right">
+                <span class="badge blue">Monte Carlo (1000)</span>
+                <span class="badge green">Realistic</span>
             </div>
         </div>
+        <div class="panel-body" style="display: none;">
+            <div class="col">
+                <h4>Proc Effects</h4>
+                <p>Simulate trinket procs using expected value calculation.</p>
+                <div class="input-group">
+                    <label>Trinket 1</label>
+                    <input type="text" class="form-control" placeholder="Search trinkets..." disabled>
+                </div>
+                <div class="input-group">
+                    <label>Trinket 2</label>
+                    <input type="text" class="form-control" placeholder="Search trinkets..." disabled>
+                </div>
+            </div>
+            <div class="col">
+                <h4>Variance Analysis</h4>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <label class="checkbox-group" style="opacity:0.5;"><input type="checkbox" checked disabled> <span style="font-size:13px; color:#fff;">Realistic Mode</span></label>
+                    <div class="input-with-suffix" style="width: 120px; background: transparent; opacity:0.5;"><span style="margin-right:8px; padding-left:12px;">Iterations:</span><input type="text" value="1000" style="text-align:right;" disabled></div>
+                </div>
+                
+                <div class="slider-row" style="margin-top: 10px;">
+                    <span>Jitter</span>
+                    <span class="val green">±75ms</span>
+                </div>
+                <input type="range" style="width:100%; accent-color: var(--color-green);" value="30" disabled>
+                
+                <div style="display:flex; gap: 40px; margin-top: 10px;">
+                    <div style="flex:1;">
+                        <div class="slider-row"><span>Reaction</span><span class="val purple">50ms</span></div>
+                        <input type="range" style="width:100%; accent-color: var(--color-purple);" value="20" disabled>
+                    </div>
+                    <div style="flex:1;">
+                        <div class="slider-row"><span>Ping</span><span class="val orange">100ms</span></div>
+                        <input type="range" style="width:100%; accent-color: var(--color-orange);" value="50" disabled>
+                    </div>
+                </div>
 
-        <!-- Doughnut Chart A -->
-        <div class="panel" style="display: flex; flex-direction: column;">
-            <div class="panel-header">
-                <div class="panel-header-left">
-                    <span id="doughnutHeaderA">Champ A Breakdown</span>
+                <div class="slider-row" style="margin-top: 10px;">
+                    <span>Miss Rate</span>
+                    <span class="val red">2%</span>
                 </div>
-            </div>
-            <div class="panel-body" style="flex: 1; min-height: 300px; padding: 16px;">
-                <div class="chart-container-wrapper">
-                    <canvas id="doughnutChartCanvasA"></canvas>
-                </div>
-            </div>
-        </div>
+                <input type="range" style="width:100%; accent-color: #f87171;" value="10" disabled>
 
-        <!-- Doughnut Chart B -->
-        <div class="panel" style="display: flex; flex-direction: column;">
-            <div class="panel-header">
-                <div class="panel-header-left">
-                    <span id="doughnutHeaderB">Champ B Breakdown</span>
-                </div>
-            </div>
-            <div class="panel-body" style="flex: 1; min-height: 300px; padding: 16px;">
-                <div class="chart-container-wrapper">
-                    <canvas id="doughnutChartCanvasB"></canvas>
-                </div>
+                <button class="purple-btn" disabled style="opacity:0.5;">Run Simulation</button>
             </div>
         </div>
     </div>
@@ -948,8 +577,8 @@
             <div class="timeline-title">Rotation Timeline</div>
             <div class="timeline-controls">
                 <span>Zoom</span>
-                <input type="range" class="zoom-slider" id="zoomSlider" min="20" max="200" value="80" aria-label="Timeline Zoom">
-                <span id="headerStats" style="margin-left: 10px;">0 casts | 0s</span>
+                <input type="range" class="zoom-slider" id="zoomSlider" min="20" max="200" value="80">
+                <span id="headerStats" style="margin-left: 10px;">45 casts | 60s | 1500ms GCD (Global Cooldown)</span>
             </div>
         </div>
         
@@ -964,65 +593,54 @@
                 
                 <div class="scrubber" id="scrubber">
                     <div class="scrubber-head"></div>
-                    <div class="scrubber-label" id="scrubberLabel">0/100</div>
+                    <div class="scrubber-label" id="scrubberLabel">100/100 (100%)</div>
                 </div>
             </div>
         </div>
- 
+
         <div class="legend-bar">
             <!-- Skills -->
-            <div class="legend-item"><div class="l-square" style="background: transparent; border: 2px solid var(--color-green);"></div> Primary Skill (E)</div>
+            <div class="legend-item"><div class="l-square" style="background: transparent; border: 2px solid var(--color-green);"></div> Primary Skill</div>
             <div class="legend-item"><div class="l-square" style="background: transparent; border: 2px solid #3b82f6;"></div> Active Skill</div>
-            <div class="legend-item"><div class="l-square" style="background: transparent; border: 2px solid var(--color-gold);"></div> Auto Attack</div>
+            <div class="legend-item"><div class="l-square" style="background: transparent; border: 2px solid var(--text-warning);"></div> Auto Attack</div>
             
             <div style="width: 1px; height: 16px; background: var(--border-color); margin: 0 10px;"></div>
- 
+
             <!-- Events -->
             <div class="legend-item"><div class="l-circle" style="background: #3b0764; border: 2px solid #a855f7; width: 14px; height: 14px;"></div> Item/Buff Proc</div>
             
             <div style="width: 1px; height: 16px; background: var(--border-color); margin: 0 10px;"></div>
- 
+
             <!-- Graphs -->
             <div class="legend-item"><div class="l-square" style="background: var(--color-cyan); opacity: 0.5;"></div> Resource Usage</div>
-            <div class="legend-item"><div style="width: 16px; height: 2px; background: var(--color-gold);"></div> Cumulative Damage</div>
+            <div class="legend-item"><div style="width: 16px; height: 2px; background: var(--color-orange);"></div> Cumulative Damage</div>
+            <div class="legend-item"><span style="color:var(--color-cyan); font-weight:bold;">+20</span> <span style="color:#f87171; font-weight:bold;">-35</span> Resource +/-</div>
         </div>
- 
+
         <div class="playback-bar">
             <div class="play-controls">
-                <button class="play-btn" id="playBtn" aria-label="Play or Pause Simulation">&#9654;</button>
-                <button class="play-btn" id="prevBtn" aria-label="Previous Frame">&lt;</button>
+                <button class="play-btn" id="playBtn">&#9654;</button>
+                <button class="play-btn" id="prevBtn">&lt;</button>
             </div>
-            <input type="range" class="time-slider" id="mainScrubber" value="0" min="0" max="100" step="0.1" aria-label="Simulation Time Scrubber">
-            <button class="play-btn" id="nextBtn" aria-label="Next Frame">&gt;</button>
+            <input type="range" class="time-slider" id="mainScrubber" value="0" min="0" max="100" step="0.1">
+            <button class="play-btn" id="nextBtn">&gt;</button>
         </div>
- 
+
         <div class="card-footer" id="cardFooter">
-            0 casts
+            <strong>45</strong> casts &nbsp;*&nbsp; <strong class="f-green">100%</strong> GCD uptime &nbsp;*&nbsp; <strong class="f-orange">195</strong> wasted &nbsp;*&nbsp; <strong>1.50s</strong> GCD
         </div>
     </div>
- 
+
     <!-- Combat Log Card -->
     <div class="panel">
-        <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-            <div class="panel-header-left">
-                <span>Combat Log</span>
-            </div>
-            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                <input type="text" id="logSearch" placeholder="Search combat logs..." class="form-control" style="width: 200px; padding: 6px 12px; height: 32px; background: rgba(0,0,0,0.3);" oninput="filterCombatLogs()" aria-label="Search combat logs">
-                <div style="display: flex; gap: 4px;" id="logFilterGroup">
-                    <button class="btn-outline active" aria-pressed="true" onclick="setLogFilter('all', this)" style="padding: 4px 10px; height: 32px;">All</button>
-                    <button class="btn-outline" aria-pressed="false" onclick="setLogFilter('cast', this)" style="padding: 4px 10px; height: 32px;">Casts</button>
-                    <button class="btn-outline" aria-pressed="false" onclick="setLogFilter('damage', this)" style="padding: 4px 10px; height: 32px;">Damage</button>
-                    <button class="btn-outline" aria-pressed="false" onclick="setLogFilter('heal', this)" style="padding: 4px 10px; height: 32px;">Heals</button>
-                    <button class="btn-outline" aria-pressed="false" onclick="setLogFilter('buff', this)" style="padding: 4px 10px; height: 32px;">Buffs</button>
-                </div>
-            </div>
+        <div class="timeline-header">
+            <div class="timeline-title">Combat Log</div>
         </div>
         <div class="panel-body" style="padding: 0;">
             <div id="combatLogContainer" style="max-height: 400px; overflow-y: auto; width: 100%; background: var(--bg-panel);">
                 <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
                     <thead>
-                        <tr style="border-bottom: 1px solid var(--border-color); background: rgba(0,0,0,0.2);">
+                        <tr style="border-bottom: 1px solid var(--border-color); background: rgba(255,255,255,0.02);">
                             <th style="padding: 10px 16px; width: 80px; color: var(--text-muted);">Time</th>
                             <th style="padding: 10px 16px; width: 100px; color: var(--text-muted);">Event</th>
                             <th style="padding: 10px 16px; width: 150px; color: var(--text-muted);">Source</th>
@@ -1059,71 +677,110 @@
     const svgGraph = document.getElementById('svgGraph');
     const tooltip = document.getElementById('tooltip');
     const itemsContainer = document.getElementById('itemsContainer');
+    
+    // Render Items
+    if (itemsData) {
+        for (const [champ, items] of Object.entries(itemsData)) {
+            const col = document.createElement('div');
+            col.className = 'col';
+            const isDummy = champ.toLowerCase() === "dummy";
+            const champImgUrl = isDummy 
+                ? 'https://raw.communitydragon.org/latest/game/assets/characters/practicetool_targetdummy/hud/practicetool_targetdummy_circle.png'
+                : `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/champion/${champ}.png?image=c_crop,h_103,w_103,x_9,y_9/q_auto:good,f_webp,w_160,h_160&v=1612`;
+            
+            // Tree color mapping for glow effect
+            const treeColors = {
+                "8000": "rgba(234, 179, 65, 0.8)", // Precision (Yellow)
+                "8100": "rgba(220, 68, 68, 0.8)",   // Domination (Red)
+                "8200": "rgba(104, 114, 226, 0.8)", // Sorcery (Blue/Purple)
+                "8300": "rgba(73, 172, 184, 0.8)",  // Inspiration (Cyan)
+                "8400": "rgba(161, 215, 142, 0.8)"  // Resolve (Green)
+            };
 
-    // Champion Spells/Passives Database Mapping
-    const CHAMPION_SPELLS = {
-        Garen: {
-            Q: "GarenQ",
-            W: "GarenW",
-            E: "GarenE",
-            R: "GarenR",
-            Passive: "GarenPassive"
-        },
-        Darius: {
-            Q: "DariusDoubleCleave",
-            W: "DariusNoxianTacticsONH",
-            E: "DariusAxeGrab",
-            R: "DariusExecute",
-            Passive: "Darius_Passive"
-        },
-        Ahri: {
-            Q: "AhriOrbofDeception",
-            W: "AhriFoxFire",
-            E: "AhriSeduce",
-            R: "AhriTumble",
-            Passive: "Ahri_Passive"
-        },
-        Zed: {
-            Q: "ZedShuriken",
-            W: "ZedShadowDash",
-            E: "ZedSpin",
-            R: "ZedUlt",
-            Passive: "Zed_Passive_Concept"
-        },
-        Jinx: {
-            Q: "JinxQ",
-            W: "JinxW",
-            E: "JinxE",
-            R: "JinxR",
-            Passive: "JinxPassive"
+            let runePageHtml = '';
+            if (typeof runesData !== 'undefined' && runesData[champ] && runesData[champ].length > 0 && typeof runeTreesData !== 'undefined') {
+                const champRunes = runesData[champ];
+                const equippedIds = new Set(champRunes.map(r => parseInt(r.id)));
+                
+                // Determine primary and secondary trees based on equipped runes
+                let primaryTreeId = champRunes[0]?.tree_id;
+                let secondaryTreeId = champRunes.find(r => r.tree_id !== primaryTreeId)?.tree_id;
+
+                const primaryTree = runeTreesData.find(t => t.id == primaryTreeId);
+                const secondaryTree = runeTreesData.find(t => t.id == secondaryTreeId);
+
+                const renderTree = (tree, isSecondary) => {
+                    if (!tree) return '';
+                    let color = treeColors[tree.id] || "rgba(255,255,255,0.8)";
+                    
+                    let html = `<div style="display: flex; flex-direction: column; gap: 8px; align-items: center; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; border-top: 2px solid ${color};">`;
+                    html += `<div style="font-size: 12px; font-weight: bold; color: ${color}; margin-bottom: 4px;">${tree.name}</div>`;
+                    
+                    const slotsToRender = isSecondary ? tree.slots.slice(1) : tree.slots;
+                    
+                    slotsToRender.forEach((slot, slotIdx) => {
+                        html += `<div style="display: flex; gap: 12px; justify-content: center; align-items: center; width: 100%;">`;
+                        slot.runes.forEach(rune => {
+                            const isEquipped = equippedIds.has(rune.id);
+                            const size = (!isSecondary && slotIdx === 0) ? 42 : 32; // Keystones are larger
+                            const filter = isEquipped ? 'grayscale(0)' : 'grayscale(100%)';
+                            const opacity = isEquipped ? '1' : '0.3';
+                            const border = isEquipped ? `2px solid ${color}` : '1px solid transparent';
+                            const shadow = isEquipped ? `0 0 10px ${color}` : 'none';
+                            
+                            const iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/14.22.1/perk/${rune.id}.png?image=q_auto:good,f_webp,w_64,h_64`;
+                            
+                            html += `<div title="${rune.name}" style="width: ${size}px; height: ${size}px; border-radius: 50%; border: ${border}; box-shadow: ${shadow}; display: flex; align-items: center; justify-content: center; background: #000; overflow: hidden; transition: all 0.2s;">
+                                <img src="${iconUrl}" style="width: 100%; height: 100%; object-fit: cover; filter: ${filter}; opacity: ${opacity};">
+                            </div>`;
+                        });
+                        html += `</div>`;
+                        if (slotIdx < slotsToRender.length - 1) {
+                            html += `<div style="width: 60%; height: 1px; background: rgba(255,255,255,0.1); margin: 2px 0;"></div>`;
+                        }
+                    });
+                    
+                    html += `</div>`;
+                    return html;
+                };
+
+                runePageHtml = `<div style="display: flex; gap: 16px; margin-top: 16px;">
+                    ${renderTree(primaryTree, false)}
+                    ${renderTree(secondaryTree, true)}
+                </div>`;
+            }
+
+            let html = `
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; position: relative;">
+                    <div style="width: 48px; height: 48px; border-radius: 50%; border: 2px solid #4b5563; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.4); background: #2a2b36; display: flex; align-items: center; justify-content: center; position: relative; z-index: 2;">
+                        <img src="${champImgUrl}" alt="${champ}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <span style="display: none; font-size: 14px; font-weight: bold; color: #e5e7eb;">${champ.substring(0, 2).toUpperCase()}</span>
+                    </div>
+                    <h4 style="margin: 0; font-size: 16px; z-index: 2;">${isDummy ? 'Target Dummy' : champ}</h4>
+                </div>
+            `;
+            if (items.length === 0) {
+                html += `<p style="font-size: 12px; color: var(--text-muted); margin-bottom: 0;">No items equipped.</p>`;
+            } else {
+                html += `<div style="display: flex; gap: 8px; flex-wrap: wrap;">`;
+                items.forEach(item => {
+                    const iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/item/${item.id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
+                    html += `<div style="width: 44px; height: 44px; background: linear-gradient(135deg, #2a2b36 0%, #1a1b23 100%); border: 1px solid #4b5563; border-radius: 6px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.3); cursor: pointer; transition: all 0.2s; position: relative;" title="${item.name}" onmouseover="this.style.borderColor='var(--color-purple)'; this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='#4b5563'; this.style.transform='translateY(0)';">
+                        <img src="${iconUrl}" alt="${item.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 4px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <span style="display: none; font-size: 12px; font-weight: bold; color: #e5e7eb; text-shadow: 1px 1px 2px #000; position: absolute;">${item.name.split(' ').map(w => w[0]).join('').substring(0, 3)}</span>
+                    </div>`;
+                });
+                html += `</div>`;
+            }
+            
+            html += runePageHtml;
+
+            col.innerHTML = html;
+            itemsContainer.appendChild(col);
         }
-    };
-
-    const SKILL_NAMES = {
-        Garen: { Q: "결정적 일격 (Q)", W: "용기 (W)", E: "심판 (E)", R: "데마시아의 정의 (R)", AA: "기본 공격", AutoAttack: "기본 공격" },
-        Darius: { Q: "학살 (Q)", W: "마비 타격 (W)", E: "포획 (E)", R: "녹서스 단두대 (R)", AA: "기본 공격", AutoAttack: "기본 공격" },
-        Ahri: { Q: "현혹의 구슬 (Q)", W: "여우불 (W)", E: "매혹 (E)", R: "혼령 질주 (R)", AA: "기본 공격", AutoAttack: "기본 공격" },
-        Zed: { Q: "예리한 표창 (Q)", W: "살아있는 그림자 (W)", E: "그림자 베기 (E)", R: "죽음의 표식 (R)", AA: "기본 공격", AutoAttack: "기본 공격" },
-        Jinx: { Q: "휘릭휘릭! (Q)", W: "빠직! (W)", E: "와작와작 뻥! (E)", R: "초강력 초토화 로켓! (R)", AA: "기본 공격", AutoAttack: "기본 공격" }
-    };
-
-    const CHAMP_BASE_HP = {
-        Garen: 2356,
-        Darius: 2590,
-        Ahri: 2202,
-        Zed: 2337,
-        Jinx: 2415,
-        Dummy: 1000000
-    };
-
-    const ITEM_HP = {
-        "6631": 450, // Stridebreaker
-        "3071": 400, // Black Cleaver
-        "3072": 0,
-        "3046": 0,
-        "3033": 0
-    };
-
+    }
+    
+    // Process Data
     const BUFF_TO_ITEM = {
         "깍아내리기": "3071",
         "열정": "3071",
@@ -1144,7 +801,6 @@
     };
 
     const BUFF_TO_SPELL = {
-        // Garen
         "결정적 일격": "GarenQ",
         "용기": "GarenW",
         "심판": "GarenE",
@@ -1156,91 +812,10 @@
         "Judgment": "GarenE",
         "Judgment Shred": "GarenE",
         "Demacian Justice": "GarenR",
-        "Perseverance": "GarenPassive",
-
-        // Darius
-        "출혈": "Darius_Passive",
-        "Hemorrhage": "Darius_Passive",
-        "녹서스의 힘": "Darius_Passive",
-        "Noxian Might": "Darius_Passive",
-        "학살": "DariusDoubleCleave",
-        "Decimate": "DariusDoubleCleave",
-        "마비 타격": "DariusNoxianTacticsONH",
-        "Crippling Strike": "DariusNoxianTacticsONH",
-        "포획": "DariusAxeGrab",
-        "Apprehend": "DariusAxeGrab",
-        "녹서스 단두대": "DariusExecute",
-        "Noxian Guillotine": "DariusExecute",
-
-        // Ahri
-        "정기 흡수": "Ahri_Passive",
-        "Essence Theft": "Ahri_Passive",
-        "현혹의 구슬": "AhriOrbofDeception",
-        "Orb of Deception": "AhriOrbofDeception",
-        "여우불": "AhriFoxFire",
-        "Fox-Fire": "AhriFoxFire",
-        "매혹": "AhriSeduce",
-        "Charm": "AhriSeduce",
-        "Charm Amplification": "AhriSeduce",
-        "혼령 질주": "AhriTumble",
-        "Spirit Rush": "AhriTumble",
-
-        // Zed
-        "약자 멸시": "Zed_Passive_Concept",
-        "Contempt for the Weak": "Zed_Passive_Concept",
-        "예리한 표창": "ZedShuriken",
-        "Razor Shuriken": "ZedShuriken",
-        "살아있는 그림자": "ZedShadowDash",
-        "Living Shadow": "ZedShadowDash",
-        "그림자 베기": "ZedSpin",
-        "Shadow Slash": "ZedSpin",
-        "죽음의 표식": "ZedUlt",
-        "Death Mark": "ZedUlt",
-
-        // Jinx
-        "신난다!": "JinxPassive",
-        "Get Excited!": "JinxPassive",
-        "휘릭휘릭!": "JinxQ",
-        "Switch Stance!": "JinxQ",
-        "빠직!": "JinxW",
-        "Zap!": "JinxW",
-        "Zap! Slow": "JinxW",
-        "JinxWSlow 만료": "JinxW",
-        "와작와작 뻥!": "JinxE",
-        "Flame Chompers!": "JinxE",
-        "Flame Chompers Root": "JinxE",
-        "JinxERoot 만료": "JinxE",
-        "초강력 초토화 로켓!": "JinxR",
-        "Super Mega Death Rocket!": "JinxR"
+        "Perseverance": "GarenPassive"
     };
 
-    // Tabs logic
-    function switchTab(tabId, btn) {
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(b => {
-            b.classList.remove('active');
-            b.setAttribute('aria-selected', 'false');
-        });
-        
-        document.getElementById(tabId).classList.add('active');
-        btn.classList.add('active');
-        btn.setAttribute('aria-selected', 'true');
-    }
-
-    function getIconData(champName, name) {
-        if (!champName) return null;
-        const champ = champName.charAt(0).toUpperCase() + champName.slice(1).toLowerCase();
-        
-        // If name is Q, W, E, R slot directly
-        const slot = name.toUpperCase();
-        if (["Q", "W", "E", "R", "PASSIVE"].includes(slot)) {
-            const mapping = CHAMPION_SPELLS[champ];
-            if (mapping && mapping[slot]) {
-                const spellId = mapping[slot];
-                return { type: slot === "PASSIVE" ? 'passive' : 'spell', id: spellId };
-            }
-        }
-
+    function getIconData(champ, name) {
         // 1. Check if it's an Item Actives/Passives from name format
         if (name.startsWith("Item(")) {
             const match = name.match(/Item\((\d+)\)/);
@@ -1252,15 +827,15 @@
         if (itemId) return { type: 'item', id: itemId };
         
         // 3. Fallback: Check itemsData
-        if (typeof itemsData !== 'undefined' && itemsData[champName]) {
-            for (const item of itemsData[champName]) {
+        if (typeof itemsData !== 'undefined' && itemsData[champ]) {
+            for (const item of itemsData[champ]) {
                 if (item.name === name) return { type: 'item', id: item.id };
             }
         }
 
         // 4. Check equipped Runes
-        if (typeof runesData !== 'undefined' && runesData[champName]) {
-            for (const rune of runesData[champName]) {
+        if (typeof runesData !== 'undefined' && runesData[champ]) {
+            for (const rune of runesData[champ]) {
                 if (name.includes(rune.name)) {
                     return { type: 'rune', id: rune.id };
                 }
@@ -1276,7 +851,7 @@
         // 5. Check Champion Skills and Passives
         let spellId = BUFF_TO_SPELL[name];
         if (spellId) {
-            if (spellId.includes("Passive") || spellId.endsWith("Concept") || spellId === "Ahri_Passive") {
+            if (spellId.includes("Passive")) {
                 return { type: 'passive', id: spellId };
             }
             return { type: 'spell', id: spellId };
@@ -1285,168 +860,24 @@
         return null;
     }
 
-    function getIconUrl(iconData, fallbackChamp, fallbackAbility) {
-        if (!iconData) {
-            if (fallbackChamp && fallbackAbility) {
-                const champ = fallbackChamp.charAt(0).toUpperCase() + fallbackChamp.slice(1).toLowerCase();
-                return `https://ddragon.leagueoflegends.com/cdn/16.12.1/img/spell/${champ}${fallbackAbility.toUpperCase()}.png`;
-            }
-            return "https://ddragon.leagueoflegends.com/cdn/16.12.1/img/item/1036.png";
-        }
-        
-        if (iconData.type === 'item') {
-            return `https://ddragon.leagueoflegends.com/cdn/16.12.1/img/item/${iconData.id}.png`;
-        } else if (iconData.type === 'rune') {
-            return `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/perk/${iconData.id}.png?image=q_auto:good,f_webp,w_64,h_64`;
-        } else if (iconData.type === 'spell') {
-            return `https://ddragon.leagueoflegends.com/cdn/16.12.1/img/spell/${iconData.id}.png`;
-        } else if (iconData.type === 'passive') {
-            return `https://ddragon.leagueoflegends.com/cdn/16.12.1/img/passive/${iconData.id}.png`;
-        }
-        
-        return '';
-    }
-
-    const champNames = Object.keys(itemsData);
-    const champA = champNames[0] || 'Champion A';
-    const champB = champNames[1] || 'Champion B';
-
-    // Populate matchup details
-    document.querySelector('.name-a').innerText = champA.toUpperCase() === "DUMMY" ? "Target Dummy" : champA;
-    document.querySelector('.name-b').innerText = champB.toUpperCase() === "DUMMY" ? "Target Dummy" : champB;
-    
-    document.querySelector('.img-a').src = champA.toUpperCase() === "DUMMY" 
-        ? 'https://raw.communitydragon.org/latest/game/assets/characters/practicetool_targetdummy/hud/practicetool_targetdummy_circle.png'
-        : `https://ddragon.leagueoflegends.com/cdn/16.12.1/img/champion/${champA}.png`;
-    document.querySelector('.img-b').src = champB.toUpperCase() === "DUMMY" 
-        ? 'https://raw.communitydragon.org/latest/game/assets/characters/practicetool_targetdummy/hud/practicetool_targetdummy_circle.png'
-        : `https://ddragon.leagueoflegends.com/cdn/16.12.1/img/champion/${champB}.png`;
-
-    document.getElementById('doughnutHeaderA').innerText = `${champA} Damage Breakdown`;
-    document.getElementById('doughnutHeaderB').innerText = `${champB} Damage Breakdown`;
-
-    // Render Items & Runes in Gear tab
-    if (itemsData) {
-        for (const [champ, items] of Object.entries(itemsData)) {
-            const col = document.createElement('div');
-            col.className = 'col';
-            col.style.background = 'rgba(0,0,0,0.2)';
-            col.style.padding = '16px';
-            col.style.borderRadius = '6px';
-            col.style.border = '1px solid rgba(255,255,255,0.02)';
-            
-            const isDummy = champ.toLowerCase() === "dummy";
-            const champImgUrl = isDummy 
-                ? 'https://raw.communitydragon.org/latest/game/assets/characters/practicetool_targetdummy/hud/practicetool_targetdummy_circle.png'
-                : `https://ddragon.leagueoflegends.com/cdn/16.12.1/img/champion/${champ}.png`;
-            
-            const treeColors = {
-                "8000": "rgba(234, 179, 65, 0.8)", // Precision (Yellow)
-                "8100": "rgba(220, 68, 68, 0.8)",   // Domination (Red)
-                "8200": "rgba(104, 114, 226, 0.8)", // Sorcery (Blue/Purple)
-                "8300": "rgba(73, 172, 184, 0.8)",  // Inspiration (Cyan)
-                "8400": "rgba(161, 215, 142, 0.8)"  // Resolve (Green)
-            };
-
-            let runePageHtml = '';
-            if (typeof runesData !== 'undefined' && runesData[champ] && runesData[champ].length > 0 && typeof runeTreesData !== 'undefined') {
-                const champRunes = runesData[champ];
-                const equippedIds = new Set(champRunes.map(r => parseInt(r.id)));
-                
-                let primaryTreeId = champRunes[0]?.tree_id;
-                let secondaryTreeId = champRunes.find(r => r.tree_id !== primaryTreeId)?.tree_id;
-
-                const primaryTree = runeTreesData.find(t => t.id == primaryTreeId);
-                const secondaryTree = runeTreesData.find(t => t.id == secondaryTreeId);
-
-                const renderTree = (tree, isSecondary) => {
-                    if (!tree) return '';
-                    let color = treeColors[tree.id] || "rgba(255,255,255,0.8)";
-                    
-                    let html = `<div style="display: flex; flex-direction: column; gap: 8px; align-items: center; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; border-top: 2px solid ${color}; flex: 1;">`;
-                    html += `<div style="font-size: 11px; font-weight: bold; color: ${color}; margin-bottom: 4px; text-transform: uppercase;">${tree.name}</div>`;
-                    
-                    const slotsToRender = isSecondary ? tree.slots.slice(1) : tree.slots;
-                    
-                    slotsToRender.forEach((slot, slotIdx) => {
-                        html += `<div style="display: flex; gap: 8px; justify-content: center; align-items: center; width: 100%;">`;
-                        slot.runes.forEach(rune => {
-                            const isEquipped = equippedIds.has(rune.id);
-                            const size = (!isSecondary && slotIdx === 0) ? 36 : 26; // Keystones are larger
-                            const filter = isEquipped ? 'grayscale(0)' : 'grayscale(100%)';
-                            const opacity = isEquipped ? '1' : '0.25';
-                            const border = isEquipped ? `1.5px solid ${color}` : '1.5px solid transparent';
-                            const shadow = isEquipped ? `0 0 8px ${color}` : 'none';
-                            
-                            const iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/perk/${rune.id}.png?image=q_auto:good,f_webp,w_64,h_64`;
-                            
-                            html += `<div title="${rune.name}" style="width: ${size}px; height: ${size}px; border-radius: 50%; border: ${border}; box-shadow: ${shadow}; display: flex; align-items: center; justify-content: center; background: #000; overflow: hidden; transition: all 0.2s;">
-                                <img src="${iconUrl}" style="width: 100%; height: 100%; object-fit: cover; filter: ${filter}; opacity: ${opacity};">
-                            </div>`;
-                        });
-                        html += `</div>`;
-                        if (slotIdx < slotsToRender.length - 1) {
-                            html += `<div style="width: 60%; height: 1px; background: rgba(255,255,255,0.05); margin: 2px 0;"></div>`;
-                        }
-                    });
-                    
-                    html += `</div>`;
-                    return html;
-                };
-
-                runePageHtml = `<div style="display: flex; gap: 12px; margin-top: 16px; width: 100%;">
-                    ${renderTree(primaryTree, false)}
-                    ${renderTree(secondaryTree, true)}
-                </div>`;
-            }
-
-            let html = `
-                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; position: relative;">
-                    <div style="width: 44px; height: 44px; border-radius: 50%; border: 2px solid #4b5563; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.4); background: #2a2b36; display: flex; align-items: center; justify-content: center;">
-                        <img src="${champImgUrl}" alt="${champ}" style="width: 100%; height: 100%; object-fit: cover;">
-                    </div>
-                    <h4 style="margin: 0; font-size: 14px;">${isDummy ? 'Target Dummy' : champ}</h4>
-                </div>
-            `;
-            if (items.length === 0) {
-                html += `<p style="font-size: 12px; color: var(--text-muted); margin-bottom: 0;">No items equipped.</p>`;
-            } else {
-                html += `<div style="display: flex; gap: 8px; flex-wrap: wrap;">`;
-                items.forEach(item => {
-                    const iconUrl = `https://ddragon.leagueoflegends.com/cdn/16.12.1/img/item/${item.id}.png`;
-                    html += `<div style="width: 40px; height: 40px; background: linear-gradient(135deg, #2a2b36 0%, #1a1b23 100%); border: 1px solid #4b5563; border-radius: 6px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.3); cursor: pointer; transition: all 0.2s; position: relative;" title="${item.name}">
-                        <img src="${iconUrl}" alt="${item.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 4px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                        <span style="display: none; font-size: 10px; font-weight: bold; color: #e5e7eb; position: absolute; text-align:center;">${item.name.split(' ').map(w => w[0]).join('').substring(0, 3)}</span>
-                    </div>`;
-                });
-                html += `</div>`;
-            }
-            
-            html += runePageHtml;
-
-            col.innerHTML = html;
-            itemsContainer.appendChild(col);
-        }
-    }
-
     const casts = events.filter(e => e.type === "cast");
     const damages = events.filter(e => e.type === "damage");
     const buffs = events.filter(e => e.type === "buff_apply");
     let resourceUpdates = events.filter(e => e.type === "resource_update");
 
+    
     let maxTime = 0;
     events.forEach(e => { if (e.time > maxTime) maxTime = e.time; });
     const duration = maxTime > 0 ? maxTime : 60;
-    document.getElementById('infoDuration').value = duration.toFixed(1);
-
+    
     let finalDmg = 0;
     damages.forEach(d => finalDmg += d.amount);
     
-    document.getElementById('headerStats').innerText = `${casts.length} casts | ${duration.toFixed(2)}s`;
-    document.getElementById('cardFooter').innerHTML = `<strong>${casts.length}</strong> casts &nbsp;*&nbsp; <strong class="f-orange">${finalDmg.toFixed(1)}</strong> Total Damage`;
-    mainScrubber.max = duration;
+    document.getElementById('headerStats').innerText = `${casts.length} casts | ${duration.toFixed(0)}s | 1.50s GCD (Global Cooldown)`;
+    document.getElementById('cardFooter').innerHTML = `<strong>${casts.length}</strong> casts &nbsp;*&nbsp; <strong class="f-green">100%</strong> GCD uptime &nbsp;*&nbsp; <strong class="f-orange">0</strong> wasted &nbsp;*&nbsp; <strong>1.50s</strong> GCD &nbsp;*&nbsp; <strong style="color:var(--color-cyan);">${Math.floor(finalDmg)}</strong> Total Damage`;
+    mainScrubber.max = duration + 5;
 
-    // Zoom and Timeline Settings
+    // Settings
     let PX_PER_SEC = 80;
     const OFFSET_X = 30; 
     
@@ -1456,11 +887,11 @@
         gridLines.innerHTML = '';
         svgGraph.innerHTML = '';
         
-        const totalWidth = Math.ceil(duration + 2) * PX_PER_SEC + OFFSET_X * 2;
+        const totalWidth = Math.ceil(duration + 5) * PX_PER_SEC + OFFSET_X * 2;
         timelineInner.style.width = totalWidth + 'px';
 
         // 1. Ticks and Grid Lines
-        for (let s = 0; s <= duration + 2; s += 2) {
+        for (let s = 0; s <= duration + 5; s += 2) {
             const leftPos = (s * PX_PER_SEC + OFFSET_X) + 'px';
             
             // Axis tick
@@ -1469,7 +900,7 @@
             tick.style.left = leftPos;
             const label = document.createElement('div');
             label.className = 'tick-label';
-            label.innerText = s.toFixed(0) + 's';
+            label.innerText = s + 's';
             tick.appendChild(label);
             timeAxis.appendChild(tick);
             
@@ -1480,7 +911,7 @@
             gridLines.appendChild(gl);
         }
 
-        // 2. Cast Icons
+        // 2. Cast Icons (arranged horizontally with vertical stagger if overlapping)
         let lastX = -999;
         let currentY = 50;
         
@@ -1491,9 +922,11 @@
             if(cast.ability === "AutoAttack") typeClass = "fallback";
 
             node.className = 'event-icon ' + typeClass;
+            
             const x = cast.time * PX_PER_SEC + OFFSET_X;
             
-            if (x - lastX < 30) {
+            // Stagger Y to prevent overlap
+            if (x - lastX < 32) {
                 currentY = (currentY === 50) ? 90 : 50;
             } else {
                 currentY = 50;
@@ -1503,12 +936,49 @@
             node.style.left = x + 'px';
             node.style.top = currentY + 'px';
 
-            const iconData = getIconData(cast.source, cast.ability);
-            node.style.backgroundImage = `url('${getIconUrl(iconData, cast.source, cast.ability)}')`;
+            if (cast.ability === "AutoAttack") {
+                node.style.backgroundImage = `url('https://opgg-static.akamaized.net/meta/images/lol/16.12.1/item/1036.png?image=q_auto:good,f_webp,w_64,h_64&v=1612')`;
+            } else {
+                const iconData = getIconData(cast.source, cast.ability);
+                if (iconData) {
+                    if (iconData.type === 'item') {
+                        node.style.backgroundImage = `url('https://opgg-static.akamaized.net/meta/images/lol/16.12.1/item/${iconData.id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612')`;
+                    } else if (iconData.type === 'rune') {
+                        node.style.backgroundImage = `url('https://opgg-static.akamaized.net/meta/images/lol/14.22.1/perk/${iconData.id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612')`;
+                    } else if (iconData.type === 'spell') {
+                        node.style.backgroundImage = `url('https://opgg-static.akamaized.net/meta/images/lol/16.12.1/spell/${iconData.id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612')`;
+                    } else if (iconData.type === 'passive') {
+                        node.style.backgroundImage = `url('https://opgg-static.akamaized.net/meta/images/lol/16.12.1/passive/${iconData.id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612')`;
+                    }
+                } else {
+                    node.style.backgroundImage = `url('https://opgg-static.akamaized.net/meta/images/lol/16.12.1/spell/${cast.source}${cast.ability}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612')`;
+                }
+            }
+
+            // Display resource delta if the champion uses resources
+            if (resourceUpdates.length > 0) {
+                let deltaVal = 0;
+                for (let i = 0; i < resourceUpdates.length; i++) {
+                    let r = resourceUpdates[i];
+                    if (Math.abs(r.time - cast.time) < 0.05) {
+                        let prevAmount = i > 0 ? resourceUpdates[i-1].amount : 100; // default max 100 for percentage
+                        deltaVal = r.amount - prevAmount;
+                        break;
+                    }
+                }
+                
+                if (Math.abs(deltaVal) > 0.1) {
+                    const isPos = deltaVal > 0;
+                    const deltaDiv = document.createElement('div');
+                    deltaDiv.className = 'resource-delta ' + (isPos ? 'positive' : 'negative');
+                    deltaDiv.innerText = (isPos ? '+' : '') + Math.floor(deltaVal);
+                    node.appendChild(deltaDiv);
+                }
+            }
+
 
             node.addEventListener('mouseenter', (e) => {
-                const abilityName = (SKILL_NAMES[cast.source] && SKILL_NAMES[cast.source][cast.ability]) || cast.ability;
-                tooltip.innerHTML = `<strong>${cast.source}</strong>${abilityName}<br>Time: <span class="time">${cast.time.toFixed(3)}s</span>`;
+                tooltip.innerHTML = `<strong>${cast.ability}</strong>Cast: <span class="time">${cast.time.toFixed(3)}s</span>`;
                 tooltip.style.opacity = 1;
                 tooltip.style.left = (e.clientX + 15) + 'px';
                 tooltip.style.top = (e.clientY + 15) + 'px';
@@ -1522,7 +992,9 @@
             timelineContent.appendChild(node);
         });
 
-        // 3. Item/Buff Effects
+
+
+        // 2.5 Item/Buff Effects
         let buffLastX = -999;
         let buffCurrentY = 120;
         buffs.forEach(buff => {
@@ -1531,7 +1003,7 @@
             node.style.width = '24px';
             node.style.height = '24px';
             node.style.borderRadius = '50%';
-            node.style.border = '2px solid var(--color-purple)';
+            node.style.border = '2px solid #a855f7';
             node.style.backgroundColor = '#3b0764';
             node.style.display = 'flex';
             node.style.alignItems = 'center';
@@ -1539,9 +1011,26 @@
             node.style.overflow = 'hidden';
             
             const iconData = getIconData(buff.target, buff.buff_name) || getIconData(buff.source, buff.buff_name);
-            node.innerHTML = `<img src="${getIconUrl(iconData)}" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';"><span style="display:none; color:#d8b4fe; font-size:9px; font-weight:bold;">B</span>`;
+            if (iconData) {
+                let iconUrl = '';
+                if (iconData.type === 'item') {
+                    iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/item/${iconData.id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
+                } else if (iconData.type === 'rune') {
+                    iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/14.22.1/perk/${iconData.id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
+                } else if (iconData.type === 'spell') {
+                    iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/spell/${iconData.id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
+                } else if (iconData.type === 'passive') {
+                    iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/passive/${iconData.id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
+                }
+                node.style.backgroundColor = 'transparent';
+                node.style.border = iconData.type === 'item' ? '1px solid #10b981' : (iconData.type === 'rune' ? '1px solid #eab308' : '1px solid #3b82f6');
+                node.innerHTML = `<img src="${iconUrl}" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';"><span style="display:none; color: #d8b4fe; font-size: 12px; font-weight: bold;">E</span>`;
+            } else {
+                node.innerHTML = '<span style="color: #d8b4fe; font-size: 12px; font-weight: bold;">E</span>';
+            }
             
-            const x = buff.time * PX_PER_SEC + OFFSET_X;
+            const x = buff.time * PX_PER_SEC + OFFSET_X; // .event-icon CSS already centers it via translateX(-50%)
+            
             if (x - buffLastX < 16) {
                 buffCurrentY = (buffCurrentY === 120) ? 148 : 120;
             } else {
@@ -1553,7 +1042,7 @@
             node.style.top = buffCurrentY + 'px';
             
             node.addEventListener('mouseenter', (e) => {
-                tooltip.innerHTML = `<strong>Buff Applied: ${buff.buff_name}</strong><br>Time: <span class="time">${buff.time.toFixed(3)}s</span><br>Target: ${buff.target}`;
+                tooltip.innerHTML = `<strong>Item/Buff: ${buff.buff_name}</strong><br>Time: <span class="time">${buff.time.toFixed(3)}s</span><br>Target: ${buff.target}`;
                 tooltip.style.opacity = 1;
                 tooltip.style.left = (e.clientX + 15) + 'px';
                 tooltip.style.top = (e.clientY + 15) + 'px';
@@ -1567,8 +1056,10 @@
             timelineContent.appendChild(node);
         });
 
-        // 4. Buff Expire Effects
+        // 2.6 Buff Expire Effects
         const buffExpires = events.filter(e => e.type === "buff_expire");
+        
+        // Deduplicate expires happening at the same time for the same base buff name
         const uniqueExpires = [];
         const expireSeen = new Set();
         buffExpires.forEach(b => {
@@ -1586,19 +1077,35 @@
             node.style.width = '20px';
             node.style.height = '20px';
             node.style.borderRadius = '50%';
-            node.style.border = '2.5px solid var(--color-red)';
+            node.style.border = '2px solid #ef4444';
             node.style.backgroundColor = '#7f1d1d';
             node.style.display = 'flex';
             node.style.alignItems = 'center';
             node.style.justifyContent = 'center';
             node.style.overflow = 'hidden';
-            node.style.opacity = '0.8';
-            node.style.filter = 'grayscale(60%)';
+            node.style.opacity = '0.7';
+            node.style.filter = 'grayscale(100%)';
             
             const iconData = getIconData(buff.target, buff.buff_name) || getIconData(buff.source, buff.buff_name);
-            node.innerHTML = `<img src="${getIconUrl(iconData)}" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none';"><div style="position:absolute; width:100%; height:100%; background:rgba(239,68,68,0.35); display:flex; align-items:center; justify-content:center; color:#fff; font-size:10px; font-weight:bold;">X</div>`;
+            if (iconData) {
+                let iconUrl = '';
+                if (iconData.type === 'item') {
+                    iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/item/${iconData.id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
+                } else if (iconData.type === 'rune') {
+                    iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/14.22.1/perk/${iconData.id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
+                } else if (iconData.type === 'spell') {
+                    iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/spell/${iconData.id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
+                } else if (iconData.type === 'passive') {
+                    iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/passive/${iconData.id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
+                }
+                node.style.backgroundColor = 'transparent';
+                node.innerHTML = `<img src="${iconUrl}" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none';"><div style="position:absolute; width:100%; height:100%; background:rgba(239, 68, 68, 0.4); display:flex; align-items:center; justify-content:center; color:white; font-size:10px; font-weight:bold;">X</div>`;
+            } else {
+                node.innerHTML = '<span style="color: #ef4444; font-size: 10px; font-weight: bold;">X</span>';
+            }
             
             const x = buff.time * PX_PER_SEC + OFFSET_X;
+            
             if (x - buffLastX < 16) {
                 buffCurrentY = (buffCurrentY === 120) ? 148 : 120;
             } else {
@@ -1624,9 +1131,34 @@
             timelineContent.appendChild(node);
         });
 
-        // 5. SVG Cumulative Damage Graph (Visual Overlay on Timeline)
+
+
+        // 3. SVG Resource Graph Background
+        if (resourceUpdates.length > 0) {
+            const h = 220; // height of inner
+            let fillPath = `M 0 ${h} `; 
+            
+            resourceUpdates.forEach(r => {
+                let x = r.time * PX_PER_SEC + OFFSET_X;
+                let y = h - (r.amount / r.max) * (h - 100); // map to bottom part
+                fillPath += `L ${x} ${y} `;
+            });
+            
+            const endX = totalWidth;
+            fillPath += `L ${endX} ${h} Z`;
+
+            const pathFill = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            pathFill.setAttribute("d", fillPath);
+            pathFill.setAttribute("fill", "var(--color-cyan)");
+            pathFill.setAttribute("opacity", "0.2"); // Added opacity for better layering
+            svgGraph.appendChild(pathFill);
+        }
+
+        // 4. SVG Cumulative Damage Graph
+        const damages = events.filter(e => e.type === 'damage');
         if (damages.length > 0) {
             const h = 220;
+            // Sort by time
             damages.sort((a, b) => a.time - b.time);
             
             let cumulative = 0;
@@ -1638,23 +1170,32 @@
             });
             
             const maxDmg = cumulative > 0 ? cumulative : 1;
+            
             let dmgPath = `M 0 ${h} `;
             dataPoints.forEach(p => {
                 let x = p.time * PX_PER_SEC + OFFSET_X;
-                let y = h - (p.dmg / maxDmg) * (h - 30);
+                // Leave a little padding at the top (h - 20)
+                let y = h - (p.dmg / maxDmg) * (h - 20);
                 dmgPath += `L ${x} ${y} `;
             });
             
             const endX = totalWidth;
-            dmgPath += `L ${endX} ${h - (cumulative / maxDmg) * (h - 30)}`;
+            dmgPath += `L ${endX} ${h - (cumulative / maxDmg) * (h - 20)}`;
             
             const pathStroke = document.createElementNS("http://www.w3.org/2000/svg", "path");
             pathStroke.setAttribute("d", dmgPath);
             pathStroke.setAttribute("fill", "none");
-            pathStroke.setAttribute("stroke", "var(--color-gold)");
-            pathStroke.setAttribute("stroke-width", "1.5");
-            pathStroke.setAttribute("opacity", "0.5");
+            pathStroke.setAttribute("stroke", "var(--color-orange)");
+            pathStroke.setAttribute("stroke-width", "2");
             svgGraph.appendChild(pathStroke);
+
+            // Optional area under the damage graph
+            let dmgAreaPath = dmgPath + ` L ${endX} ${h} Z`;
+            const areaFill = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            areaFill.setAttribute("d", dmgAreaPath);
+            areaFill.setAttribute("fill", "var(--color-orange)");
+            areaFill.setAttribute("opacity", "0.05");
+            svgGraph.appendChild(areaFill);
         }
     }
 
@@ -1674,213 +1215,44 @@
     let lastAnimTime = 0;
     const playBtn = document.getElementById('playBtn');
 
-    // -------------------------------------------------------------
-    // Precomputed HP/Damage Curves for Performance Optimization
-    // -------------------------------------------------------------
-    const hpCurves = {};
-    const dmgCurves = {};
-    const maxHps = {};
-
-    function getCachedMaxHp(champ) {
-        if (maxHps[champ] !== undefined) return maxHps[champ];
-        const baseHp = CHAMP_BASE_HP[champ] || 2500;
-        let itemHp = 0;
-        if (itemsData[champ]) {
-            itemsData[champ].forEach(it => {
-                itemHp += ITEM_HP[it.id] || 0;
-            });
-        }
-        maxHps[champ] = baseHp + itemHp;
-        return maxHps[champ];
-    }
-
-    function precomputeCurves() {
-        const sortedEvents = events.slice().sort((a, b) => a.time - b.time);
-        
-        champNames.forEach(champ => {
-            const maxHP = getCachedMaxHp(champ);
-            const opponent = champNames.find(k => k !== champ);
-            
-            // HP curve
-            let currentHP = maxHP;
-            const hpCurve = [{ time: 0, hp: currentHP }];
-            
-            // Damage curve (cumulative damage dealt by this champ)
-            let cumulativeDmg = 0;
-            const dmgCurve = [{ time: 0, dmg: cumulativeDmg }];
-            
-            sortedEvents.forEach(e => {
-                if (e.type === 'damage') {
-                    if (e.source === opponent) {
-                        currentHP -= e.amount;
-                        currentHP = Math.max(0, Math.min(maxHP, currentHP));
-                        hpCurve.push({ time: e.time, hp: currentHP });
-                    }
-                    if (e.source === champ) {
-                        cumulativeDmg += e.amount;
-                        dmgCurve.push({ time: e.time, dmg: cumulativeDmg });
-                    }
-                } else if (e.type === 'heal' && e.target === champ) {
-                    currentHP += e.amount;
-                    currentHP = Math.max(0, Math.min(maxHP, currentHP));
-                    hpCurve.push({ time: e.time, hp: currentHP });
-                } else if (e.type === 'death' && e.source === champ) {
-                    currentHP = 0;
-                    hpCurve.push({ time: e.time, hp: currentHP });
-                }
-            });
-            
-            hpCurves[champ] = hpCurve;
-            dmgCurves[champ] = dmgCurve;
-        });
-    }
-
-    function getValueAtTime(curve, t, key) {
-        if (!curve || curve.length === 0) return 0;
-        let low = 0;
-        let high = curve.length - 1;
-        let ans = 0;
-        while (low <= high) {
-            let mid = Math.floor((low + high) / 2);
-            if (curve[mid].time <= t) {
-                ans = mid;
-                low = mid + 1;
-            } else {
-                high = mid - 1;
-            }
-        }
-        return curve[ans][key];
-    }
-
-    // Run precomputation
-    precomputeCurves();
-
-    // Health simulation over time (using cache)
-    function getChampHpAtTime(champ, t) {
-        const maxHP = getCachedMaxHp(champ);
-        const currentHP = getValueAtTime(hpCurves[champ], t, 'hp');
-        return { currentHP, maxHP };
-    }
-
-    function updateMatchupHeader(t) {
-        // Champion A
-        if (champA) {
-            const { currentHP, maxHP } = getChampHpAtTime(champA, t);
-            const hpPct = (currentHP / maxHP) * 100;
-            const hpBar = document.querySelector('.hp-bar-a');
-            if (hpBar) {
-                hpBar.style.width = hpPct + '%';
-                if (hpPct > 50) hpBar.style.backgroundColor = 'var(--color-green)';
-                else if (hpPct > 20) hpBar.style.backgroundColor = '#fbbf24';
-                else hpBar.style.backgroundColor = 'var(--color-red)';
-            }
-            const hpText = document.querySelector('.hp-text-a');
-            if (hpText) hpText.innerText = `${Math.round(currentHP)} / ${Math.round(maxHP)} (${Math.round(hpPct)}%)`;
-            
-            const dmgDealt = getValueAtTime(dmgCurves[champA], t, 'dmg');
-            const dps = t > 0 ? (dmgDealt / t) : 0;
-            document.querySelector('.dmg-dealt-a').innerText = Math.round(dmgDealt);
-            document.querySelector('.dps-a').innerText = dps.toFixed(1);
-            
-            const isDead = currentHP <= 0;
-            const winnerBadge = document.querySelector('.win-a');
-            const cardA = document.getElementById('champCardA');
-            if (winnerBadge && cardA) {
-                if (isDead) {
-                    winnerBadge.innerText = "DEFEATED";
-                    winnerBadge.style.display = "block";
-                    winnerBadge.style.backgroundColor = "rgba(239, 68, 68, 0.85)";
-                    cardA.style.filter = "grayscale(50%)";
-                    cardA.style.boxShadow = "none";
-                } else {
-                    const hpB = champB ? getChampHpAtTime(champB, t).currentHP : 1;
-                    const isBDead = champB && hpB <= 0;
-                    if (isBDead) {
-                        winnerBadge.innerText = "VICTORY";
-                        winnerBadge.style.display = "block";
-                        winnerBadge.style.backgroundColor = "rgba(197, 160, 89, 0.85)";
-                        cardA.style.filter = "none";
-                        cardA.style.boxShadow = "0 0 20px rgba(197, 160, 89, 0.4)";
-                        cardA.style.borderColor = "var(--color-gold)";
-                    } else {
-                        winnerBadge.style.display = "none";
-                        cardA.style.filter = "none";
-                        cardA.style.boxShadow = "none";
-                        cardA.style.borderColor = "var(--border-color)";
-                    }
-                }
-            }
-        }
-        
-        // Champion B
-        if (champB) {
-            const { currentHP, maxHP } = getChampHpAtTime(champB, t);
-            const hpPct = (currentHP / maxHP) * 100;
-            const hpBar = document.querySelector('.hp-bar-b');
-            if (hpBar) {
-                hpBar.style.width = hpPct + '%';
-                if (hpPct > 50) hpBar.style.backgroundColor = 'var(--color-green)';
-                else if (hpPct > 20) hpBar.style.backgroundColor = '#fbbf24';
-                else hpBar.style.backgroundColor = 'var(--color-red)';
-            }
-            const hpText = document.querySelector('.hp-text-b');
-            if (hpText) hpText.innerText = `${Math.round(currentHP)} / ${Math.round(maxHP)} (${Math.round(hpPct)}%)`;
-            
-            const dmgDealt = getValueAtTime(dmgCurves[champB], t, 'dmg');
-            const dps = t > 0 ? (dmgDealt / t) : 0;
-            document.querySelector('.dmg-dealt-b').innerText = Math.round(dmgDealt);
-            document.querySelector('.dps-b').innerText = dps.toFixed(1);
-            
-            const isDead = currentHP <= 0;
-            const winnerBadge = document.querySelector('.win-b');
-            const cardB = document.getElementById('champCardB');
-            if (winnerBadge && cardB) {
-                if (isDead) {
-                    winnerBadge.innerText = "DEFEATED";
-                    winnerBadge.style.display = "block";
-                    winnerBadge.style.backgroundColor = "rgba(239, 68, 68, 0.85)";
-                    cardB.style.filter = "grayscale(50%)";
-                    cardB.style.boxShadow = "none";
-                } else {
-                    const hpA = champA ? getChampHpAtTime(champA, t).currentHP : 1;
-                    const isADead = champA && hpA <= 0;
-                    if (isADead) {
-                        winnerBadge.innerText = "VICTORY";
-                        winnerBadge.style.display = "block";
-                        winnerBadge.style.backgroundColor = "rgba(197, 160, 89, 0.85)";
-                        cardB.style.filter = "none";
-                        cardB.style.boxShadow = "0 0 20px rgba(197, 160, 89, 0.4)";
-                        cardB.style.borderColor = "var(--color-gold)";
-                    } else {
-                        winnerBadge.style.display = "none";
-                        cardB.style.filter = "none";
-                        cardB.style.boxShadow = "none";
-                        cardB.style.borderColor = "var(--border-color)";
-                    }
-                }
-            }
-        }
-    }
-
     function updateScrubberPosition() {
         scrubber.style.left = (playTime * PX_PER_SEC + OFFSET_X) + 'px';
         mainScrubber.value = playTime;
         
-        let labelText = `${playTime.toFixed(1)}s`;
+        // Calculate current damage
+        let currentDmg = 0;
+        for(let d of damages) {
+            if (d.time <= playTime) {
+                currentDmg += d.amount;
+            }
+        }
+
+        let labelText = "";
+        if (resourceUpdates.length > 0) {
+            let res = 100;
+            for(let r of resourceUpdates) {
+                if(r.time <= playTime) res = r.amount;
+            }
+            labelText = `${Math.floor(res)}/100 (${Math.floor(res)}%)`;
+        } else {
+            labelText = `소모값 없음`;
+        }
+
+        if (currentDmg > 0) {
+            labelText += ` | 누적 딜: ${Math.floor(currentDmg)}`;
+        }
+        
         scrubberLabel.innerText = labelText;
         
-        // Auto-scroll timeline to keep scrubber visible
+        // Auto scroll timeline
         const scrollLeft = playTime * PX_PER_SEC + OFFSET_X - (scrollWrapper.clientWidth / 2);
         scrollWrapper.scrollLeft = Math.max(0, scrollLeft);
 
-        // Update health bars and damage dealt metrics
-        updateMatchupHeader(playTime);
-
-        // Highlight Combat Log Active Row
+        // Highlight Combat Log
         if (window.sortedLogEvents) {
             let activeIdx = -1;
             for(let i=0; i<window.sortedLogEvents.length; i++) {
-                if (window.sortedLogEvents[i].time <= playTime + 0.001) {
+                if (window.sortedLogEvents[i].time <= playTime + 0.001) { // small epsilon
                     activeIdx = i;
                 } else {
                     break;
@@ -1897,9 +1269,9 @@
                         newRow.classList.add('active-log');
                         const container = document.getElementById('combatLogContainer');
                         if (container) {
+                            // Calculate relative offset
                             const targetTop = newRow.offsetTop - container.clientHeight / 2;
-                            // Smooth scroll when manually scrubbing / paused, auto/instant scroll when playing
-                            container.scrollTo({ top: targetTop, behavior: isPlaying ? 'auto' : 'smooth' });
+                            container.scrollTo({ top: targetTop, behavior: isPlaying ? 'smooth' : 'auto' });
                         }
                     }
                 }
@@ -1914,9 +1286,9 @@
         lastAnimTime = timestamp;
         
         playTime += delta;
-        if (playTime > duration) {
+        if (playTime > duration + 5) {
             isPlaying = false;
-            playBtn.innerHTML = '&#9654;';
+            playBtn.innerHTML = '&#9654;'; // Play
             playTime = 0;
         }
         
@@ -1927,21 +1299,21 @@
     playBtn.addEventListener('click', () => {
         isPlaying = !isPlaying;
         if (isPlaying) {
-            playBtn.innerHTML = '&#10074;&#10074;';
+            playBtn.innerHTML = '&#10074;&#10074;'; // Pause
             lastAnimTime = performance.now();
             requestAnimationFrame(animLoop);
         } else {
-            playBtn.innerHTML = '&#9654;';
+            playBtn.innerHTML = '&#9654;'; // Play
         }
     });
 
     document.getElementById('prevBtn').addEventListener('click', () => {
-        playTime = Math.max(0, playTime - 0.5);
+        playTime = Math.max(0, playTime - 1);
         updateScrubberPosition();
     });
 
     document.getElementById('nextBtn').addEventListener('click', () => {
-        playTime = Math.min(duration, playTime + 0.5);
+        playTime = Math.min(duration + 5, playTime + 1);
         updateScrubberPosition();
     });
 
@@ -1950,313 +1322,44 @@
         updateScrubberPosition();
     });
 
-    // Jump playback to specific event time
-    function jumpToTime(time) {
-        playTime = time;
-        updateScrubberPosition();
-    }
-
-    // Chart.js Data Generation
-    const labels = [];
-    const champA_dmg = [];
-    const champB_dmg = [];
-    const champA_dps = [];
-    const champB_dps = [];
-
-    // Calculate rolling values using optimized cached curves
-    const w = 2.0;
-    for (let t = 0; t <= duration + 0.1; t += 0.1) {
-        labels.push(t.toFixed(1) + 's');
-        
-        // Cumulative
-        let dmgA = getValueAtTime(dmgCurves[champA], t, 'dmg');
-        let dmgB = getValueAtTime(dmgCurves[champB], t, 'dmg');
-        champA_dmg.push(Math.round(dmgA));
-        champB_dmg.push(Math.round(dmgB));
-        
-        // Rolling DPS (2s sliding window, using cache)
-        let dmgA_prev = getValueAtTime(dmgCurves[champA], Math.max(0, t - w), 'dmg');
-        let dmgB_prev = getValueAtTime(dmgCurves[champB], Math.max(0, t - w), 'dmg');
-        champA_dps.push(Math.round((dmgA - dmgA_prev) / w));
-        champB_dps.push(Math.round((dmgB - dmgB_prev) / w));
-    }
-
-    let combatChart = null;
-    let chartMode = 'damage';
-
-    function initCombatChart() {
-        if (typeof Chart === 'undefined') return;
-        const ctx = document.getElementById('combatChartCanvas').getContext('2d');
-        if (combatChart) combatChart.destroy();
-        
-        const isDmg = chartMode === 'damage';
-        const dataA = isDmg ? champA_dmg : champA_dps;
-        const dataB = isDmg ? champB_dmg : champB_dps;
-        const axisLabel = isDmg ? 'Damage (Dealt)' : 'DPS (dealt)';
-        
-        if (typeof Chart !== 'undefined') {
-            combatChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: champA,
-                            data: dataA,
-                            borderColor: 'rgba(69, 243, 255, 1)',
-                            backgroundColor: 'rgba(69, 243, 255, 0.05)',
-                            fill: isDmg,
-                            tension: 0.15,
-                            pointRadius: 0,
-                            borderWidth: 2.5
-                        },
-                        {
-                            label: champB,
-                            data: dataB,
-                            borderColor: 'rgba(239, 68, 68, 1)',
-                            backgroundColor: 'rgba(239, 68, 68, 0.05)',
-                            fill: isDmg,
-                            tension: 0.15,
-                            pointRadius: 0,
-                            borderWidth: 2.5
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: {
-                            grid: { color: 'rgba(255,255,255,0.03)' },
-                            ticks: { color: 'var(--text-muted)', font: { size: 10 } }
-                        },
-                        y: {
-                            grid: { color: 'rgba(255,255,255,0.03)' },
-                            ticks: { color: 'var(--text-muted)', font: { size: 10 } },
-                            title: { display: true, text: axisLabel, color: 'var(--text-muted)' }
-                        }
-                    },
-                    plugins: {
-                        legend: { labels: { color: 'var(--text-main)', font: { size: 11, weight: 'bold' } } },
-                        tooltip: { mode: 'index', intersect: false }
-                    }
-                }
-            });
-        }
-    }
-
-    function toggleChartMode(mode) {
-        chartMode = mode;
-        document.getElementById('btnChartDmg').classList.toggle('active', mode === 'damage');
-        document.getElementById('btnChartDps').classList.toggle('active', mode === 'dps');
-        initCombatChart();
-    }
-
-    function getDamageBreakdown(champ) {
-        const breakdown = {};
-        let total = 0;
-        
-        events.forEach(e => {
-            if (e.type === "damage" && e.source === champ) {
-                let key = e.ability;
-                
-                // Translate
-                if (SKILL_NAMES[champ] && SKILL_NAMES[champ][key]) {
-                    key = SKILL_NAMES[champ][key];
-                } else {
-                    let resolved = null;
-                    if (key.startsWith("Item(")) {
-                        const match = key.match(/Item\((\d+)\)/);
-                        if (match) {
-                            const itemObj = itemsData[champ]?.find(it => it.id === match[1]);
-                            if (itemObj) resolved = itemObj.name;
-                        }
-                    }
-                    if (!resolved) {
-                        const runeObj = runesData[champ]?.find(ru => key.includes(ru.name));
-                        if (runeObj) resolved = runeObj.name;
-                    }
-                    if (resolved) key = resolved;
-                }
-                
-                breakdown[key] = (breakdown[key] || 0) + e.amount;
-                total += e.amount;
-            }
-        });
-        
-        return { breakdown, total };
-    }
-
-    function initDoughnutCharts() {
-        if (typeof Chart === 'undefined') return;
-        const setupDoughnut = (canvasId, info, colorPalette) => {
-            const canvas = document.getElementById(canvasId);
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            const keys = Object.keys(info.breakdown);
-            const values = Object.values(info.breakdown).map(v => Math.round(v));
-            
-            if (keys.length === 0) {
-                ctx.font = '13px Inter';
-                ctx.fillStyle = '#8b949e';
-                ctx.textAlign = 'center';
-                ctx.fillText('No damage dealt', ctx.canvas.width / 2, ctx.canvas.height / 2);
-                return;
-            }
-            
-            if (typeof Chart !== 'undefined') {
-                new Chart(ctx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: keys,
-                        datasets: [{
-                            data: values,
-                            backgroundColor: colorPalette.slice(0, keys.length),
-                            borderColor: '#1f2833',
-                            borderWidth: 2
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                                labels: { color: '#d1d5db', boxWidth: 10, font: { size: 10 } }
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        const val = context.raw;
-                                        const pct = ((val / info.total) * 100).toFixed(1);
-                                        return `${context.label}: ${val} (${pct}%)`;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-        };
-
-        const paletteA = [
-            'rgba(69, 243, 255, 0.85)',
-            'rgba(197, 160, 89, 0.85)',
-            'rgba(16, 185, 129, 0.85)',
-            'rgba(168, 85, 247, 0.85)',
-            'rgba(245, 158, 11, 0.85)',
-            'rgba(236, 72, 153, 0.85)',
-            'rgba(20, 184, 166, 0.85)'
-        ];
-
-        const paletteB = [
-            'rgba(239, 68, 68, 0.85)',
-            'rgba(197, 160, 89, 0.85)',
-            'rgba(16, 185, 129, 0.85)',
-            'rgba(168, 85, 247, 0.85)',
-            'rgba(245, 158, 11, 0.85)',
-            'rgba(236, 72, 153, 0.85)',
-            'rgba(20, 184, 166, 0.85)'
-        ];
-
-        setupDoughnut('doughnutChartCanvasA', getDamageBreakdown(champA), paletteA);
-        setupDoughnut('doughnutChartCanvasB', getDamageBreakdown(champB), paletteB);
-    }
-
-    // Initialize charts with offline fallback handling
-    if (typeof Chart !== 'undefined') {
-        initCombatChart();
-        initDoughnutCharts();
-    } else {
-        console.warn("Chart.js could not be loaded. Visualizations are disabled in offline mode.");
-        const renderFallback = (canvasId) => {
-            const canvas = document.getElementById(canvasId);
-            if (canvas && canvas.parentElement) {
-                const fallback = document.createElement('div');
-                fallback.style.display = 'flex';
-                fallback.style.alignItems = 'center';
-                fallback.style.justifyContent = 'center';
-                fallback.style.height = '100%';
-                fallback.style.color = 'var(--text-muted)';
-                fallback.style.fontSize = '13px';
-                fallback.style.border = '1px dashed var(--border-color)';
-                fallback.style.borderRadius = 'var(--radius-md)';
-                fallback.innerText = 'Visualization disabled in offline mode';
-                canvas.style.display = 'none';
-                canvas.parentElement.appendChild(fallback);
-            }
-        };
-        renderFallback('combatChartCanvas');
-        renderFallback('doughnutChartCanvasA');
-        renderFallback('doughnutChartCanvasB');
-    }
-
-    // Searchable/Filterable Combat Log
-    let currentLogFilter = 'all';
-    let logSearchQuery = '';
-
-    function setLogFilter(filterType, btn) {
-        const buttons = document.querySelectorAll('#logFilterGroup button');
-        buttons.forEach(b => {
-            b.classList.remove('active');
-            b.setAttribute('aria-pressed', 'false');
-        });
-        btn.classList.add('active');
-        btn.setAttribute('aria-pressed', 'true');
-        
-        currentLogFilter = filterType;
-        renderCombatLog();
-    }
-
-    function filterCombatLogs() {
-        logSearchQuery = document.getElementById('logSearch').value.toLowerCase();
-        renderCombatLog();
-    }
-
-    function renderCombatLog() {
-        const combatLogBody = document.getElementById('combatLogBody');
-        if (!combatLogBody) return;
-        
-        let logHtml = '';
+    // Render Combat Log
+    const combatLogBody = document.getElementById('combatLogBody');
+    if (combatLogBody) {
+        // Sort events by time
+        const sortedEvents = events.slice().sort((a, b) => a.time - b.time);
         window.sortedLogEvents = [];
         window.lastActiveLogIdx = -1;
         
-        const sorted = events.slice().sort((a, b) => a.time - b.time);
-        
-        sorted.forEach(e => {
-            let matchesFilter = false;
-            if (currentLogFilter === 'all') matchesFilter = true;
-            else if (currentLogFilter === 'cast' && e.type === 'cast') matchesFilter = true;
-            else if (currentLogFilter === 'damage' && e.type === 'damage') matchesFilter = true;
-            else if (currentLogFilter === 'heal' && e.type === 'heal') matchesFilter = true;
-            else if (currentLogFilter === 'buff' && (e.type === 'buff_apply' || e.type === 'buff_expire')) matchesFilter = true;
-            
-            if (!matchesFilter) return;
-            
+        let logHtml = '';
+        sortedEvents.forEach(e => {
+            const timeStr = e.time.toFixed(3) + 's';
             let eventType = '';
             let details = '';
             let color = 'var(--text-main)';
+
             let iconHtml = '';
             let iconData = null;
-            
             if (e.type === 'cast' || e.type === 'damage') {
                 iconData = getIconData(e.source, e.ability);
             } else if (e.type === 'buff_apply' || e.type === 'buff_expire') {
                 iconData = getIconData(e.target, e.buff_name);
             }
-            
+
             if (iconData) {
-                iconHtml = `<img src="${getIconUrl(iconData)}" style="width:16px; height:16px; vertical-align:middle; border-radius:3px; margin-right:4px;" onerror="this.style.display='none';">`;
+                let iconUrl = '';
+                if (iconData.type === 'item') iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/item/${iconData.id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
+                else if (iconData.type === 'rune') iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/14.22.1/perk/${iconData.id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
+                else if (iconData.type === 'spell') iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/spell/${iconData.id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
+                else if (iconData.type === 'passive') iconUrl = `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/passive/${iconData.id}.png?image=q_auto:good,f_webp,w_64,h_64&v=1612`;
+                iconHtml = `<img src="${iconUrl}" style="width:16px; height:16px; vertical-align:middle; border-radius:3px; margin-right:4px;" onerror="this.style.display='none';">`;
             }
-            
+
             if (e.type === 'cast') {
                 eventType = 'Cast';
-                const label = (SKILL_NAMES[e.source] && SKILL_NAMES[e.source][e.ability]) || e.ability;
-                details = `Used ${iconHtml} <strong style="color:var(--color-green);">${label}</strong>`;
+                details = `Used ${iconHtml} <strong style="color:var(--color-green);">${e.ability}</strong>`;
             } else if (e.type === 'damage') {
                 eventType = 'Damage';
-                const label = (SKILL_NAMES[e.source] && SKILL_NAMES[e.source][e.ability]) || e.ability;
-                details = `${iconHtml} <strong style="color:var(--color-cyan);">${label}</strong> hit for <strong style="color:#f87171;">${e.amount.toFixed(1)}</strong>`;
+                details = `${iconHtml} <strong style="color:var(--color-cyan);">${e.ability}</strong> hit for <strong style="color:#f87171;">${e.amount.toFixed(1)}</strong>`;
             } else if (e.type === 'death') {
                 eventType = 'Death';
                 details = `Died`;
@@ -2267,33 +1370,24 @@
             } else if (e.type === 'buff_expire') {
                 eventType = 'Buff Expire';
                 details = `${iconHtml} Lost <strong style="color:var(--text-muted);">${e.buff_name}</strong>`;
-            } else if (e.type === 'heal') {
-                eventType = 'Heal';
-                details = `Healed for <strong style="color:var(--color-green);">${e.amount.toFixed(1)}</strong>`;
-                color = 'var(--color-green)';
             } else {
-                return;
+                return; // Skip resource updates for log to keep it clean
             }
-            
-            const rowText = `${eventType} ${e.source || e.target} ${details}`.toLowerCase();
-            if (logSearchQuery && !rowText.includes(logSearchQuery)) return;
             
             const currentIdx = window.sortedLogEvents.length;
             window.sortedLogEvents.push(e);
-            
+
             logHtml += `
-            <tr id="logRow-${currentIdx}" style="border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.15s; cursor: pointer;" onclick="jumpToTime(${e.time})">
-                <td style="padding: 6px 16px; color: var(--text-muted); font-family: monospace;">${e.time.toFixed(3)}s</td>
+            <tr id="logRow-${currentIdx}" style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s;">
+                <td style="padding: 6px 16px; color: var(--text-muted); font-family: monospace;">${timeStr}</td>
                 <td style="padding: 6px 16px; color: ${color};">${eventType}</td>
-                <td style="padding: 6px 16px; font-weight:600;">${e.source || e.target}</td>
+                <td style="padding: 6px 16px;">${e.source || e.target}</td>
                 <td style="padding: 6px 16px;">${details}</td>
             </tr>`;
         });
-        
         combatLogBody.innerHTML = logHtml;
     }
 
-    renderCombatLog();
     updateScrubberPosition();
 </script>
 </body>
