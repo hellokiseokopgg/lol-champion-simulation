@@ -1195,26 +1195,13 @@
             let fillPath = `M 0 ${h} `; 
             let first = true;
             let lastY = h;
-
-            let cumulativeRes = 0;
-            let lastRes = resourceUpdates[0].max;
-            let resPoints = [];
             
             resourceUpdates.forEach(r => {
-                let diff = lastRes - r.amount;
-                if (diff > 0) cumulativeRes += diff; // accumulate consumed amount
-                lastRes = r.amount;
-                resPoints.push({ time: r.time, consumed: cumulativeRes });
-            });
-            
-            let maxResConsumed = cumulativeRes > 0 ? cumulativeRes : 1;
-            
-            resPoints.forEach(p => {
-                let x = p.time * PX_PER_SEC + OFFSET_X;
-                let y = h - (p.consumed / maxResConsumed) * (h - 20); // starts at h (0 consumed), goes up
+                let x = r.time * PX_PER_SEC + OFFSET_X;
+                let y = h - (r.amount / r.max) * (h - 20); // map to the same height as damage graph
                 if (first) {
-                    strokePath += `M 0 ${h} L ${x} ${h} L ${x} ${y} `;
-                    fillPath += `L ${x} ${h} L ${x} ${y} `;
+                    strokePath += `M 0 ${y} L ${x} ${y} `;
+                    fillPath += `L 0 ${y} L ${x} ${y} `;
                     first = false;
                 } else {
                     strokePath += `L ${x} ${lastY} L ${x} ${y} `;
@@ -1323,20 +1310,20 @@
             else if (resName === "Energy") resName = "기력";
             else if (resName === "Rage") resName = "분노";
 
-            let cumulativeConsumed = 0;
-            let lastAmt = resourceUpdates[0].max;
+            let res = resourceUpdates[0].max;
+            let maxRes = resourceUpdates[0].max || 1;
             
             for(let r of resourceUpdates) {
                 if(r.time <= playTime) { 
-                    let diff = lastAmt - r.amount;
-                    if (diff > 0) cumulativeConsumed += diff;
-                    lastAmt = r.amount;
+                    res = r.amount;
+                    maxRes = r.max || 1;
                 } else {
                     break;
                 }
             }
             
-            labelText = `누적 ${resName} 소모: ${Math.floor(cumulativeConsumed)}`;
+            let pct = Math.floor((res / maxRes) * 100);
+            labelText = `${resName}: ${Math.floor(res)}/${Math.floor(maxRes)} (${pct}%)`;
         } else {
             labelText = `소모값 없음`;
         }
