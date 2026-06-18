@@ -341,7 +341,7 @@ fn main() {
                 };
 
                 let mut sim = lol_core::sim::GameSimulation::new(lol_core::sim::SimConfig {
-                    max_duration: 60.0,
+                    max_duration: 100.0,
                 });
 
                 let items_a: Vec<(String, String)> = config_a
@@ -377,14 +377,6 @@ fn main() {
                     let mut coll = collector.borrow_mut();
                     coll.champion_initial_stats.insert(id_a.clone(), inst_a.borrow().state().stats.initial.clone());
                     coll.champion_initial_stats.insert(id_b.clone(), inst_b.borrow().state().stats.initial.clone());
-
-                    let champ_a = inst_a.borrow();
-                    let res_a = &champ_a.state().resource;
-                    coll.record_resource_update(lol_core::types::SimTime::new(0.0), id_a.clone(), format!("{:?}", res_a.resource_type), res_a.current, res_a.max);
-                    
-                    let champ_b = inst_b.borrow();
-                    let res_b = &champ_b.state().resource;
-                    coll.record_resource_update(lol_core::types::SimTime::new(0.0), id_b.clone(), format!("{:?}", res_b.resource_type), res_b.current, res_b.max);
                 }
                 collector
                     .borrow_mut()
@@ -452,7 +444,7 @@ fn main() {
             let garen_apl_script = "
 actions+=/R,if=target.health.pct<30
 actions+=/AutoAttack,if=buff.Judgment.down
-actions+=/Q,if=buff.Judgment.down&(resource.current>20|resource.current<1)
+actions+=/Q,if=buff.Judgment.down
 actions+=/E
 actions+=/W
 ";
@@ -517,7 +509,7 @@ actions+=/AutoAttack
             // Final run with collector
             let (_, collector) = run_sim(&best_script, script_b_str.as_deref());
 
-            let max_time = lol_core::types::SimTime::new(60.0);
+            let max_time = lol_core::types::SimTime::new(100.0);
             let stats =
                 lol_report::statistics::Statistics::calculate(&collector.borrow(), max_time);
 

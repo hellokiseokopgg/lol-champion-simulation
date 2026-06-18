@@ -2,26 +2,26 @@
   "id": "dummy",
   "name": "Target Dummy",
   "base_stats": {
-    "hp": 100000.0,
-    "hp_regen": 10000.0,
-    "mp": 0.0,
-    "mp_regen": 0.0,
-    "attack_damage": 0.0,
-    "armor": 100.0,
-    "magic_resist": 100.0,
+    "hp": 2452.0,
+    "hp_regen": 5.5,
+    "mp": 500.0,
+    "mp_regen": 8.0,
+    "attack_damage": 55.0,
+    "armor": 34.0,
+    "magic_resist": 30.0,
     "attack_speed": 0.625,
-    "attack_range": 125,
-    "move_speed": 0.0
+    "attack_range": 480,
+    "move_speed": 335.0
   },
   "growth_stats": {
     "hp": 0.0,
-    "hp_regen": 0.0,
-    "mp": 0.0,
-    "mp_regen": 0.0,
-    "attack_damage": 0.0,
-    "armor": 0.0,
-    "magic_resist": 0.0,
-    "attack_speed": 0.0
+    "hp_regen": 0.6,
+    "mp": 28.0,
+    "mp_regen": 0.8,
+    "attack_damage": 2.65,
+    "armor": 4.7,
+    "magic_resist": 1.3,
+    "attack_speed": 0.0211
   },
   "abilities": {}
 }

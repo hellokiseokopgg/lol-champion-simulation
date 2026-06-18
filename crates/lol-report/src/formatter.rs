@@ -172,11 +172,15 @@ impl Formatter {
                     time,
                     source,
                     ability,
+                    cost,
+                    resource_type,
                 } => Some(format!(
-                    r#"  {{ "type": "cast", "time": {}, "source": "{}", "ability": "{:?}" }}"#,
+                    r#"  {{ "type": "cast", "time": {}, "source": "{}", "ability": "{:?}", "cost": {}, "resource_type": "{}" }}"#,
                     time.as_f64(),
                     source.0,
-                    ability
+                    ability,
+                    cost,
+                    resource_type
                 )),
                 CombatEvent::Damage {
                     time,

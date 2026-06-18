@@ -109,7 +109,9 @@ impl lol_core::event::SimEvent for ActorTickEvent {
         let mut cast_slot = None;
         let mut cast_time = 0.0;
         let mut base_cooldown = 0.0;
-        let mut level = 0;
+        let mut level = 1;
+        let mut cost = 0.0;
+        let mut resource_type = String::from("None");
 
         {
             if let Some(champ_ref) = ctx.champions.get(&self.actor) {
@@ -128,6 +130,8 @@ impl lol_core::event::SimEvent for ActorTickEvent {
                             if let Some(state) = champ_inst.state().abilities.get_state(slot) {
                                 level = state.level;
                             }
+                            cost = ability.cost(level);
+                            resource_type = format!("{:?}", champ_inst.state().resource.resource_type);
 
                             if slot == lol_core::types::AbilitySlot::AutoAttack {
                                 let stats = &champ_inst.state().stats.current;
@@ -167,9 +171,13 @@ impl lol_core::event::SimEvent for ActorTickEvent {
 
         if let Some(slot) = cast_slot {
             if let Some(recorder) = &ctx.recorder {
-                recorder
-                    .borrow_mut()
-                    .record_cast(ctx.current_time, self.actor.clone(), slot);
+                recorder.borrow_mut().record_cast(
+                    ctx.current_time,
+                    self.actor.clone(),
+                    slot,
+                    cost,
+                    resource_type,
+                );
             }
 
             if let Some(champ_ref) = ctx.champions.get(&self.actor) {

@@ -50,7 +50,6 @@ impl ChampionModule for ZedModule {
         }
 
         let custom_state = Rc::new(RefCell::new(ZedCustomState {
-            last_regen_time: 0.0,
             last_passive_proc_time: -99.0,
             death_mark_accumulated: 0.0,
         }));
@@ -81,7 +80,6 @@ impl ChampionModule for ZedModule {
 }
 
 pub struct ZedCustomState {
-    pub last_regen_time: f64,
     pub last_passive_proc_time: f64,
     pub death_mark_accumulated: f64,
 }
@@ -91,22 +89,6 @@ pub struct ZedInstance {
     pub _config: ChampionConfig,
     pub abilities: Vec<Box<dyn Ability>>,
     pub custom_state: Rc<RefCell<ZedCustomState>>,
-}
-
-impl ZedInstance {
-    fn check_and_regen_energy(&self, time: SimTime) {
-        let mut custom = self.custom_state.borrow_mut();
-        let elapsed = time.as_f64() - custom.last_regen_time;
-        if elapsed > 0.0 {
-            // Energy regeneration of +10 per second
-            let regen = 10.0 * elapsed;
-            let state_ptr = &self.state as *const ChampionState as usize as *mut ChampionState;
-            unsafe {
-                (*state_ptr).resource.restore(regen);
-            }
-            custom.last_regen_time = time.as_f64();
-        }
-    }
 }
 
 impl ChampionInstance for ZedInstance {
@@ -119,8 +101,6 @@ impl ChampionInstance for ZedInstance {
     }
 
     fn update_stats(&mut self, time: lol_core::types::SimTime) {
-        self.check_and_regen_energy(time);
-
         // 1. Recalculate base stats using growth logic
         let level = self.state.level as f64;
         let growth_multiplier = (level - 1.0) * (0.7025 + 0.0175 * (level - 1.0));
@@ -201,7 +181,6 @@ impl ChampionInstance for ZedInstance {
     }
 
     fn can_cast(&self, slot: AbilitySlot, time: SimTime) -> bool {
-        self.check_and_regen_energy(time);
         if self.state().casting.is_some() {
             return false;
         }
@@ -861,7 +840,6 @@ mod tests {
     #[test]
     fn test_death_mark_damage_accumulation_and_pop() {
         let custom_state = Rc::new(RefCell::new(ZedCustomState {
-            last_regen_time: 0.0,
             last_passive_proc_time: -99.0,
             death_mark_accumulated: 1000.0,
         }));

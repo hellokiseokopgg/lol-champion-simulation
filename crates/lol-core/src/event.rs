@@ -22,6 +22,8 @@ pub trait EventRecorder {
         time: SimTime,
         source: crate::types::ChampionId,
         ability: crate::types::AbilitySlot,
+        cost: f64,
+        resource_type: String,
     );
     fn record_heal(
         &mut self,
@@ -313,13 +315,12 @@ impl SimContext {
                             &defender_stats,
                         );
 
-                        let is_dead = if let Some(champ_ref) = self.champions.get(&target_id) {
-                            champ_ref
-                                .borrow_mut()
-                                .take_damage(damage_result.final_damage)
-                                .is_dead
+                        let (is_dead, current_hp, max_hp) = if let Some(champ_ref) = self.champions.get(&target_id) {
+                            let mut champ = champ_ref.borrow_mut();
+                            let res = champ.take_damage(damage_result.final_damage);
+                            (res.is_dead, champ.state().health.current, champ.state().stats.current.health)
                         } else {
-                            false
+                            (false, 0.0, 0.0)
                         };
 
                         if let Some(recorder) = &self.recorder {
@@ -330,6 +331,13 @@ impl SimContext {
                                 slot,
                                 damage_result.final_damage,
                                 false,
+                            );
+                            recorder.borrow_mut().record_resource_update(
+                                self.current_time,
+                                target_id.clone(),
+                                "HP".to_string(),
+                                current_hp,
+                                max_hp,
                             );
                         }
 
@@ -433,6 +441,7 @@ impl SimEvent for HealEvent {
             if champ.state().health.current > max_hp {
                 champ.state_mut().health.current = max_hp;
             }
+            let current_hp = champ.state().health.current;
 
             if let Some(recorder) = &ctx.recorder {
                 recorder.borrow_mut().record_heal(
@@ -440,6 +449,13 @@ impl SimEvent for HealEvent {
                     self.source.clone(),
                     self.target.clone(),
                     actual_heal,
+                );
+                recorder.borrow_mut().record_resource_update(
+                    ctx.current_time,
+                    self.target.clone(),
+                    "HP".to_string(),
+                    current_hp,
+                    max_hp,
                 );
             }
         }
@@ -612,6 +628,8 @@ impl SimEvent for DoTTickEvent {
         if let Some(champ_ref) = ctx.champions.get(&self.target) {
             let mut champ = champ_ref.borrow_mut();
             let is_dead = champ.take_damage(self.damage).is_dead;
+            let current_hp = champ.state().health.current;
+            let max_hp = champ.state().stats.current.health;
 
             if let Some(recorder) = &ctx.recorder {
                 recorder.borrow_mut().record_damage(
@@ -621,6 +639,13 @@ impl SimEvent for DoTTickEvent {
                     crate::types::AbilitySlot::Passive, // Or the specific ability slot
                     self.damage,
                     false,
+                );
+                recorder.borrow_mut().record_resource_update(
+                    ctx.current_time,
+                    self.target.clone(),
+                    "HP".to_string(),
+                    current_hp,
+                    max_hp,
                 );
             }
 
@@ -637,6 +662,111 @@ impl SimEvent for DoTTickEvent {
 
     fn name(&self) -> &str {
         "DoTTickEvent"
+    }
+}
+
+/// Periodic event executed every 0.5 seconds to regenerate champion resources.
+pub struct RegenTickEvent;
+
+impl SimEvent for RegenTickEvent {
+    #[allow(clippy::collapsible_if)]
+    fn execute(&self, ctx: &mut SimContext, event_manager: &mut EventManager) {
+        let tick_interval = 0.5;
+
+        for (id, champ_ref) in &ctx.champions {
+            let mut champ = champ_ref.borrow_mut();
+
+            // Verify they are alive
+            if champ.state().health.current <= 0.0 {
+                continue;
+            }
+
+            // Sync max values in resource/health with the calculated stats
+            let max_hp = champ.state().stats.current.health;
+            champ.state_mut().health.update_max(max_hp);
+
+            let max_resource = champ.state().stats.current.mana;
+            champ.state_mut().resource.update_max(max_resource);
+
+            // Health regeneration
+            let health_regen = champ.state().stats.current.health_regen;
+            let hp_to_regen = (health_regen / 5.0) * tick_interval;
+            let old_hp = champ.state().health.current;
+            champ.state_mut().health.restore(hp_to_regen);
+            let mut new_hp = champ.state().health.current;
+
+            // Dummy 5-second full recovery gimmick
+            if id.0.to_lowercase().contains("dummy") {
+                let time_secs = ctx.current_time.as_f64();
+                let rem = time_secs % 5.0;
+                if time_secs > 0.0 && (rem < 0.01 || rem > 4.99) {
+                    champ.state_mut().health.current = max_hp;
+                    new_hp = max_hp;
+                }
+            }
+
+            if let Some(recorder) = &ctx.recorder {
+                if new_hp != old_hp {
+                    recorder.borrow_mut().record_resource_update(
+                        ctx.current_time,
+                        id.clone(),
+                        "HP".to_string(),
+                        new_hp,
+                        max_hp,
+                    );
+                }
+            }
+
+            // Resource regeneration
+            let resource_type = champ.state().resource.resource_type;
+            match resource_type {
+                crate::types::ResourceType::Mana => {
+                    let mana_regen = champ.state().stats.current.mana_regen;
+                    let mana_to_regen = (mana_regen / 5.0) * tick_interval;
+                    let old_mana = champ.state().resource.current;
+                    champ.state_mut().resource.restore(mana_to_regen);
+                    let new_mana = champ.state().resource.current;
+
+                    if let Some(recorder) = &ctx.recorder {
+                        if new_mana != old_mana {
+                            recorder.borrow_mut().record_resource_update(
+                                ctx.current_time,
+                                id.clone(),
+                                "Mana".to_string(),
+                                new_mana,
+                                max_resource,
+                            );
+                        }
+                    }
+                }
+                crate::types::ResourceType::Energy => {
+                    let energy_to_regen = 10.0 * tick_interval;
+                    let old_energy = champ.state().resource.current;
+                    champ.state_mut().resource.restore(energy_to_regen);
+                    let new_energy = champ.state().resource.current;
+
+                    if let Some(recorder) = &ctx.recorder {
+                        if new_energy != old_energy {
+                            recorder.borrow_mut().record_resource_update(
+                                ctx.current_time,
+                                id.clone(),
+                                "Energy".to_string(),
+                                new_energy,
+                                max_resource,
+                            );
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        // Schedule next tick
+        event_manager.schedule_in(tick_interval, Box::new(RegenTickEvent));
+    }
+
+    fn name(&self) -> &str {
+        "RegenTickEvent"
     }
 }
 

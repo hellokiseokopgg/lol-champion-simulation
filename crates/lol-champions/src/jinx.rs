@@ -170,11 +170,15 @@ impl StatusEffect for JinxFishbonesBuff {
         1
     }
     fn stat_modifiers(&self, _stacks: u32) -> StatBlock {
-        StatBlock::new()
+        let mut stats = StatBlock::new();
+        stats.attack_speed = -0.15;
+        stats
     }
 }
 
-pub struct JinxPowPowBuff;
+pub struct JinxPowPowBuff {
+    pub q_level: u32,
+}
 impl StatusEffect for JinxPowPowBuff {
     fn id(&self) -> EffectId {
         EffectId("JinxPowPow".into())
@@ -193,8 +197,14 @@ impl StatusEffect for JinxPowPowBuff {
     }
     fn stat_modifiers(&self, stacks: u32) -> StatBlock {
         let mut stats = StatBlock::new();
-        // +10% AS per stack
-        stats.attack_speed = 0.10 * stacks as f64;
+        let total_as = match self.q_level {
+            1 => 0.30,
+            2 => 0.55,
+            3 => 0.80,
+            4 => 1.05,
+            _ => 1.30,
+        };
+        stats.attack_speed = (total_as / 3.0) * stacks as f64;
         stats
     }
 }
@@ -349,9 +359,20 @@ impl Ability for JinxAutoAttack {
         ctx.trigger_on_physical_damage(actor, target, &damage_result);
         ctx.trigger_on_damage_dealt(actor, damage_result.final_damage, false, AbilitySlot::AutoAttack);
 
-        // Apply minigun stack if not fishbones
+        // Apply minigun stack if not fishbones, decay stack if fishbones
         if !use_fishbones {
-            ctx.apply_buff(actor, Box::new(JinxPowPowBuff));
+            let q_level = if let Some(champ_ref) = ctx.champions.get(actor) {
+                champ_ref.borrow().state().abilities.get_state(AbilitySlot::Q).map(|s| s.level).unwrap_or(1)
+            } else {
+                1
+            };
+            ctx.apply_buff(actor, Box::new(JinxPowPowBuff { q_level }));
+        } else {
+            if let Some(champ_ref) = ctx.champions.get(actor) {
+                let mut champ = champ_ref.borrow_mut();
+                champ.state_mut().buffs.decrement_stacks(&EffectId("JinxPowPow".into()));
+                champ.update_stats(ctx.current_time);
+            }
         }
 
         if let Some(d) = ctx.champions.get(target) {
@@ -697,7 +718,7 @@ mod tests {
 
     #[test]
     fn test_jinx_powpow_stacks_and_attack_speed() {
-        let powpow = JinxPowPowBuff;
+        let powpow = JinxPowPowBuff { q_level: 1 };
         // 0 stacks
         let mods_0 = powpow.stat_modifiers(0);
         assert_eq!(mods_0.attack_speed, 0.0);
@@ -732,5 +753,18 @@ mod tests {
         let missing_hp = 1000.0;
         let raw_damage = base_damage + 1.5 * bonus_ad + 0.25 * missing_hp;
         assert_eq!(raw_damage, 700.0);
+    }
+
+    #[test]
+    fn test_jinx_q_level_scaling_and_fishbones_penalty() {
+        // Test Pow-Pow AS scaling at max level (Q Rank 5)
+        let powpow_rank5 = JinxPowPowBuff { q_level: 5 };
+        let mods_3_rank5 = powpow_rank5.stat_modifiers(3);
+        assert!((mods_3_rank5.attack_speed - 1.30).abs() < 1e-6);
+
+        // Test Fishbones -15% AS penalty
+        let fishbones = JinxFishbonesBuff;
+        let fb_mods = fishbones.stat_modifiers(1);
+        assert!((fb_mods.attack_speed - (-0.15)).abs() < 1e-6);
     }
 }

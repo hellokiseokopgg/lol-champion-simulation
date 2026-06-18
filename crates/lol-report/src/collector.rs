@@ -14,6 +14,8 @@ pub enum CombatEvent {
         time: SimTime,
         source: ChampionId,
         ability: AbilitySlot,
+        cost: f64,
+        resource_type: String,
     },
     Death {
         time: SimTime,
@@ -102,11 +104,20 @@ impl DataCollector {
             .push((rune_id, rune_name, rune_tree));
     }
 
-    pub fn record_cast(&mut self, time: SimTime, source: ChampionId, ability: AbilitySlot) {
+    pub fn record_cast(
+        &mut self,
+        time: SimTime,
+        source: ChampionId,
+        ability: AbilitySlot,
+        cost: f64,
+        resource_type: String,
+    ) {
         self.events.push(CombatEvent::Cast {
             time,
             source,
             ability,
+            cost,
+            resource_type,
         });
     }
 
@@ -185,8 +196,15 @@ impl lol_core::event::EventRecorder for DataCollector {
         self.record_damage(time, source, target, ability, amount, is_crit);
     }
 
-    fn record_cast(&mut self, time: SimTime, source: ChampionId, ability: AbilitySlot) {
-        self.record_cast(time, source, ability);
+    fn record_cast(
+        &mut self,
+        time: SimTime,
+        source: ChampionId,
+        ability: AbilitySlot,
+        cost: f64,
+        resource_type: String,
+    ) {
+        self.record_cast(time, source, ability, cost, resource_type);
     }
 
     fn record_heal(

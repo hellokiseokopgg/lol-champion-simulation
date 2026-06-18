@@ -612,8 +612,9 @@
             <div style="width: 1px; height: 16px; background: var(--border-color); margin: 0 10px;"></div>
 
             <!-- Graphs -->
-            <div class="legend-item"><div class="l-square" style="background: var(--color-cyan); opacity: 0.5;"></div> Resource Usage</div>
-            <div class="legend-item"><div style="width: 16px; height: 2px; background: var(--color-orange);"></div> Cumulative Damage</div>
+            <div class="legend-item"><div class="l-square" style="background: var(--color-green); opacity: 0.5;"></div> HP (체력)</div>
+            <div class="legend-item"><div class="l-square" style="background: var(--color-cyan); opacity: 0.5;"></div> Resource (마나/기력)</div>
+            <div class="legend-item"><div style="width: 16px; height: 2px; background: var(--color-orange);"></div> Cumulative Damage (누적 피해량)</div>
             <div class="legend-item"><span style="color:var(--color-cyan); font-weight:bold;">+20</span> <span style="color:#f87171; font-weight:bold;">-35</span> Resource +/-</div>
         </div>
 
@@ -678,7 +679,71 @@
     const svgGraph = document.getElementById('svgGraph');
     const tooltip = document.getElementById('tooltip');
     const itemsContainer = document.getElementById('itemsContainer');
-    
+
+    let primaryChamp = null;
+    let resourceUpdates = [];
+    let hpUpdates = [];
+
+    function reconstructHpUpdates(champName) {
+        let maxHp = 1000;
+        if (typeof statsData !== 'undefined' && statsData[champName]) {
+            maxHp = statsData[champName].health || maxHp;
+        }
+        
+        let hpRegen = 0;
+        if (typeof statsData !== 'undefined' && statsData[champName]) {
+            hpRegen = statsData[champName].health_regen || 0;
+        }
+
+        let currentHp = maxHp;
+        let hpEvents = [{ time: 0, amount: currentHp, max: maxHp }];
+        
+        // Sort events by time
+        const sortedEvents = events.slice().sort((a, b) => a.time - b.time);
+        
+        let lastRegenTime = 0;
+        
+        sortedEvents.forEach(e => {
+            // Process regen ticks up to e.time
+            while (lastRegenTime + 0.5 <= e.time) {
+                lastRegenTime += 0.5;
+                if (currentHp < maxHp && hpRegen > 0) {
+                    currentHp = Math.min(maxHp, currentHp + (hpRegen / 5.0) * 0.5);
+                    hpEvents.push({ time: lastRegenTime, amount: currentHp, max: maxHp });
+                }
+            }
+
+            if (e.type === "damage") {
+                const targetChamp = Object.keys(statsData).find(k => k !== e.source);
+                if (targetChamp === champName) {
+                    currentHp = Math.max(0, currentHp - e.amount);
+                    hpEvents.push({ time: e.time, amount: currentHp, max: maxHp });
+                }
+            } else if (e.type === "heal" && e.target === champName) {
+                currentHp = Math.min(maxHp, currentHp + e.amount);
+                hpEvents.push({ time: e.time, amount: currentHp, max: maxHp });
+            } else if (e.type === "resource_update" && e.target === champName && e.resource_type === "HP") {
+                currentHp = e.amount;
+                maxHp = e.max || maxHp;
+                if (e.time > 0) {
+                    hpEvents.push({ time: e.time, amount: currentHp, max: maxHp });
+                }
+            }
+        });
+        
+        // Final regen check up to max duration
+        const endDuration = (typeof duration !== 'undefined') ? duration : 60;
+        while (lastRegenTime + 0.5 <= endDuration + 5) {
+            lastRegenTime += 0.5;
+            if (currentHp < maxHp && hpRegen > 0) {
+                currentHp = Math.min(maxHp, currentHp + (hpRegen / 5.0) * 0.5);
+                hpEvents.push({ time: lastRegenTime, amount: currentHp, max: maxHp });
+            }
+        }
+        
+        return hpEvents;
+    }
+
     // Render Items
     if (itemsData) {
         for (const [champ, items] of Object.entries(itemsData)) {
@@ -686,7 +751,7 @@
             col.className = 'col';
             const isDummy = champ.toLowerCase() === "dummy";
             const champImgUrl = isDummy 
-                ? 'https://raw.communitydragon.org/latest/game/assets/characters/practicetool_targetdummy/hud/practicetool_targetdummy_circle.png'
+                ? 'https://opgg-static.akamaized.net/meta/images/lol/16.12.1/champion/FiddleSticks.png?image=c_crop,h_103,w_103,x_9,y_9/q_auto:good,f_webp,w_160,h_160&v=1612'
                 : `https://opgg-static.akamaized.net/meta/images/lol/16.12.1/champion/${champ}.png?image=c_crop,h_103,w_103,x_9,y_9/q_auto:good,f_webp,w_160,h_160&v=1612`;
             
             // Tree color mapping for glow effect
@@ -757,7 +822,7 @@
                         <img src="${champImgUrl}" alt="${champ}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                         <span style="display: none; font-size: 14px; font-weight: bold; color: #e5e7eb;">${champ.substring(0, 2).toUpperCase()}</span>
                     </div>
-                    <h4 style="margin: 0; font-size: 16px; z-index: 2;">${isDummy ? 'Target Dummy' : champ}</h4>
+                    <h4 style="margin: 0; font-size: 16px; z-index: 2;">${isDummy ? 'Fiddlesticks (Dummy)' : champ}</h4>
                 </div>
             `;
             if (items.length === 0) {
@@ -833,6 +898,8 @@
             col.innerHTML = html;
             itemsContainer.appendChild(col);
         }
+
+        // Initial primaryChamp selection deferred to the end of script to prevent ReferenceError (duration)
     }
     
     // Process Data
@@ -919,16 +986,7 @@
     const damages = events.filter(e => e.type === "damage");
     const buffs = events.filter(e => e.type === "buff_apply");
     
-    let primaryChamp = null;
-    if (typeof statsData !== 'undefined' && Object.keys(statsData).length > 0) {
-        let keys = Object.keys(statsData);
-        primaryChamp = keys.find(k => !k.toLowerCase().includes("dummy")) || keys[0];
-    } else if (casts.length > 0) {
-        primaryChamp = casts[0].source;
-    }
-    
-    let resourceUpdates = events.filter(e => e.type === "resource_update" && e.target === primaryChamp && e.resource_type !== "HP");
-    let hpUpdates = events.filter(e => e.type === "resource_update" && e.target === primaryChamp && e.resource_type === "HP");
+    // primaryChamp, resourceUpdates, hpUpdates are initialized and selected above
 
     
     let maxTime = 0;
@@ -1361,8 +1419,12 @@
         let maxHp = 1;
         let currentHp = 1;
 
-        if (typeof statsData !== 'undefined' && primaryChamp && statsData[primaryChamp]) {
-            maxHp = statsData[primaryChamp].health || 1;
+        let targetChamp = primaryChamp;
+        if (typeof statsData !== 'undefined' && Object.keys(statsData).length > 0) {
+            targetChamp = Object.keys(statsData).find(k => k !== primaryChamp) || primaryChamp;
+        }
+        if (typeof statsData !== 'undefined' && statsData[targetChamp]) {
+            maxHp = statsData[targetChamp].health || 1;
             currentHp = maxHp;
         }
 
@@ -1381,7 +1443,7 @@
         }
         
         let hpPct = Math.floor((currentHp / maxHp) * 100);
-        hpText = `체력: ${Math.floor(currentHp)}/${Math.floor(maxHp)} (${hpPct}%)`;
+        hpText = `상대 체력: ${Math.floor(currentHp)}/${Math.floor(maxHp)} (${hpPct}%)`;
 
         let labelText = "";
         if (resourceUpdates.length > 0 && resourceUpdates[0].resource_type !== "None") {
@@ -1530,7 +1592,12 @@
 
             if (e.type === 'cast') {
                 eventType = 'Cast';
-                details = `Used ${iconHtml} <strong style="color:var(--color-green);">${e.ability}</strong>`;
+                let costStr = '';
+                if (typeof e.cost === 'number' && e.cost > 0) {
+                    let rName = e.resource_type === 'Mana' ? '마나' : (e.resource_type === 'Energy' ? '기력' : (e.resource_type === 'Rage' ? '분노' : e.resource_type));
+                    costStr = ` <span style="font-size: 0.85em; color: var(--color-cyan);">(소모: ${e.cost} ${rName})</span>`;
+                }
+                details = `Used ${iconHtml} <strong style="color:var(--color-green);">${e.ability}</strong>${costStr}`;
             } else if (e.type === 'damage') {
                 eventType = 'Damage';
                 details = `${iconHtml} <strong style="color:var(--color-cyan);">${e.ability}</strong> hit for <strong style="color:#f87171;">${e.amount.toFixed(1)}</strong>`;
@@ -1562,6 +1629,21 @@
         combatLogBody.innerHTML = logHtml;
     }
 
+    // Choose initial primaryChamp and initialize timeline
+    if (typeof statsData !== 'undefined' && Object.keys(statsData).length > 0) {
+        let keys = Object.keys(statsData);
+        primaryChamp = keys.find(k => !k.toLowerCase().includes("dummy")) || keys[0];
+    } else if (casts.length > 0) {
+        primaryChamp = casts[0].source;
+    }
+    
+    if (primaryChamp) {
+        resourceUpdates = events.filter(e => e.type === "resource_update" && e.target === primaryChamp && e.resource_type !== "HP");
+        const defenderChamp = Object.keys(statsData).find(k => k !== primaryChamp) || primaryChamp;
+        hpUpdates = reconstructHpUpdates(defenderChamp);
+    }
+    
+    renderTimeline();
     updateScrubberPosition();
 </script>
 </body>

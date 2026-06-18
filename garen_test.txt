@@ -2,6 +2,6 @@ items=6631,3033,3046
 runes=8010,9111,9104,8299,8473,8451
 actions+=/R,if=target.health.pct<100
 actions+=/AutoAttack
-actions+=/Q
+actions+=/Q,if=resource.current>20|resource.current<1
 actions+=/Item:6631
 actions+=/E
