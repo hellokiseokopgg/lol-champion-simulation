@@ -1357,21 +1357,30 @@
         }
 
         let hpText = "";
+        let maxHp = 1;
+        let currentHp = 1;
+
+        if (typeof statsData !== 'undefined' && primaryChamp && statsData[primaryChamp]) {
+            maxHp = statsData[primaryChamp].health || 1;
+            currentHp = maxHp;
+        }
+
         if (hpUpdates.length > 0) {
-            let res = hpUpdates[0].max;
-            let maxRes = hpUpdates[0].max || 1;
+            currentHp = hpUpdates[0].max;
+            maxHp = hpUpdates[0].max || maxHp;
             
             for(let r of hpUpdates) {
                 if(r.time <= playTime) { 
-                    res = r.amount;
-                    maxRes = r.max || 1;
+                    currentHp = r.amount;
+                    maxHp = r.max || maxHp;
                 } else {
                     break;
                 }
             }
-            let pct = Math.floor((res / maxRes) * 100);
-            hpText = `체력: ${Math.floor(res)}/${Math.floor(maxRes)} (${pct}%)`;
         }
+        
+        let hpPct = Math.floor((currentHp / maxHp) * 100);
+        hpText = `체력: ${Math.floor(currentHp)}/${Math.floor(maxHp)} (${hpPct}%)`;
 
         let labelText = "";
         if (resourceUpdates.length > 0 && resourceUpdates[0].resource_type !== "None") {
