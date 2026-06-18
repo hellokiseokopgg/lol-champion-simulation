@@ -29,6 +29,15 @@ impl AplExecutor {
                 continue;
             }
 
+            // Check if champion has enough resources to cast
+            if let Some(ability) = champion.get_ability(action.slot) {
+                let level = champion.state().abilities.get_state(action.slot).map_or(1, |s| s.level);
+                let cost = ability.cost(level);
+                if champion.state().resource.current < cost {
+                    continue;
+                }
+            }
+
             if action
                 .condition
                 .as_ref()
