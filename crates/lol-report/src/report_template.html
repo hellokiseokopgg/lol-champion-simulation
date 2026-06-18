@@ -926,7 +926,8 @@
         primaryChamp = casts[0].source;
     }
     
-    let resourceUpdates = events.filter(e => e.type === "resource_update" && e.target === primaryChamp);
+    let resourceUpdates = events.filter(e => e.type === "resource_update" && e.target === primaryChamp && e.resource_type !== "HP");
+    let hpUpdates = events.filter(e => e.type === "resource_update" && e.target === primaryChamp && e.resource_type === "HP");
 
     
     let maxTime = 0;
@@ -1228,6 +1229,7 @@
                 pathStroke.setAttribute("fill", "none");
                 pathStroke.setAttribute("stroke", "var(--color-cyan)");
                 pathStroke.setAttribute("stroke-width", "2");
+                pathStroke.setAttribute("opacity", "0.8");
                 svgGraph.appendChild(pathStroke);
 
                 const pathFill = document.createElementNS("http://www.w3.org/2000/svg", "path");
@@ -1235,6 +1237,49 @@
                 pathFill.setAttribute("fill", "var(--color-cyan)");
                 pathFill.setAttribute("opacity", "0.1"); 
                 svgGraph.appendChild(pathFill);
+            }
+        }
+
+        // 3-1. SVG HP Graph Background
+        if (hpUpdates.length > 0) {
+            const h = 220;
+            let strokePath = ``;
+            let fillPath = `M 0 ${h} `; 
+            let first = true;
+            let lastY = h;
+            
+            hpUpdates.forEach(r => {
+                let x = r.time * PX_PER_SEC + OFFSET_X;
+                let y = h - (r.amount / r.max) * (h - 20);
+                if (first) {
+                    strokePath += `M 0 ${y} L ${x} ${y} `;
+                    fillPath += `L 0 ${y} L ${x} ${y} `;
+                    first = false;
+                } else {
+                    strokePath += `L ${x} ${lastY} L ${x} ${y} `;
+                    fillPath += `L ${x} ${lastY} L ${x} ${y} `;
+                }
+                lastY = y;
+            });
+            
+            const endX = totalWidth;
+            if (!first) {
+                strokePath += `L ${endX} ${lastY}`;
+                fillPath += `L ${endX} ${lastY} L ${endX} ${h} Z`;
+
+                const pathStroke = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                pathStroke.setAttribute("d", strokePath);
+                pathStroke.setAttribute("fill", "none");
+                pathStroke.setAttribute("stroke", "var(--color-green)");
+                pathStroke.setAttribute("stroke-width", "2");
+                pathStroke.setAttribute("opacity", "0.8");
+                svgGraph.appendChild(pathStroke);
+
+                const areaFill = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                areaFill.setAttribute("d", fillPath);
+                areaFill.setAttribute("fill", "var(--color-green)");
+                areaFill.setAttribute("opacity", "0.05");
+                svgGraph.appendChild(areaFill);
             }
         }
 
@@ -1311,6 +1356,23 @@
             }
         }
 
+        let hpText = "";
+        if (hpUpdates.length > 0) {
+            let res = hpUpdates[0].max;
+            let maxRes = hpUpdates[0].max || 1;
+            
+            for(let r of hpUpdates) {
+                if(r.time <= playTime) { 
+                    res = r.amount;
+                    maxRes = r.max || 1;
+                } else {
+                    break;
+                }
+            }
+            let pct = Math.floor((res / maxRes) * 100);
+            hpText = `체력: ${Math.floor(res)}/${Math.floor(maxRes)} (${pct}%)`;
+        }
+
         let labelText = "";
         if (resourceUpdates.length > 0 && resourceUpdates[0].resource_type !== "None") {
             let resName = resourceUpdates[0].resource_type;
@@ -1334,6 +1396,10 @@
             labelText = `${resName}: ${Math.floor(res)}/${Math.floor(maxRes)} (${pct}%)`;
         } else {
             labelText = `소모값 없음`;
+        }
+
+        if (hpText !== "") {
+            labelText = hpText + " | " + labelText;
         }
 
         if (currentDmg > 0) {
