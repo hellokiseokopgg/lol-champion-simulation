@@ -921,7 +921,8 @@
     
     let primaryChamp = null;
     if (typeof statsData !== 'undefined' && Object.keys(statsData).length > 0) {
-        primaryChamp = Object.keys(statsData)[0];
+        let keys = Object.keys(statsData);
+        primaryChamp = keys.find(k => !k.toLowerCase().includes("dummy")) || keys[0];
     } else if (casts.length > 0) {
         primaryChamp = casts[0].source;
     }
