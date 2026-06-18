@@ -1,4 +1,5 @@
 const { chromium } = require('playwright');
+const path = require('path');
 
 (async () => {
   const browser = await chromium.launch();
@@ -6,12 +7,13 @@ const { chromium } = require('playwright');
     viewport: { width: 1400, height: 1600 }
   });
   
-  const reportPath = '/Users/kskim/Projects/lol-champion-simulation/report.html';
-  await page.goto(`file://${reportPath}`);
+  const reportPath = path.resolve(__dirname, '../report.html');
+  await page.goto(`file://${reportPath}`, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(1000);
   
-  await page.screenshot({ path: '/Users/kskim/.gemini/antigravity/brain/003cff05-0e8c-48df-abb6-a1172da68096/default_folded_screenshot.png', fullPage: true });
-  console.log('Screenshot saved to default_folded_screenshot.png');
+  const screenshotPath = path.resolve(__dirname, 'report_screenshot.png');
+  await page.screenshot({ path: screenshotPath, fullPage: true });
+  console.log('Screenshot saved to report_screenshot.png');
 
   await browser.close();
 })();

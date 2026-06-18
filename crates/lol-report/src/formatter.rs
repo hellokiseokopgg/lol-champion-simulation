@@ -367,6 +367,7 @@ impl Formatter {
         }
         json_runes.push('}');
 
+        let json_stats = serde_json::to_string(&collector.champion_initial_stats).unwrap_or_else(|_| "{}".to_string());
         let template = include_str!("report_template.html");
         let rune_trees_json = include_str!("runesReforged.json");
         template
@@ -375,5 +376,6 @@ impl Formatter {
             .replace("/* __ITEMS_JSON__ */", &json_items)
             .replace("/* __RUNES_JSON__ */", &json_runes)
             .replace("/* __RUNE_TREES_JSON__ */", rune_trees_json)
+            .replace("/* __STATS_JSON__ */", &json_stats)
     }
 }

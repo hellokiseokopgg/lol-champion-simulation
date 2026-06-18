@@ -57,6 +57,7 @@ pub struct DataCollector {
     pub champion_items: std::collections::HashMap<ChampionId, Vec<(String, String)>>,
     // (id, name, tree)
     pub champion_runes: std::collections::HashMap<ChampionId, Vec<(String, String, String)>>,
+    pub champion_initial_stats: std::collections::HashMap<lol_core::types::ChampionId, lol_core::stats::StatBlock>,
 }
 
 impl DataCollector {
@@ -65,6 +66,7 @@ impl DataCollector {
             events: Vec::new(),
             champion_items: std::collections::HashMap::new(),
             champion_runes: std::collections::HashMap::new(),
+            champion_initial_stats: std::collections::HashMap::new(),
         }
     }
 

@@ -664,6 +664,7 @@
     const itemsData = /* __ITEMS_JSON__ */;
     const runesData = /* __RUNES_JSON__ */;
     const runeTreesData = /* __RUNE_TREES_JSON__ */;
+    const statsData = /* __STATS_JSON__ */;
     
     // UI Elements
     const timelineInner = document.getElementById('timelineInner');
@@ -774,6 +775,60 @@
             }
             
             html += runePageHtml;
+
+            if (typeof statsData !== 'undefined' && statsData[champ]) {
+                const s = statsData[champ];
+                
+                const formatVal = (v, isPct = false, decimals = 0) => {
+                    if (v === undefined || v === null) return '0';
+                    let val = isPct ? v * 100 : v;
+                    return val.toFixed(decimals);
+                };
+                
+                const formatAS = (v) => {
+                    if (v === undefined || v === null) return '0.000';
+                    return v.toFixed(3);
+                };
+                
+                const statsList = [
+                    { label: 'Health', value: formatVal(s.health, false, 0), icon: '❤️' },
+                    { label: 'Mana/Resource', value: formatVal(s.mana, false, 0), icon: '💧' },
+                    { label: 'Attack Damage', value: formatVal(s.attack_damage, false, 0), icon: '⚔️' },
+                    { label: 'Ability Power', value: formatVal(s.ability_power, false, 0), icon: '✨' },
+                    { label: 'Armor', value: formatVal(s.armor, false, 0), icon: '🛡️' },
+                    { label: 'Magic Resist', value: formatVal(s.magic_resist, false, 0), icon: '🔮' },
+                    { label: 'Attack Speed', value: formatAS(s.attack_speed), icon: '⚡' },
+                    { label: 'Ability Haste', value: formatVal(s.ability_haste, false, 0), icon: '⏱️' },
+                    { label: 'Movement Speed', value: formatVal(s.movement_speed, false, 0), icon: '👟' },
+                    { label: 'Crit Chance', value: formatVal(s.crit_chance, true, 0) + '%', icon: '💥' },
+                    { label: 'Armor Pen', value: `${formatVal(s.armor_pen_flat, false, 0)} | ${formatVal(s.armor_pen_percent, true, 0)}%`, icon: '🎯' },
+                    { label: 'Magic Pen', value: `${formatVal(s.magic_pen_flat, false, 0)} | ${formatVal(s.magic_pen_percent, true, 0)}%`, icon: '🌟' }
+                ];
+                
+                let statsHtml = `
+                    <div style="margin-top: 16px; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px; font-family: sans-serif;">
+                        <div style="font-size: 13px; font-weight: bold; color: #9ca3af; margin-bottom: 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 4px;">Starting Stats</div>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 16px;">
+                `;
+                
+                statsList.forEach(item => {
+                    statsHtml += `
+                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #d1d5db; padding: 2px 0;">
+                            <span style="display: flex; align-items: center; gap: 4px; color: #9ca3af;">
+                                <span>${item.icon}</span>
+                                <span>${item.label}</span>
+                            </span>
+                            <span style="font-weight: 600; color: #f3f4f6;">${item.value}</span>
+                        </div>
+                    `;
+                });
+                
+                statsHtml += `
+                        </div>
+                    </div>
+                `;
+                html += statsHtml;
+            }
 
             col.innerHTML = html;
             itemsContainer.appendChild(col);

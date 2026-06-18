@@ -14,6 +14,7 @@ version = "0.1.0"
 edition = "2024"
 description = "League of Legends 1v1 champion combat simulation engine"
 license = "MIT"
+default-run = "lol-champion-simulation"
 
 [dependencies]
 lol-core = { path = "crates/lol-core" }
