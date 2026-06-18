@@ -1191,22 +1191,43 @@
         // 3. SVG Resource Graph Background
         if (resourceUpdates.length > 0) {
             const h = 220; // height of inner
+            let strokePath = ``;
             let fillPath = `M 0 ${h} `; 
+            let first = true;
+            let lastY = h;
             
             resourceUpdates.forEach(r => {
                 let x = r.time * PX_PER_SEC + OFFSET_X;
-                let y = h - (r.amount / r.max) * (h - 100); // map to bottom part
-                fillPath += `L ${x} ${y} `;
+                let y = h - (r.amount / r.max) * (h - 20); // map to the same height as damage graph
+                if (first) {
+                    strokePath += `M 0 ${y} L ${x} ${y} `;
+                    fillPath += `L 0 ${y} L ${x} ${y} `;
+                    first = false;
+                } else {
+                    strokePath += `L ${x} ${lastY} L ${x} ${y} `;
+                    fillPath += `L ${x} ${lastY} L ${x} ${y} `;
+                }
+                lastY = y;
             });
             
             const endX = totalWidth;
-            fillPath += `L ${endX} ${h} Z`;
+            if (!first) {
+                strokePath += `L ${endX} ${lastY}`;
+                fillPath += `L ${endX} ${lastY} L ${endX} ${h} Z`;
 
-            const pathFill = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            pathFill.setAttribute("d", fillPath);
-            pathFill.setAttribute("fill", "var(--color-cyan)");
-            pathFill.setAttribute("opacity", "0.2"); // Added opacity for better layering
-            svgGraph.appendChild(pathFill);
+                const pathStroke = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                pathStroke.setAttribute("d", strokePath);
+                pathStroke.setAttribute("fill", "none");
+                pathStroke.setAttribute("stroke", "var(--color-cyan)");
+                pathStroke.setAttribute("stroke-width", "2");
+                svgGraph.appendChild(pathStroke);
+
+                const pathFill = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                pathFill.setAttribute("d", fillPath);
+                pathFill.setAttribute("fill", "var(--color-cyan)");
+                pathFill.setAttribute("opacity", "0.1"); 
+                svgGraph.appendChild(pathFill);
+            }
         }
 
         // 4. SVG Cumulative Damage Graph
