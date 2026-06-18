@@ -1189,19 +1189,32 @@
 
 
         // 3. SVG Resource Graph Background
-        if (resourceUpdates.length > 0) {
+        if (resourceUpdates.length > 0 && resourceUpdates[0].buff_name !== "None") {
             const h = 220; // height of inner
             let strokePath = ``;
             let fillPath = `M 0 ${h} `; 
             let first = true;
             let lastY = h;
+
+            let cumulativeRes = 0;
+            let lastRes = resourceUpdates[0].max;
+            let resPoints = [];
             
             resourceUpdates.forEach(r => {
-                let x = r.time * PX_PER_SEC + OFFSET_X;
-                let y = h - (r.amount / r.max) * (h - 20); // map to the same height as damage graph
+                let diff = lastRes - r.amount;
+                if (diff > 0) cumulativeRes += diff; // accumulate consumed amount
+                lastRes = r.amount;
+                resPoints.push({ time: r.time, consumed: cumulativeRes });
+            });
+            
+            let maxResConsumed = cumulativeRes > 0 ? cumulativeRes : 1;
+            
+            resPoints.forEach(p => {
+                let x = p.time * PX_PER_SEC + OFFSET_X;
+                let y = h - (p.consumed / maxResConsumed) * (h - 20); // starts at h (0 consumed), goes up
                 if (first) {
-                    strokePath += `M 0 ${y} L ${x} ${y} `;
-                    fillPath += `L 0 ${y} L ${x} ${y} `;
+                    strokePath += `M 0 ${h} L ${x} ${h} L ${x} ${y} `;
+                    fillPath += `L ${x} ${h} L ${x} ${y} `;
                     first = false;
                 } else {
                     strokePath += `L ${x} ${lastY} L ${x} ${y} `;
@@ -1304,18 +1317,26 @@
         }
 
         let labelText = "";
-        if (resourceUpdates.length > 0) {
-            let res = resourceUpdates[0].max;
-            let maxRes = resourceUpdates[0].max || 1;
+        if (resourceUpdates.length > 0 && resourceUpdates[0].buff_name !== "None") {
+            let resName = resourceUpdates[0].buff_name;
+            if (resName === "Mana") resName = "마나";
+            else if (resName === "Energy") resName = "기력";
+            else if (resName === "Rage") resName = "분노";
+
+            let cumulativeConsumed = 0;
+            let lastAmt = resourceUpdates[0].max;
+            
             for(let r of resourceUpdates) {
-                if(r.time <= playTime) { res = r.amount; maxRes = r.max || 1; }
+                if(r.time <= playTime) { 
+                    let diff = lastAmt - r.amount;
+                    if (diff > 0) cumulativeConsumed += diff;
+                    lastAmt = r.amount;
+                } else {
+                    break;
+                }
             }
-            if (resourceUpdates[0].buff_name === "None") {
-                labelText = `소모값 없음`;
-            } else {
-                let pct = Math.floor((res / maxRes) * 100);
-                labelText = `${Math.floor(res)}/${Math.floor(maxRes)} (${pct}%)`;
-            }
+            
+            labelText = `누적 ${resName} 소모: ${Math.floor(cumulativeConsumed)}`;
         } else {
             labelText = `소모값 없음`;
         }
