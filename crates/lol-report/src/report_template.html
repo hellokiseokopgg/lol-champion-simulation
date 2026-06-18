@@ -1016,7 +1016,7 @@
                 for (let i = 0; i < resourceUpdates.length; i++) {
                     let r = resourceUpdates[i];
                     if (Math.abs(r.time - cast.time) < 0.05) {
-                        let prevAmount = i > 0 ? resourceUpdates[i-1].amount : 100; // default max 100 for percentage
+                        let prevAmount = i > 0 ? resourceUpdates[i-1].amount : r.max; // use r.max for initial baseline
                         deltaVal = r.amount - prevAmount;
                         break;
                     }
@@ -1284,11 +1284,17 @@
 
         let labelText = "";
         if (resourceUpdates.length > 0) {
-            let res = 100;
+            let res = resourceUpdates[0].max;
+            let maxRes = resourceUpdates[0].max || 1;
             for(let r of resourceUpdates) {
-                if(r.time <= playTime) res = r.amount;
+                if(r.time <= playTime) { res = r.amount; maxRes = r.max || 1; }
             }
-            labelText = `${Math.floor(res)}/100 (${Math.floor(res)}%)`;
+            if (resourceUpdates[0].buff_name === "None") {
+                labelText = `소모값 없음`;
+            } else {
+                let pct = Math.floor((res / maxRes) * 100);
+                labelText = `${Math.floor(res)}/${Math.floor(maxRes)} (${pct}%)`;
+            }
         } else {
             labelText = `소모값 없음`;
         }

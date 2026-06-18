@@ -113,6 +113,26 @@ impl SimContext {
         ));
     }
 
+    pub fn consume_resource(&mut self, actor: &crate::types::ChampionId, amount: f64) {
+        let (current, max, rtype) = if let Some(champ_ref) = self.champions.get(actor) {
+            let mut champ = champ_ref.borrow_mut();
+            champ.state_mut().resource.reduce(amount);
+            (champ.state().resource.current, champ.state().resource.max, champ.state().resource.resource_type)
+        } else {
+            return;
+        };
+
+        if let Some(recorder) = &self.recorder {
+            recorder.borrow_mut().record_resource_update(
+                self.current_time,
+                actor.clone(),
+                format!("{:?}", rtype),
+                current,
+                max,
+            );
+        }
+    }
+
     pub fn trigger_on_hit(
         &mut self,
         actor: &crate::types::ChampionId,

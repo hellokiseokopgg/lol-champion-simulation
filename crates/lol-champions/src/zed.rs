@@ -453,14 +453,13 @@ impl Ability for ZedQ {
     }
     fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, target: &ChampionId) {
         let level = if let Some(champ_ref) = ctx.champions.get(actor) {
-            let mut champ = champ_ref.borrow_mut();
-            let lvl = champ.state().abilities.get_state(AbilitySlot::Q).map(|s| s.level).unwrap_or(1);
-            let cost = 75.0 - (lvl as f64 - 1.0) * 5.0;
-            champ.state_mut().resource.reduce(cost);
-            lvl
+            let champ = champ_ref.borrow();
+            champ.state().abilities.get_state(AbilitySlot::Q).map(|s| s.level).unwrap_or(1)
         } else {
             1
         };
+        let cost = 75.0 - (level as f64 - 1.0) * 5.0;
+        ctx.consume_resource(actor, cost);
 
         let base_damage = 80.0 + (level as f64 - 1.0) * 35.0;
 
@@ -581,15 +580,14 @@ impl Ability for ZedW {
         40.0 - (level as f64 - 1.0) * 5.0
     }
     fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, _target: &ChampionId) {
-        let _level = if let Some(champ_ref) = ctx.champions.get(actor) {
-            let mut champ = champ_ref.borrow_mut();
-            let lvl = champ.state().abilities.get_state(AbilitySlot::W).map(|s| s.level).unwrap_or(1);
-            let cost = 40.0 - (lvl as f64 - 1.0) * 5.0;
-            champ.state_mut().resource.reduce(cost);
-            lvl
+        let level = if let Some(champ_ref) = ctx.champions.get(actor) {
+            let champ = champ_ref.borrow();
+            champ.state().abilities.get_state(AbilitySlot::W).map(|s| s.level).unwrap_or(1)
         } else {
             1
         };
+        let cost = 40.0 - (level as f64 - 1.0) * 5.0;
+        ctx.consume_resource(actor, cost);
 
         ctx.apply_buff(actor, Box::new(ZedShadowBuff));
     }
@@ -620,10 +618,7 @@ impl Ability for ZedE {
         50.0
     }
     fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, target: &ChampionId) {
-        if let Some(champ_ref) = ctx.champions.get(actor) {
-            let mut champ = champ_ref.borrow_mut();
-            champ.state_mut().resource.reduce(50.0);
-        }
+        ctx.consume_resource(actor, 50.0);
 
         let level = if let Some(champ_ref) = ctx.champions.get(actor) {
             champ_ref.borrow().state().abilities.get_state(AbilitySlot::E).map(|s| s.level).unwrap_or(1)

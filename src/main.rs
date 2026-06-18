@@ -412,6 +412,14 @@ fn main() {
                     let mut coll = collector.borrow_mut();
                     coll.champion_initial_stats.insert(id_a.clone(), inst_a.borrow().state().stats.initial.clone());
                     coll.champion_initial_stats.insert(id_b.clone(), inst_b.borrow().state().stats.initial.clone());
+
+                    let champ_a = inst_a.borrow();
+                    let res_a = &champ_a.state().resource;
+                    coll.record_resource_update(lol_core::types::SimTime::new(0.0), id_a.clone(), format!("{:?}", res_a.resource_type), res_a.current, res_a.max);
+                    
+                    let champ_b = inst_b.borrow();
+                    let res_b = &champ_b.state().resource;
+                    coll.record_resource_update(lol_core::types::SimTime::new(0.0), id_b.clone(), format!("{:?}", res_b.resource_type), res_b.current, res_b.max);
                 }
                 collector
                     .borrow_mut()

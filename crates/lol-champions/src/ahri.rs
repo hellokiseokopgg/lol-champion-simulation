@@ -311,14 +311,13 @@ impl Ability for AhriQ {
     }
     fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, target: &ChampionId) {
         let level = if let Some(champ_ref) = ctx.champions.get(actor) {
-            let mut champ = champ_ref.borrow_mut();
-            let lvl = champ.state().abilities.get_state(AbilitySlot::Q).map(|s| s.level).unwrap_or(1);
-            let cost = 55.0 + (lvl as f64 - 1.0) * 5.0;
-            champ.state_mut().resource.reduce(cost);
-            lvl
+            let champ = champ_ref.borrow();
+            champ.state().abilities.get_state(AbilitySlot::Q).map(|s| s.level).unwrap_or(1)
         } else {
             1
         };
+        let cost = 55.0 + (level as f64 - 1.0) * 5.0;
+        ctx.consume_resource(actor, cost);
 
         let base_damage = 40.0 + (level as f64 - 1.0) * 25.0;
 
@@ -457,12 +456,12 @@ impl Ability for AhriW {
     }
     fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, target: &ChampionId) {
         let level = if let Some(champ_ref) = ctx.champions.get(actor) {
-            let mut champ = champ_ref.borrow_mut();
-            champ.state_mut().resource.reduce(40.0);
+            let champ = champ_ref.borrow();
             champ.state().abilities.get_state(AbilitySlot::W).map(|s| s.level).unwrap_or(1)
         } else {
             1
         };
+        ctx.consume_resource(actor, 40.0);
 
         let base_damage = 50.0 + (level as f64 - 1.0) * 25.0;
 
@@ -536,12 +535,12 @@ impl Ability for AhriE {
     }
     fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, target: &ChampionId) {
         let level = if let Some(champ_ref) = ctx.champions.get(actor) {
-            let mut champ = champ_ref.borrow_mut();
-            champ.state_mut().resource.reduce(70.0);
+            let champ = champ_ref.borrow();
             champ.state().abilities.get_state(AbilitySlot::E).map(|s| s.level).unwrap_or(1)
         } else {
             1
         };
+        ctx.consume_resource(actor, 70.0);
 
         let base_damage = 80.0 + (level as f64 - 1.0) * 30.0;
 
@@ -641,9 +640,7 @@ impl Ability for AhriR {
 
             if is_first {
                 // First dash consumes 100 mana and sets up charges
-                if let Some(champ_ref) = ctx.champions.get(actor) {
-                    champ_ref.borrow_mut().state_mut().resource.reduce(100.0);
-                }
+                ctx.consume_resource(actor, 100.0);
                 custom.spirit_rush_charges = 2; // 1st is consumed now, 2 remaining
                 custom.spirit_rush_window_end = ctx.current_time.as_f64() + 15.0;
 

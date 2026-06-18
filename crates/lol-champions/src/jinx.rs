@@ -314,13 +314,8 @@ impl Ability for JinxAutoAttack {
             }
         }
 
-        let mut target_champ = None;
         if cost_mana {
-            target_champ = ctx.champions.get(actor);
-        }
-        if let Some(champ_ref) = target_champ {
-            let mut champ = champ_ref.borrow_mut();
-            champ.state_mut().resource.reduce(20.0);
+            ctx.consume_resource(actor, 20.0);
         }
 
         let raw_damage = if use_fishbones {
@@ -441,14 +436,13 @@ impl Ability for JinxW {
     }
     fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, target: &ChampionId) {
         let level = if let Some(champ_ref) = ctx.champions.get(actor) {
-            let mut champ = champ_ref.borrow_mut();
-            let lvl = champ.state().abilities.get_state(AbilitySlot::W).map(|s| s.level).unwrap_or(1);
-            let cost = 50.0 + (lvl as f64 - 1.0) * 10.0;
-            champ.state_mut().resource.reduce(cost);
-            lvl
+            let champ = champ_ref.borrow();
+            champ.state().abilities.get_state(AbilitySlot::W).map(|s| s.level).unwrap_or(1)
         } else {
             1
         };
+        let cost = 50.0 + (level as f64 - 1.0) * 10.0;
+        ctx.consume_resource(actor, cost);
 
         let base_damage = 10.0 + (level as f64 - 1.0) * 50.0;
 
@@ -524,12 +518,12 @@ impl Ability for JinxE {
     }
     fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, target: &ChampionId) {
         let level = if let Some(champ_ref) = ctx.champions.get(actor) {
-            let mut champ = champ_ref.borrow_mut();
-            champ.state_mut().resource.reduce(70.0);
+            let champ = champ_ref.borrow();
             champ.state().abilities.get_state(AbilitySlot::E).map(|s| s.level).unwrap_or(1)
         } else {
             1
         };
+        ctx.consume_resource(actor, 70.0);
 
         let base_damage = 70.0 + (level as f64 - 1.0) * 50.0;
 
@@ -602,12 +596,12 @@ impl Ability for JinxR {
     }
     fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, target: &ChampionId) {
         let level = if let Some(champ_ref) = ctx.champions.get(actor) {
-            let mut champ = champ_ref.borrow_mut();
-            champ.state_mut().resource.reduce(100.0);
+            let champ = champ_ref.borrow();
             champ.state().abilities.get_state(AbilitySlot::R).map(|s| s.level).unwrap_or(1)
         } else {
             1
         };
+        ctx.consume_resource(actor, 100.0);
 
         let base_damage = 300.0 + (level as f64 - 1.0) * 150.0;
 
