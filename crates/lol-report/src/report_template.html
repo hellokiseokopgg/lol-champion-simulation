@@ -918,7 +918,15 @@
     const casts = events.filter(e => e.type === "cast");
     const damages = events.filter(e => e.type === "damage");
     const buffs = events.filter(e => e.type === "buff_apply");
-    let resourceUpdates = events.filter(e => e.type === "resource_update");
+    
+    let primaryChamp = null;
+    if (typeof statsData !== 'undefined' && Object.keys(statsData).length > 0) {
+        primaryChamp = Object.keys(statsData)[0];
+    } else if (casts.length > 0) {
+        primaryChamp = casts[0].source;
+    }
+    
+    let resourceUpdates = events.filter(e => e.type === "resource_update" && e.target === primaryChamp);
 
     
     let maxTime = 0;
@@ -1189,7 +1197,7 @@
 
 
         // 3. SVG Resource Graph Background
-        if (resourceUpdates.length > 0 && resourceUpdates[0].buff_name !== "None") {
+        if (resourceUpdates.length > 0 && resourceUpdates[0].resource_type !== "None") {
             const h = 220; // height of inner
             let strokePath = ``;
             let fillPath = `M 0 ${h} `; 
@@ -1304,8 +1312,8 @@
         }
 
         let labelText = "";
-        if (resourceUpdates.length > 0 && resourceUpdates[0].buff_name !== "None") {
-            let resName = resourceUpdates[0].buff_name;
+        if (resourceUpdates.length > 0 && resourceUpdates[0].resource_type !== "None") {
+            let resName = resourceUpdates[0].resource_type;
             if (resName === "Mana") resName = "마나";
             else if (resName === "Energy") resName = "기력";
             else if (resName === "Rage") resName = "분노";
