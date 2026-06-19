@@ -1,0 +1,7 @@
+items=3031,3046,3033
+runes=8010,9111,9104,8299,8473,8451
+actions+=/W
+actions+=/Q
+actions+=/R
+actions+=/E
+actions+=/AutoAttack

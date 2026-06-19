@@ -1,6 +1,7 @@
 pub mod ahri;
 pub mod darius;
 pub mod dummy;
+pub mod ezreal;
 pub mod garen;
 pub mod jinx;
 pub mod zed;
@@ -26,6 +27,7 @@ impl ChampionRegistry {
         registry.register(Box::new(ahri::AhriModule));
         registry.register(Box::new(darius::DariusModule));
         registry.register(Box::new(dummy::DummyModule));
+        registry.register(Box::new(ezreal::EzrealModule));
         registry.register(Box::new(garen::GarenModule));
         registry.register(Box::new(jinx::JinxModule));
         registry.register(Box::new(zed::ZedModule));

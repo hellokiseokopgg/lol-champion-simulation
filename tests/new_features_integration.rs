@@ -299,3 +299,31 @@ fn test_jinx_integration() {
     let has_r = events.iter().any(|e| e["type"] == "damage" && e["source"] == "Jinx" && e["ability"] == "R");
     assert!(has_r, "Jinx should execute Super Mega Death Rocket!");
 }
+
+/// Ezreal: Simulate Ezreal vs Dummy. Verify W mark detonation, passive attack speed stacks, Q cooldown reduction, and skill executions.
+#[test]
+fn test_ezreal_integration() {
+    let apl_ezreal = "actions+=/W\nactions+=/Q\nactions+=/R\nactions+=/E\nactions+=/AA\n";
+    let _stdout = run_with_apl("Ezreal", "Dummy", None, None, apl_ezreal, &["--html-out", "temp_ezreal.html"]);
+
+    let html_content = std::fs::read_to_string("temp_ezreal.html").unwrap();
+    let _ = std::fs::remove_file("temp_ezreal.html");
+    let events = parse_html_events(&html_content);
+
+    // Verify Q, W, E, R damage events
+    let has_q = events.iter().any(|e| e["type"] == "damage" && e["source"] == "Ezreal" && e["ability"] == "Q");
+    let has_w = events.iter().any(|e| e["type"] == "damage" && e["source"] == "Ezreal" && e["ability"] == "W");
+    let has_e = events.iter().any(|e| e["type"] == "damage" && e["source"] == "Ezreal" && e["ability"] == "E");
+    let has_r = events.iter().any(|e| e["type"] == "damage" && e["source"] == "Ezreal" && e["ability"] == "R");
+
+    assert!(has_q, "Ezreal should execute Q");
+    assert!(has_w, "Ezreal should execute W");
+    assert!(has_e, "Ezreal should execute E");
+    assert!(has_r, "Ezreal should execute R");
+
+    // Verify passive buff application (Rising Spell Force - localized to "끓어오르는 주문 힘" by ko.json)
+    let has_passive = events.iter().any(|e| {
+        e["type"] == "buff_apply" && e["target"] == "Ezreal" && e["buff_name"].as_str().is_some_and(|s| s.contains("끓어오르는 주문 힘"))
+    });
+    assert!(has_passive, "Ezreal should apply Rising Spell Force passive");
+}

@@ -1,0 +1,62 @@
+{
+    "id": "ezreal",
+    "name": "Ezreal",
+    "base_stats": {
+        "hp": 600.0,
+        "mp": 375.0,
+        "hp_regen": 4.0,
+        "mp_regen": 8.5,
+        "armor": 24.0,
+        "magic_resist": 30.0,
+        "attack_damage": 62.0,
+        "attack_speed": 0.625,
+        "attack_range": 550.0,
+        "move_speed": 330.0,
+        "attack_delay_offset": 0.0,
+        "attack_speed_ratio": 0.625
+    },
+    "growth_stats": {
+        "hp": 102.0,
+        "mp": 70.0,
+        "hp_regen": 0.65,
+        "mp_regen": 0.65,
+        "armor": 4.7,
+        "magic_resist": 1.3,
+        "attack_damage": 2.5,
+        "attack_speed": 0.025
+    },
+    "skills": [
+        {
+            "id": "ezreal_q",
+            "name": "Mystic Shot",
+            "base_damage": [20.0, 45.0, 70.0, 95.0, 120.0],
+            "cooldowns": [5.5, 5.25, 5.0, 4.75, 4.5],
+            "ad_ratio": [1.3, 1.3, 1.3, 1.3, 1.3],
+            "ap_ratio": [0.15, 0.15, 0.15, 0.15, 0.15]
+        },
+        {
+            "id": "ezreal_w",
+            "name": "Essence Flux",
+            "base_damage": [80.0, 135.0, 190.0, 245.0, 300.0],
+            "cooldowns": [12.0, 11.0, 10.0, 9.0, 8.0],
+            "ad_ratio": [0.0, 0.0, 0.0, 0.0, 0.0],
+            "ap_ratio": [0.7, 0.7, 0.7, 0.7, 0.7]
+        },
+        {
+            "id": "ezreal_e",
+            "name": "Arcane Shift",
+            "base_damage": [80.0, 130.0, 180.0, 230.0, 280.0],
+            "cooldowns": [28.0, 25.0, 22.0, 19.0, 16.0],
+            "ad_ratio": [0.0, 0.0, 0.0, 0.0, 0.0],
+            "ap_ratio": [0.75, 0.75, 0.75, 0.75, 0.75]
+        },
+        {
+            "id": "ezreal_r",
+            "name": "Trueshot Barrage",
+            "base_damage": [350.0, 500.0, 650.0],
+            "cooldowns": [120.0, 105.0, 90.0],
+            "ad_ratio": [0.0, 0.0, 0.0],
+            "ap_ratio": [0.9, 0.9, 0.9]
+        }
+    ]
+}
