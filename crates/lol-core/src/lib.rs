@@ -17,7 +17,7 @@ pub use buff::*;
 pub use champion::*;
 pub use cooldown::*;
 pub use damage::*;
-pub use event::{EventManager, SimContext, SimEvent, RegenTickEvent};
+pub use event::{EventManager, RegenTickEvent, SimContext, SimEvent};
 pub use item::*;
 pub use resource::*;
 pub use rune::*;

@@ -4,7 +4,7 @@ use lol_core::champion::{ChampionConfig, ChampionInstance, ChampionModule, Champ
 use lol_core::damage::DamagePipeline;
 use lol_core::event::{SimContext, SimEvent};
 use lol_core::stats::StatBlock;
-use lol_core::types::{AbilitySlot, ChampionId, DamageType, EffectId, CCType};
+use lol_core::types::{AbilitySlot, CCType, ChampionId, DamageType, EffectId};
 
 pub struct JinxModule;
 
@@ -125,10 +125,12 @@ impl ChampionInstance for JinxInstance {
             1.0
         };
         total_bonus = total_bonus
-            + self
-                .state
-                .rune_manager
-                .get_bonus_stats(time, &self.state.stats.base, level, hp_ratio);
+            + self.state.rune_manager.get_bonus_stats(
+                time,
+                &self.state.stats.base,
+                level,
+                hp_ratio,
+            );
         self.state.stats.recalculate_current(&total_bonus);
     }
 
@@ -284,7 +286,11 @@ impl Ability for JinxAutoAttack {
     }
     fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, target: &ChampionId) {
         let is_fishbones = if let Some(champ_ref) = ctx.champions.get(actor) {
-            champ_ref.borrow().state().buffs.has_effect_by_id(&EffectId("JinxFishbones".into()), ctx.current_time)
+            champ_ref
+                .borrow()
+                .state()
+                .buffs
+                .has_effect_by_id(&EffectId("JinxFishbones".into()), ctx.current_time)
         } else {
             false
         };
@@ -318,7 +324,10 @@ impl Ability for JinxAutoAttack {
                 // Out of mana: switch stance back to minigun automatically
                 if let Some(champ_ref) = ctx.champions.get(actor) {
                     let mut champ = champ_ref.borrow_mut();
-                    champ.state_mut().buffs.remove_effect(&EffectId("JinxFishbones".into()));
+                    champ
+                        .state_mut()
+                        .buffs
+                        .remove_effect(&EffectId("JinxFishbones".into()));
                     champ.update_stats(ctx.current_time);
                 }
             }
@@ -357,12 +366,23 @@ impl Ability for JinxAutoAttack {
         // Trigger on-hit effects
         ctx.trigger_on_hit(actor, target, &damage_result);
         ctx.trigger_on_physical_damage(actor, target, &damage_result);
-        ctx.trigger_on_damage_dealt(actor, damage_result.final_damage, false, AbilitySlot::AutoAttack);
+        ctx.trigger_on_damage_dealt(
+            actor,
+            damage_result.final_damage,
+            false,
+            AbilitySlot::AutoAttack,
+        );
 
         // Apply minigun stack if not fishbones, decay stack if fishbones
         if !use_fishbones {
             let q_level = if let Some(champ_ref) = ctx.champions.get(actor) {
-                champ_ref.borrow().state().abilities.get_state(AbilitySlot::Q).map(|s| s.level).unwrap_or(1)
+                champ_ref
+                    .borrow()
+                    .state()
+                    .abilities
+                    .get_state(AbilitySlot::Q)
+                    .map(|s| s.level)
+                    .unwrap_or(1)
             } else {
                 1
             };
@@ -370,15 +390,26 @@ impl Ability for JinxAutoAttack {
         } else {
             if let Some(champ_ref) = ctx.champions.get(actor) {
                 let mut champ = champ_ref.borrow_mut();
-                champ.state_mut().buffs.decrement_stacks(&EffectId("JinxPowPow".into()));
+                champ
+                    .state_mut()
+                    .buffs
+                    .decrement_stacks(&EffectId("JinxPowPow".into()));
                 champ.update_stats(ctx.current_time);
             }
         }
 
         if let Some(d) = ctx.champions.get(target) {
-            let is_dead = d.borrow_mut().take_damage(damage_result.final_damage).is_dead;
+            let is_dead = d
+                .borrow_mut()
+                .take_damage(damage_result.final_damage)
+                .is_dead;
             if is_dead {
-                ctx.new_events.push((0.0, Box::new(lol_core::event::DeathEvent { target: target.clone() })));
+                ctx.new_events.push((
+                    0.0,
+                    Box::new(lol_core::event::DeathEvent {
+                        target: target.clone(),
+                    }),
+                ));
             }
         }
     }
@@ -406,11 +437,21 @@ impl Ability for JinxQ {
     fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, _target: &ChampionId) {
         if let Some(champ_ref) = ctx.champions.get(actor) {
             let mut champ = champ_ref.borrow_mut();
-            let has_fb = champ.state().buffs.has_effect_by_id(&EffectId("JinxFishbones".into()), ctx.current_time);
+            let has_fb = champ
+                .state()
+                .buffs
+                .has_effect_by_id(&EffectId("JinxFishbones".into()), ctx.current_time);
             if has_fb {
-                champ.state_mut().buffs.remove_effect(&EffectId("JinxFishbones".into()));
+                champ
+                    .state_mut()
+                    .buffs
+                    .remove_effect(&EffectId("JinxFishbones".into()));
             } else {
-                champ.state_mut().buffs.apply_effect(Box::new(JinxFishbonesBuff), ctx.current_time, 0.0);
+                champ.state_mut().buffs.apply_effect(
+                    Box::new(JinxFishbonesBuff),
+                    ctx.current_time,
+                    0.0,
+                );
             }
             champ.update_stats(ctx.current_time);
         }
@@ -458,7 +499,12 @@ impl Ability for JinxW {
     fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, target: &ChampionId) {
         let level = if let Some(champ_ref) = ctx.champions.get(actor) {
             let champ = champ_ref.borrow();
-            champ.state().abilities.get_state(AbilitySlot::W).map(|s| s.level).unwrap_or(1)
+            champ
+                .state()
+                .abilities
+                .get_state(AbilitySlot::W)
+                .map(|s| s.level)
+                .unwrap_or(1)
         } else {
             1
         };
@@ -504,9 +550,17 @@ impl Ability for JinxW {
         ctx.apply_buff(target, Box::new(JinxWSlow));
 
         if let Some(d) = ctx.champions.get(target) {
-            let is_dead = d.borrow_mut().take_damage(damage_result.final_damage).is_dead;
+            let is_dead = d
+                .borrow_mut()
+                .take_damage(damage_result.final_damage)
+                .is_dead;
             if is_dead {
-                ctx.new_events.push((0.0, Box::new(lol_core::event::DeathEvent { target: target.clone() })));
+                ctx.new_events.push((
+                    0.0,
+                    Box::new(lol_core::event::DeathEvent {
+                        target: target.clone(),
+                    }),
+                ));
             }
         }
     }
@@ -540,7 +594,12 @@ impl Ability for JinxE {
     fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, target: &ChampionId) {
         let level = if let Some(champ_ref) = ctx.champions.get(actor) {
             let champ = champ_ref.borrow();
-            champ.state().abilities.get_state(AbilitySlot::E).map(|s| s.level).unwrap_or(1)
+            champ
+                .state()
+                .abilities
+                .get_state(AbilitySlot::E)
+                .map(|s| s.level)
+                .unwrap_or(1)
         } else {
             1
         };
@@ -584,9 +643,17 @@ impl Ability for JinxE {
         ctx.apply_buff(target, Box::new(JinxERoot));
 
         if let Some(d) = ctx.champions.get(target) {
-            let is_dead = d.borrow_mut().take_damage(damage_result.final_damage).is_dead;
+            let is_dead = d
+                .borrow_mut()
+                .take_damage(damage_result.final_damage)
+                .is_dead;
             if is_dead {
-                ctx.new_events.push((0.0, Box::new(lol_core::event::DeathEvent { target: target.clone() })));
+                ctx.new_events.push((
+                    0.0,
+                    Box::new(lol_core::event::DeathEvent {
+                        target: target.clone(),
+                    }),
+                ));
             }
         }
     }
@@ -618,7 +685,12 @@ impl Ability for JinxR {
     fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, target: &ChampionId) {
         let level = if let Some(champ_ref) = ctx.champions.get(actor) {
             let champ = champ_ref.borrow();
-            champ.state().abilities.get_state(AbilitySlot::R).map(|s| s.level).unwrap_or(1)
+            champ
+                .state()
+                .abilities
+                .get_state(AbilitySlot::R)
+                .map(|s| s.level)
+                .unwrap_or(1)
         } else {
             1
         };
@@ -648,12 +720,16 @@ pub struct JinxRocketImpactEvent {
 
 impl SimEvent for JinxRocketImpactEvent {
     fn execute(&self, ctx: &mut SimContext, _event_manager: &mut lol_core::event::EventManager) {
-        let (attacker_stats, attacker_base) = if let Some(champ_ref) = ctx.champions.get(&self.attacker) {
-            let champ = champ_ref.borrow();
-            (champ.state().stats.current.clone(), champ.state().stats.base.clone())
-        } else {
-            return;
-        };
+        let (attacker_stats, attacker_base) =
+            if let Some(champ_ref) = ctx.champions.get(&self.attacker) {
+                let champ = champ_ref.borrow();
+                (
+                    champ.state().stats.current.clone(),
+                    champ.state().stats.base.clone(),
+                )
+            } else {
+                return;
+            };
 
         let defender_stats = if let Some(d) = ctx.champions.get(&self.defender) {
             d.borrow().state().stats.current.clone()
@@ -695,12 +771,25 @@ impl SimEvent for JinxRocketImpactEvent {
         }
 
         ctx.trigger_on_physical_damage(&self.attacker, &self.defender, &damage_result);
-        ctx.trigger_on_damage_dealt(&self.attacker, damage_result.final_damage, true, AbilitySlot::R);
+        ctx.trigger_on_damage_dealt(
+            &self.attacker,
+            damage_result.final_damage,
+            true,
+            AbilitySlot::R,
+        );
 
         if let Some(d) = ctx.champions.get(&self.defender) {
-            let is_dead = d.borrow_mut().take_damage(damage_result.final_damage).is_dead;
+            let is_dead = d
+                .borrow_mut()
+                .take_damage(damage_result.final_damage)
+                .is_dead;
             if is_dead {
-                ctx.new_events.push((0.0, Box::new(lol_core::event::DeathEvent { target: self.defender.clone() })));
+                ctx.new_events.push((
+                    0.0,
+                    Box::new(lol_core::event::DeathEvent {
+                        target: self.defender.clone(),
+                    }),
+                ));
             }
         }
     }
@@ -712,9 +801,9 @@ impl SimEvent for JinxRocketImpactEvent {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use lol_core::buff::StatusEffect;
     use lol_core::stats::StatBlock;
     use lol_core::types::DamageType;
-    use lol_core::buff::StatusEffect;
 
     #[test]
     fn test_jinx_powpow_stacks_and_attack_speed() {
@@ -740,7 +829,13 @@ mod tests {
         let raw_damage = attacker.attack_damage * 1.10;
         assert!((raw_damage - 110.0).abs() < 1e-6);
 
-        let result = DamagePipeline::process(raw_damage, DamageType::Physical, false, &attacker, &defender);
+        let result = DamagePipeline::process(
+            raw_damage,
+            DamageType::Physical,
+            false,
+            &attacker,
+            &defender,
+        );
         assert!((result.final_damage - 110.0).abs() < 1e-6);
     }
 

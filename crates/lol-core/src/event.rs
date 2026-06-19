@@ -119,7 +119,11 @@ impl SimContext {
         let (current, max, rtype) = if let Some(champ_ref) = self.champions.get(actor) {
             let mut champ = champ_ref.borrow_mut();
             champ.state_mut().resource.reduce(amount);
-            (champ.state().resource.current, champ.state().resource.max, champ.state().resource.resource_type)
+            (
+                champ.state().resource.current,
+                champ.state().resource.max,
+                champ.state().resource.resource_type,
+            )
         } else {
             return;
         };
@@ -177,6 +181,26 @@ impl SimContext {
         }
     }
 
+    pub fn trigger_on_ability_cast(
+        &mut self,
+        actor: &crate::types::ChampionId,
+        slot: crate::types::AbilitySlot,
+    ) {
+        let items = if let Some(champ_ref) = self.champions.get(actor) {
+            std::mem::take(&mut champ_ref.borrow_mut().state_mut().items)
+        } else {
+            return;
+        };
+
+        for effect in items.effects() {
+            effect.on_ability_cast(self, actor, slot);
+        }
+
+        if let Some(champ_ref) = self.champions.get(actor) {
+            champ_ref.borrow_mut().state_mut().items = items;
+        }
+    }
+
     pub fn trigger_on_damage_dealt(
         &mut self,
         actor: &crate::types::ChampionId,
@@ -191,6 +215,22 @@ impl SimContext {
         } else {
             return;
         };
+
+        // Notify item effects of the damage dealt
+        let target_id = self.champions.keys().find(|&k| k != actor).cloned();
+        if let Some(target_id) = &target_id {
+            let items = if let Some(champ_ref) = self.champions.get(actor) {
+                std::mem::take(&mut champ_ref.borrow_mut().state_mut().items)
+            } else {
+                crate::item::ItemManager::new()
+            };
+            for effect in items.effects() {
+                effect.on_damage_dealt(self, actor, target_id, amount, is_ability, slot);
+            }
+            if let Some(champ_ref) = self.champions.get(actor) {
+                champ_ref.borrow_mut().state_mut().items = items;
+            }
+        }
 
         for event in rune_events {
             match event {
@@ -235,11 +275,14 @@ impl SimContext {
                     }
                 }
                 crate::rune_manager::RuneEvent::Healed { amount } => {
-                    self.new_events.push((0.0, Box::new(crate::event::HealEvent {
-                        target: actor.clone(),
-                        source: actor.clone(),
-                        amount,
-                    })));
+                    self.new_events.push((
+                        0.0,
+                        Box::new(crate::event::HealEvent {
+                            target: actor.clone(),
+                            source: actor.clone(),
+                            amount,
+                        }),
+                    ));
                 }
                 crate::rune_manager::RuneEvent::ApplyDebuff {
                     name,
@@ -315,13 +358,18 @@ impl SimContext {
                             &defender_stats,
                         );
 
-                        let (is_dead, current_hp, max_hp) = if let Some(champ_ref) = self.champions.get(&target_id) {
-                            let mut champ = champ_ref.borrow_mut();
-                            let res = champ.take_damage(damage_result.final_damage);
-                            (res.is_dead, champ.state().health.current, champ.state().stats.current.health)
-                        } else {
-                            (false, 0.0, 0.0)
-                        };
+                        let (is_dead, current_hp, max_hp) =
+                            if let Some(champ_ref) = self.champions.get(&target_id) {
+                                let mut champ = champ_ref.borrow_mut();
+                                let res = champ.take_damage(damage_result.final_damage);
+                                (
+                                    res.is_dead,
+                                    champ.state().health.current,
+                                    champ.state().stats.current.health,
+                                )
+                            } else {
+                                (false, 0.0, 0.0)
+                            };
 
                         if let Some(recorder) = &self.recorder {
                             recorder.borrow_mut().record_damage(
@@ -379,37 +427,37 @@ impl SimEvent for DeathEvent {
         if let Some(killer_champ_ref) = killer_id.as_ref().and_then(|id| ctx.champions.get(id)) {
             let killer_id = killer_id.clone().unwrap();
             let mut killer_champ = killer_champ_ref.borrow_mut();
-                let killer_stats = killer_champ.state().stats.current.clone();
-                let current_hp = killer_champ.state().health.current;
-                
-                let rune_events = killer_champ.state_mut().rune_manager.on_takedown(
-                    ctx.current_time,
-                    &killer_stats,
-                    current_hp,
-                );
-                
-                for event in rune_events {
-                    if let crate::rune_manager::RuneEvent::Healed { amount } = event {
-                        let gw = killer_champ.state().stats.current.grievous_wounds;
-                        let actual_heal = amount * f64::max(0.0, 1.0 - gw);
-                        let max_hp = killer_champ.state().stats.current.health;
-                        
-                        killer_champ.state_mut().health.current += actual_heal;
-                        if killer_champ.state().health.current > max_hp {
-                            killer_champ.state_mut().health.current = max_hp;
-                        }
+            let killer_stats = killer_champ.state().stats.current.clone();
+            let current_hp = killer_champ.state().health.current;
 
-                        if let Some(recorder) = &ctx.recorder {
-                            recorder.borrow_mut().record_heal(
-                                ctx.current_time,
-                                killer_id.clone(),
-                                killer_id.clone(),
-                                actual_heal,
-                            );
-                        }
+            let rune_events = killer_champ.state_mut().rune_manager.on_takedown(
+                ctx.current_time,
+                &killer_stats,
+                current_hp,
+            );
+
+            for event in rune_events {
+                if let crate::rune_manager::RuneEvent::Healed { amount } = event {
+                    let gw = killer_champ.state().stats.current.grievous_wounds;
+                    let actual_heal = amount * f64::max(0.0, 1.0 - gw);
+                    let max_hp = killer_champ.state().stats.current.health;
+
+                    killer_champ.state_mut().health.current += actual_heal;
+                    if killer_champ.state().health.current > max_hp {
+                        killer_champ.state_mut().health.current = max_hp;
+                    }
+
+                    if let Some(recorder) = &ctx.recorder {
+                        recorder.borrow_mut().record_heal(
+                            ctx.current_time,
+                            killer_id.clone(),
+                            killer_id.clone(),
+                            actual_heal,
+                        );
                     }
                 }
             }
+        }
 
         ctx.is_simulation_over = true;
     }
@@ -430,7 +478,7 @@ impl SimEvent for HealEvent {
     fn execute(&self, ctx: &mut SimContext, _event_manager: &mut EventManager) {
         if let Some(target_champ) = ctx.champions.get(&self.target) {
             let mut champ = target_champ.borrow_mut();
-            
+
             // Apply Grievous Wounds
             let gw = champ.state().stats.current.grievous_wounds;
             let actual_heal = self.amount * f64::max(0.0, 1.0 - gw);
@@ -699,7 +747,7 @@ impl SimEvent for RegenTickEvent {
             if id.0.to_lowercase().contains("dummy") {
                 let time_secs = ctx.current_time.as_f64();
                 let rem = time_secs % 5.0;
-                if time_secs > 0.0 && (rem < 0.01 || rem > 4.99) {
+                if time_secs > 0.0 && !(0.01..=4.99).contains(&rem) {
                     champ.state_mut().health.current = max_hp;
                     new_hp = max_hp;
                 }

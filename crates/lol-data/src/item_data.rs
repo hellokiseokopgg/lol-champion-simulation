@@ -56,6 +56,8 @@ pub struct ItemStats {
     pub life_steal: f32,
     #[serde(default)]
     pub ability_haste: f32,
+    #[serde(default)]
+    pub ability_power_percent_bonus: f32,
 }
 
 impl ItemData {
@@ -80,6 +82,7 @@ impl ItemData {
                 magic_pen_flat: self.stats.magic_pen_flat as f64,
                 magic_pen_percent: self.stats.magic_pen_percent as f64,
                 life_steal: self.stats.life_steal as f64,
+                ability_power_percent_bonus: self.stats.ability_power_percent_bonus as f64,
                 ..Default::default()
             },
             effects: {
@@ -95,6 +98,33 @@ impl ItemData {
                 }
                 if self.id == "3046" || self.id == "phantom_dancer" {
                     effects.push(Box::new(lol_core::item::PhantomDancerEffect));
+                }
+                if self.id == "3115" || self.id == "nashors_tooth" {
+                    effects.push(Box::new(lol_core::item::NashorsToothEffect));
+                }
+                if self.id == "3089" || self.id == "rabadons_deathcap" {
+                    effects.push(Box::new(lol_core::item::RabadonsDeathcapEffect));
+                }
+                if self.id == "6672" || self.id == "kraken_slayer" {
+                    effects.push(Box::new(lol_core::item::KrakenSlayerEffect));
+                }
+                if self.id == "3091" || self.id == "wits_end" {
+                    effects.push(Box::new(lol_core::item::WitsEndEffect));
+                }
+                if self.id == "3151" || self.id == "liandrys_torment" {
+                    effects.push(Box::new(lol_core::item::LiandrysTormentEffect));
+                }
+                if self.id == "3153" || self.id == "blade_of_the_ruined_king" {
+                    effects.push(Box::new(lol_core::item::BladeOfTheRuinedKingEffect));
+                }
+                if self.id == "3100" || self.id == "lich_bane" {
+                    effects.push(Box::new(lol_core::item::LichBaneEffect));
+                }
+                if self.id == "3078" || self.id == "trinity_force" {
+                    effects.push(Box::new(lol_core::item::TrinityForceEffect));
+                }
+                if self.id == "6655" || self.id == "ludens_companion" {
+                    effects.push(Box::new(lol_core::item::LudensCompanionEffect));
                 }
                 effects
             },

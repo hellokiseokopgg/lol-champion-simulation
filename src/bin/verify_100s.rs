@@ -375,8 +375,10 @@ fn main() {
                 ));
                 {
                     let mut coll = collector.borrow_mut();
-                    coll.champion_initial_stats.insert(id_a.clone(), inst_a.borrow().state().stats.initial.clone());
-                    coll.champion_initial_stats.insert(id_b.clone(), inst_b.borrow().state().stats.initial.clone());
+                    coll.champion_initial_stats
+                        .insert(id_a.clone(), inst_a.borrow().state().stats.initial.clone());
+                    coll.champion_initial_stats
+                        .insert(id_b.clone(), inst_b.borrow().state().stats.initial.clone());
                 }
                 collector
                     .borrow_mut()

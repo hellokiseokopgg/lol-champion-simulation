@@ -36,6 +36,15 @@
 | 10 | Complete Champion Mechanics | Scope: Implement abilities, passive, and status effects for Ahri, Zed, and Jinx. | M7 | DONE |
 | 11 | Final Integration Track & E2E Pass | Scope: Run all E2E tests and ensure 100% pass with 0 regressions. | M8, M9, M10 | DONE |
 | 12 | Adversarial Hardening (Tier 5) | Scope: Edge-case verification and Forensic Audit. | M11 | DONE |
+| 13 | Run 6: Passive Items Data & Localization | Add Nashor's, Rabadon's, and Kraken Slayer to data/items.json and locale files. | None | DONE |
+| 14 | Run 6: Dynamic Item Passive Implementation | Implement the 3 passive mechanics in lol-core and lol-champions. | M13 | DONE |
+| 15 | Run 6: HTML Report Mappings & Timeline Verification | Add mappings in report_template.html and verify report. | M14 | DONE |
+| 16 | Run 6: Verification, Testing & Hardening | Write tests, run E2E suite, perform Forensic Audit. | M15 | DONE |
+| 17 | Run 8: Passive-Only Item Selection (Phase 3) | Add Lich Bane, Trinity Force, and Luden's Companion to items.json. | None | DONE |
+| 18 | Run 8: Dynamic Item Passive Implementation | Implement Spellblade and Luden's charge passives in lol-core, lol-champions, lol-apl. | M17 | DONE |
+| 19 | Run 8: HTML Mappings & Locale | Update ko.json, en.json, and report_template.html. | M18 | DONE |
+| 20 | Run 8: Testing & Verification | Write tests, run E2E, perform Forensic Audit. | M19 | DONE |
+
 
 ## Interface Contracts
 ### `trigger_on_damage_dealt` behavior

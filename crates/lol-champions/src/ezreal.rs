@@ -123,10 +123,12 @@ impl ChampionInstance for EzrealInstance {
             1.0
         };
         total_bonus = total_bonus
-            + self
-                .state
-                .rune_manager
-                .get_bonus_stats(time, &self.state.stats.base, level, hp_ratio);
+            + self.state.rune_manager.get_bonus_stats(
+                time,
+                &self.state.stats.base,
+                level,
+                hp_ratio,
+            );
         self.state.stats.recalculate_current(&total_bonus);
     }
 
@@ -208,7 +210,10 @@ fn check_and_detonate_w(
     triggering_cost: f64,
 ) {
     let has_w = if let Some(d) = ctx.champions.get(target) {
-        d.borrow().state().buffs.has_effect_by_id(&EffectId("EzrealW".into()), ctx.current_time)
+        d.borrow()
+            .state()
+            .buffs
+            .has_effect_by_id(&EffectId("EzrealW".into()), ctx.current_time)
     } else {
         false
     };
@@ -216,12 +221,21 @@ fn check_and_detonate_w(
     if has_w {
         // 1. W 버프 제거
         if let Some(d) = ctx.champions.get(target) {
-            d.borrow_mut().state_mut().buffs.remove_effect(&EffectId("EzrealW".into()));
+            d.borrow_mut()
+                .state_mut()
+                .buffs
+                .remove_effect(&EffectId("EzrealW".into()));
         }
 
         // 2. W 레벨 구하기
         let w_level = if let Some(champ_ref) = ctx.champions.get(actor) {
-            champ_ref.borrow().state().abilities.get_state(AbilitySlot::W).map(|s| s.level).unwrap_or(1)
+            champ_ref
+                .borrow()
+                .state()
+                .abilities
+                .get_state(AbilitySlot::W)
+                .map(|s| s.level)
+                .unwrap_or(1)
         } else {
             1
         };
@@ -229,7 +243,10 @@ fn check_and_detonate_w(
         // 3. 데미지 계산 및 입히기
         let (attacker_stats, attacker_base) = if let Some(champ_ref) = ctx.champions.get(actor) {
             let champ = champ_ref.borrow();
-            (champ.state().stats.current.clone(), champ.state().stats.base.clone())
+            (
+                champ.state().stats.current.clone(),
+                champ.state().stats.base.clone(),
+            )
         } else {
             return;
         };
@@ -266,9 +283,17 @@ fn check_and_detonate_w(
         ctx.trigger_on_damage_dealt(actor, damage_result.final_damage, true, AbilitySlot::W);
 
         if let Some(d) = ctx.champions.get(target) {
-            let is_dead = d.borrow_mut().take_damage(damage_result.final_damage).is_dead;
+            let is_dead = d
+                .borrow_mut()
+                .take_damage(damage_result.final_damage)
+                .is_dead;
             if is_dead {
-                ctx.new_events.push((0.0, Box::new(lol_core::event::DeathEvent { target: target.clone() })));
+                ctx.new_events.push((
+                    0.0,
+                    Box::new(lol_core::event::DeathEvent {
+                        target: target.clone(),
+                    }),
+                ));
             }
         }
 
@@ -277,7 +302,7 @@ fn check_and_detonate_w(
         if let Some(champ_ref) = ctx.champions.get(actor) {
             let mut champ = champ_ref.borrow_mut();
             champ.state_mut().resource.restore(recovered_mana);
-            
+
             let current_mana = champ.state().resource.current;
             let max_mana = champ.state().resource.max;
             if let Some(recorder) = &ctx.recorder {
@@ -303,7 +328,12 @@ fn check_and_detonate_w(
 fn apply_q_cooldown_reduction(ctx: &mut SimContext, actor: &ChampionId) {
     if let Some(champ_ref) = ctx.champions.get(actor) {
         let mut champ = champ_ref.borrow_mut();
-        for slot in &[AbilitySlot::Q, AbilitySlot::W, AbilitySlot::E, AbilitySlot::R] {
+        for slot in &[
+            AbilitySlot::Q,
+            AbilitySlot::W,
+            AbilitySlot::E,
+            AbilitySlot::R,
+        ] {
             if let Some(state) = champ.state_mut().abilities.get_state_mut(*slot) {
                 state.cooldown.reduce_cooldown(1.5);
             }
@@ -370,15 +400,28 @@ impl Ability for EzrealAutoAttack {
 
         ctx.trigger_on_hit(actor, target, &damage_result);
         ctx.trigger_on_physical_damage(actor, target, &damage_result);
-        ctx.trigger_on_damage_dealt(actor, damage_result.final_damage, false, AbilitySlot::AutoAttack);
+        ctx.trigger_on_damage_dealt(
+            actor,
+            damage_result.final_damage,
+            false,
+            AbilitySlot::AutoAttack,
+        );
 
         // 평타로 표식 폭발 검사 (평타 소모마나 0)
         check_and_detonate_w(ctx, actor, target, 0.0);
 
         if let Some(d) = ctx.champions.get(target) {
-            let is_dead = d.borrow_mut().take_damage(damage_result.final_damage).is_dead;
+            let is_dead = d
+                .borrow_mut()
+                .take_damage(damage_result.final_damage)
+                .is_dead;
             if is_dead {
-                ctx.new_events.push((0.0, Box::new(lol_core::event::DeathEvent { target: target.clone() })));
+                ctx.new_events.push((
+                    0.0,
+                    Box::new(lol_core::event::DeathEvent {
+                        target: target.clone(),
+                    }),
+                ));
             }
         }
     }
@@ -416,7 +459,12 @@ impl Ability for EzrealQ {
     fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, target: &ChampionId) {
         let level = if let Some(champ_ref) = ctx.champions.get(actor) {
             let champ = champ_ref.borrow();
-            champ.state().abilities.get_state(AbilitySlot::Q).map(|s| s.level).unwrap_or(1)
+            champ
+                .state()
+                .abilities
+                .get_state(AbilitySlot::Q)
+                .map(|s| s.level)
+                .unwrap_or(1)
         } else {
             1
         };
@@ -436,8 +484,9 @@ impl Ability for EzrealQ {
         };
 
         let base_damage = 20.0 + (level as f64 - 1.0) * 25.0;
-        let raw_damage = base_damage + 1.3 * attacker_stats.attack_damage + 0.15 * attacker_stats.ability_power;
-        
+        let raw_damage =
+            base_damage + 1.3 * attacker_stats.attack_damage + 0.15 * attacker_stats.ability_power;
+
         // Q applies on-hits, so it can crit if crit chance is met (modeled as physical damage)
         let is_critical = attacker_stats.crit_chance >= 1.0;
         let damage_result = DamagePipeline::process(
@@ -473,9 +522,17 @@ impl Ability for EzrealQ {
         check_and_detonate_w(ctx, actor, target, cost);
 
         if let Some(d) = ctx.champions.get(target) {
-            let is_dead = d.borrow_mut().take_damage(damage_result.final_damage).is_dead;
+            let is_dead = d
+                .borrow_mut()
+                .take_damage(damage_result.final_damage)
+                .is_dead;
             if is_dead {
-                ctx.new_events.push((0.0, Box::new(lol_core::event::DeathEvent { target: target.clone() })));
+                ctx.new_events.push((
+                    0.0,
+                    Box::new(lol_core::event::DeathEvent {
+                        target: target.clone(),
+                    }),
+                ));
             }
         }
     }
@@ -555,14 +612,22 @@ impl Ability for EzrealE {
 
         let level = if let Some(champ_ref) = ctx.champions.get(actor) {
             let champ = champ_ref.borrow();
-            champ.state().abilities.get_state(AbilitySlot::E).map(|s| s.level).unwrap_or(1)
+            champ
+                .state()
+                .abilities
+                .get_state(AbilitySlot::E)
+                .map(|s| s.level)
+                .unwrap_or(1)
         } else {
             1
         };
 
         let (attacker_stats, attacker_base) = if let Some(champ_ref) = ctx.champions.get(actor) {
             let champ = champ_ref.borrow();
-            (champ.state().stats.current.clone(), champ.state().stats.base.clone())
+            (
+                champ.state().stats.current.clone(),
+                champ.state().stats.base.clone(),
+            )
         } else {
             return;
         };
@@ -605,9 +670,17 @@ impl Ability for EzrealE {
         check_and_detonate_w(ctx, actor, target, 90.0);
 
         if let Some(d) = ctx.champions.get(target) {
-            let is_dead = d.borrow_mut().take_damage(damage_result.final_damage).is_dead;
+            let is_dead = d
+                .borrow_mut()
+                .take_damage(damage_result.final_damage)
+                .is_dead;
             if is_dead {
-                ctx.new_events.push((0.0, Box::new(lol_core::event::DeathEvent { target: target.clone() })));
+                ctx.new_events.push((
+                    0.0,
+                    Box::new(lol_core::event::DeathEvent {
+                        target: target.clone(),
+                    }),
+                ));
             }
         }
     }
@@ -645,14 +718,22 @@ impl Ability for EzrealR {
 
         let level = if let Some(champ_ref) = ctx.champions.get(actor) {
             let champ = champ_ref.borrow();
-            champ.state().abilities.get_state(AbilitySlot::R).map(|s| s.level).unwrap_or(1)
+            champ
+                .state()
+                .abilities
+                .get_state(AbilitySlot::R)
+                .map(|s| s.level)
+                .unwrap_or(1)
         } else {
             1
         };
 
         let (attacker_stats, attacker_base) = if let Some(champ_ref) = ctx.champions.get(actor) {
             let champ = champ_ref.borrow();
-            (champ.state().stats.current.clone(), champ.state().stats.base.clone())
+            (
+                champ.state().stats.current.clone(),
+                champ.state().stats.base.clone(),
+            )
         } else {
             return;
         };
@@ -695,9 +776,17 @@ impl Ability for EzrealR {
         check_and_detonate_w(ctx, actor, target, 100.0);
 
         if let Some(d) = ctx.champions.get(target) {
-            let is_dead = d.borrow_mut().take_damage(damage_result.final_damage).is_dead;
+            let is_dead = d
+                .borrow_mut()
+                .take_damage(damage_result.final_damage)
+                .is_dead;
             if is_dead {
-                ctx.new_events.push((0.0, Box::new(lol_core::event::DeathEvent { target: target.clone() })));
+                ctx.new_events.push((
+                    0.0,
+                    Box::new(lol_core::event::DeathEvent {
+                        target: target.clone(),
+                    }),
+                ));
             }
         }
     }
@@ -709,9 +798,8 @@ impl Ability for EzrealR {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lol_core::stats::StatBlock;
-    use lol_core::types::DamageType;
     use lol_core::buff::StatusEffect;
+    use lol_core::stats::StatBlock;
 
     #[test]
     fn test_ezreal_passive_attack_speed() {
@@ -734,12 +822,11 @@ mod tests {
 
     #[test]
     fn test_ezreal_w_detonation_mana_refund_auto_attack() {
-        use std::collections::HashMap;
         use crate::dummy::DummyModule;
+        use std::collections::HashMap;
 
-        let mut sim = lol_core::sim::GameSimulation::new(lol_core::sim::SimConfig {
-            max_duration: 10.0,
-        });
+        let mut sim =
+            lol_core::sim::GameSimulation::new(lol_core::sim::SimConfig { max_duration: 10.0 });
 
         let id_ezreal = ChampionId("Ezreal".to_string());
         let id_dummy = ChampionId("Dummy".to_string());
@@ -789,7 +876,13 @@ mod tests {
 
         // Apply W mark first on dummy
         ctx.apply_buff(&id_dummy, Box::new(EzrealWBuff));
-        assert!(dummy_inst.borrow().state().buffs.has_effect_by_id(&EffectId("EzrealW".into()), ctx.current_time));
+        assert!(
+            dummy_inst
+                .borrow()
+                .state()
+                .buffs
+                .has_effect_by_id(&EffectId("EzrealW".into()), ctx.current_time)
+        );
 
         // Set ezreal mana to 300
         ezreal_inst.borrow_mut().state_mut().resource.current = 300.0;

@@ -55,5 +55,93 @@
       "attack_speed": 0.60,
       "crit_chance": 0.20
     }
+  },
+  {
+    "id": "3115",
+    "name": "Nashor's Tooth",
+    "cost": 3000,
+    "stats": {
+      "ability_power": 90.0,
+      "attack_speed": 0.50,
+      "ability_haste": 15.0
+    }
+  },
+  {
+    "id": "3089",
+    "name": "Rabadon's Deathcap",
+    "cost": 3600,
+    "stats": {
+      "ability_power": 140.0,
+      "ability_power_percent_bonus": 0.35
+    }
+  },
+  {
+    "id": "6672",
+    "name": "Kraken Slayer",
+    "cost": 3000,
+    "stats": {
+      "attack_damage": 50.0,
+      "attack_speed": 0.40,
+      "crit_chance": 0.20
+    }
+  },
+  {
+    "id": "3091",
+    "name": "Wit's End",
+    "cost": 2800,
+    "stats": {
+      "attack_speed": 0.55,
+      "magic_resist": 50.0
+    }
+  },
+  {
+    "id": "3151",
+    "name": "Liandry's Torment",
+    "cost": 3000,
+    "stats": {
+      "ability_power": 90.0,
+      "hp": 300.0
+    }
+  },
+  {
+    "id": "3153",
+    "name": "Blade of the Ruined King",
+    "cost": 3200,
+    "stats": {
+      "attack_damage": 40.0,
+      "attack_speed": 0.25,
+      "life_steal": 0.10
+    }
+  },
+  {
+    "id": "3100",
+    "name": "Lich Bane",
+    "cost": 3100,
+    "stats": {
+      "ability_power": 100.0,
+      "ability_haste": 15.0
+    }
+  },
+  {
+    "id": "3078",
+    "name": "Trinity Force",
+    "cost": 3333,
+    "stats": {
+      "attack_damage": 45.0,
+      "hp": 300.0,
+      "attack_speed": 0.33,
+      "ability_haste": 20.0
+    }
+  },
+  {
+    "id": "6655",
+    "name": "Luden's Companion",
+    "cost": 2900,
+    "stats": {
+      "ability_power": 95.0,
+      "mp": 600.0,
+      "ability_haste": 25.0
+    }
   }
 ]
+

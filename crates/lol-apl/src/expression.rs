@@ -26,16 +26,52 @@ pub enum Expression {
     Or(Box<Expression>, Box<Expression>),
 }
 
+fn split_outside_parens(input: &str, pat: char) -> Option<(&str, &str)> {
+    let mut depth = 0;
+    for (i, c) in input.char_indices() {
+        match c {
+            '(' => depth += 1,
+            ')' => depth -= 1,
+            _ if c == pat && depth == 0 => {
+                return Some((&input[..i], &input[i + 1..]));
+            }
+            _ => {}
+        }
+    }
+    None
+}
+
 impl Expression {
-    pub fn parse(input: &str) -> Result<Self, String> {
-        let input = input.trim();
-        if let Some((left, right)) = input.split_once('&') {
+    pub fn parse(mut input: &str) -> Result<Self, String> {
+        input = input.trim();
+        while input.starts_with('(') && input.ends_with(')') {
+            let mut depth = 0;
+            let mut matches_all = true;
+            for (i, c) in input.char_indices() {
+                if c == '(' {
+                    depth += 1;
+                } else if c == ')' {
+                    depth -= 1;
+                    if depth == 0 && i < input.len() - 1 {
+                        matches_all = false;
+                        break;
+                    }
+                }
+            }
+            if matches_all && depth == 0 {
+                input = input[1..input.len() - 1].trim();
+            } else {
+                break;
+            }
+        }
+
+        if let Some((left, right)) = split_outside_parens(input, '&') {
             return Ok(Expression::And(
                 Box::new(Self::parse(left)?),
                 Box::new(Self::parse(right)?),
             ));
         }
-        if let Some((left, right)) = input.split_once('|') {
+        if let Some((left, right)) = split_outside_parens(input, '|') {
             return Ok(Expression::Or(
                 Box::new(Self::parse(left)?),
                 Box::new(Self::parse(right)?),

@@ -67,10 +67,12 @@ impl ChampionInstance for DummyInstance {
             1.0
         };
         total_bonus = total_bonus
-            + self
-                .state
-                .rune_manager
-                .get_bonus_stats(time, &self.state.stats.base, level, hp_ratio);
+            + self.state.rune_manager.get_bonus_stats(
+                time,
+                &self.state.stats.base,
+                level,
+                hp_ratio,
+            );
         self.state.stats.recalculate_current(&total_bonus);
     }
 

@@ -76,13 +76,29 @@ impl GameSimulation {
             }
         }
 
+        // Trigger on_simulation_start for all item effects of all champions
+        let actor_ids: Vec<crate::types::ChampionId> = self.actors.keys().cloned().collect();
+        for actor in &actor_ids {
+            let items = if let Some(champ_ref) = ctx.champions.get(actor) {
+                std::mem::take(&mut champ_ref.borrow_mut().state_mut().items)
+            } else {
+                continue;
+            };
+
+            for effect in items.effects() {
+                effect.on_simulation_start(&mut ctx, actor);
+            }
+
+            if let Some(champ_ref) = ctx.champions.get(actor) {
+                champ_ref.borrow_mut().state_mut().items = items;
+            }
+        }
+
         let max_time = SimTime::new(self.config.max_duration);
 
         // Schedule the periodic resource regeneration tick event at 0.5s
-        self.event_manager.schedule(
-            SimTime::new(0.5),
-            Box::new(crate::event::RegenTickEvent),
-        );
+        self.event_manager
+            .schedule(SimTime::new(0.5), Box::new(crate::event::RegenTickEvent));
 
         // Delegate to the EventManager's run loop
         self.event_manager.run(&mut ctx, max_time);
@@ -94,9 +110,9 @@ mod tests {
     use super::*;
     use crate::champion::ChampionState;
     use crate::stats::StatBlock;
-    use crate::types::{ResourceType, ChampionId};
-    use std::rc::Rc;
+    use crate::types::{ChampionId, ResourceType};
     use std::cell::RefCell;
+    use std::rc::Rc;
 
     struct MockChampion {
         state: ChampionState,
@@ -110,7 +126,10 @@ mod tests {
             &mut self.state
         }
         fn update_stats(&mut self, _time: SimTime) {}
-        fn get_ability(&self, _slot: crate::types::AbilitySlot) -> Option<&dyn crate::ability::Ability> {
+        fn get_ability(
+            &self,
+            _slot: crate::types::AbilitySlot,
+        ) -> Option<&dyn crate::ability::Ability> {
             None
         }
         fn take_damage(&mut self, amount: f64) -> crate::types::TakeDamageResult {
@@ -154,7 +173,9 @@ mod tests {
         state.health.current = 50.0;
         state.resource.current = 50.0;
 
-        let champ = Rc::new(RefCell::new(Box::new(MockChampion { state }) as Box<dyn ChampionInstance>));
+        let champ = Rc::new(RefCell::new(
+            Box::new(MockChampion { state }) as Box<dyn ChampionInstance>
+        ));
 
         let config = SimConfig { max_duration: 5.0 };
         let mut sim = GameSimulation::new(config);
@@ -188,7 +209,9 @@ mod tests {
         state.health.current = 100.0;
         state.resource.current = 100.0;
 
-        let champ = Rc::new(RefCell::new(Box::new(MockChampion { state }) as Box<dyn ChampionInstance>));
+        let champ = Rc::new(RefCell::new(
+            Box::new(MockChampion { state }) as Box<dyn ChampionInstance>
+        ));
 
         let config = SimConfig { max_duration: 5.0 };
         let mut sim = GameSimulation::new(config);
@@ -222,7 +245,9 @@ mod tests {
             state.health.current = 50.0;
             state.resource.current = 50.0;
 
-            let champ = Rc::new(RefCell::new(Box::new(MockChampion { state }) as Box<dyn ChampionInstance>));
+            let champ = Rc::new(RefCell::new(
+                Box::new(MockChampion { state }) as Box<dyn ChampionInstance>
+            ));
             let config = SimConfig { max_duration: 5.0 };
             let mut sim = GameSimulation::new(config);
             sim.add_actor(ChampionId("ZeroRegen".to_string()), champ.clone());
@@ -253,7 +278,9 @@ mod tests {
             state.health.current = 50.0;
             state.resource.current = 50.0;
 
-            let champ = Rc::new(RefCell::new(Box::new(MockChampion { state }) as Box<dyn ChampionInstance>));
+            let champ = Rc::new(RefCell::new(
+                Box::new(MockChampion { state }) as Box<dyn ChampionInstance>
+            ));
             let config = SimConfig { max_duration: 5.0 };
             let mut sim = GameSimulation::new(config);
             sim.add_actor(ChampionId("NegativeRegen".to_string()), champ.clone());
@@ -287,7 +314,9 @@ mod tests {
         state.health.current = 99.0;
         state.resource.current = 99.0;
 
-        let champ = Rc::new(RefCell::new(Box::new(MockChampion { state }) as Box<dyn ChampionInstance>));
+        let champ = Rc::new(RefCell::new(
+            Box::new(MockChampion { state }) as Box<dyn ChampionInstance>
+        ));
         let config = SimConfig { max_duration: 5.0 };
         let mut sim = GameSimulation::new(config);
         sim.add_actor(ChampionId("CapRegen".to_string()), champ.clone());
@@ -321,7 +350,9 @@ mod tests {
             state.health.current = 50.0;
             state.resource.current = 50.0;
 
-            let champ = Rc::new(RefCell::new(Box::new(MockChampion { state }) as Box<dyn ChampionInstance>));
+            let champ = Rc::new(RefCell::new(
+                Box::new(MockChampion { state }) as Box<dyn ChampionInstance>
+            ));
             let config = SimConfig { max_duration: 5.0 };
             let mut sim = GameSimulation::new(config);
             sim.add_actor(ChampionId("NoResourceType".to_string()), champ.clone());
@@ -354,7 +385,9 @@ mod tests {
             state.health.current = 50.0;
             state.resource.current = 0.0;
 
-            let champ = Rc::new(RefCell::new(Box::new(MockChampion { state }) as Box<dyn ChampionInstance>));
+            let champ = Rc::new(RefCell::new(
+                Box::new(MockChampion { state }) as Box<dyn ChampionInstance>
+            ));
             let config = SimConfig { max_duration: 5.0 };
             let mut sim = GameSimulation::new(config);
             sim.add_actor(ChampionId("NoStats".to_string()), champ.clone());
@@ -386,7 +419,9 @@ mod tests {
         state.health.current = 0.0; // Dead!
         state.resource.current = 50.0;
 
-        let champ = Rc::new(RefCell::new(Box::new(MockChampion { state }) as Box<dyn ChampionInstance>));
+        let champ = Rc::new(RefCell::new(
+            Box::new(MockChampion { state }) as Box<dyn ChampionInstance>
+        ));
         let config = SimConfig { max_duration: 5.0 };
         let mut sim = GameSimulation::new(config);
         sim.add_actor(ChampionId("DeadChamp".to_string()), champ.clone());

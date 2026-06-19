@@ -4,7 +4,7 @@ use lol_core::champion::{ChampionConfig, ChampionInstance, ChampionModule, Champ
 use lol_core::damage::DamagePipeline;
 use lol_core::event::{SimContext, SimEvent};
 use lol_core::stats::StatBlock;
-use lol_core::types::{AbilitySlot, ChampionId, DamageType, EffectId, CCType, SimTime};
+use lol_core::types::{AbilitySlot, CCType, ChampionId, DamageType, EffectId, SimTime};
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -60,7 +60,9 @@ impl ChampionModule for AhriModule {
             Box::new(AhriQ),
             Box::new(AhriW),
             Box::new(AhriE),
-            Box::new(AhriR { custom_state: custom_state.clone() }),
+            Box::new(AhriR {
+                custom_state: custom_state.clone(),
+            }),
         ];
 
         // Register active items dynamically
@@ -139,10 +141,12 @@ impl ChampionInstance for AhriInstance {
             1.0
         };
         total_bonus = total_bonus
-            + self
-                .state
-                .rune_manager
-                .get_bonus_stats(time, &self.state.stats.base, level, hp_ratio);
+            + self.state.rune_manager.get_bonus_stats(
+                time,
+                &self.state.stats.base,
+                level,
+                hp_ratio,
+            );
         self.state.stats.recalculate_current(&total_bonus);
     }
 
@@ -176,12 +180,19 @@ impl ChampionInstance for AhriInstance {
             .on_damage_dealt(time, amount, is_ability, slot, &stats, level);
 
         // Track spell hits for Essence Theft (only for Q, W, E, R)
-        if is_ability && (slot == AbilitySlot::Q || slot == AbilitySlot::W || slot == AbilitySlot::E || slot == AbilitySlot::R) {
+        if is_ability
+            && (slot == AbilitySlot::Q
+                || slot == AbilitySlot::W
+                || slot == AbilitySlot::E
+                || slot == AbilitySlot::R)
+        {
             let mut custom = self.custom_state.borrow_mut();
             if custom.essence_theft_stacks >= 8 {
                 // Next spell hit consumes stacks to heal
                 let heal_amount = 3.0 * level as f64 + 0.2 * stats.ability_power;
-                events.push(lol_core::rune_manager::RuneEvent::Healed { amount: heal_amount });
+                events.push(lol_core::rune_manager::RuneEvent::Healed {
+                    amount: heal_amount,
+                });
                 custom.essence_theft_stacks = 0;
             } else {
                 custom.essence_theft_stacks += 1;
@@ -280,12 +291,25 @@ impl Ability for AhriAutoAttack {
 
         ctx.trigger_on_hit(actor, target, &damage_result);
         ctx.trigger_on_physical_damage(actor, target, &damage_result);
-        ctx.trigger_on_damage_dealt(actor, damage_result.final_damage, false, AbilitySlot::AutoAttack);
+        ctx.trigger_on_damage_dealt(
+            actor,
+            damage_result.final_damage,
+            false,
+            AbilitySlot::AutoAttack,
+        );
 
         if let Some(d) = ctx.champions.get(target) {
-            let is_dead = d.borrow_mut().take_damage(damage_result.final_damage).is_dead;
+            let is_dead = d
+                .borrow_mut()
+                .take_damage(damage_result.final_damage)
+                .is_dead;
             if is_dead {
-                ctx.new_events.push((0.0, Box::new(lol_core::event::DeathEvent { target: target.clone() })));
+                ctx.new_events.push((
+                    0.0,
+                    Box::new(lol_core::event::DeathEvent {
+                        target: target.clone(),
+                    }),
+                ));
             }
         }
     }
@@ -312,7 +336,12 @@ impl Ability for AhriQ {
     fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, target: &ChampionId) {
         let level = if let Some(champ_ref) = ctx.champions.get(actor) {
             let champ = champ_ref.borrow();
-            champ.state().abilities.get_state(AbilitySlot::Q).map(|s| s.level).unwrap_or(1)
+            champ
+                .state()
+                .abilities
+                .get_state(AbilitySlot::Q)
+                .map(|s| s.level)
+                .unwrap_or(1)
         } else {
             1
         };
@@ -357,9 +386,17 @@ impl Ability for AhriQ {
         ctx.trigger_on_damage_dealt(actor, damage_result.final_damage, true, AbilitySlot::Q);
 
         if let Some(d) = ctx.champions.get(target) {
-            let is_dead = d.borrow_mut().take_damage(damage_result.final_damage).is_dead;
+            let is_dead = d
+                .borrow_mut()
+                .take_damage(damage_result.final_damage)
+                .is_dead;
             if is_dead {
-                ctx.new_events.push((0.0, Box::new(lol_core::event::DeathEvent { target: target.clone() })));
+                ctx.new_events.push((
+                    0.0,
+                    Box::new(lol_core::event::DeathEvent {
+                        target: target.clone(),
+                    }),
+                ));
             }
         }
 
@@ -419,12 +456,25 @@ impl SimEvent for AhriQReturnEvent {
             );
         }
 
-        ctx.trigger_on_damage_dealt(&self.attacker, damage_result.final_damage, true, AbilitySlot::Q);
+        ctx.trigger_on_damage_dealt(
+            &self.attacker,
+            damage_result.final_damage,
+            true,
+            AbilitySlot::Q,
+        );
 
         if let Some(d) = ctx.champions.get(&self.defender) {
-            let is_dead = d.borrow_mut().take_damage(damage_result.final_damage).is_dead;
+            let is_dead = d
+                .borrow_mut()
+                .take_damage(damage_result.final_damage)
+                .is_dead;
             if is_dead {
-                ctx.new_events.push((0.0, Box::new(lol_core::event::DeathEvent { target: self.defender.clone() })));
+                ctx.new_events.push((
+                    0.0,
+                    Box::new(lol_core::event::DeathEvent {
+                        target: self.defender.clone(),
+                    }),
+                ));
             }
         }
     }
@@ -457,7 +507,12 @@ impl Ability for AhriW {
     fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, target: &ChampionId) {
         let level = if let Some(champ_ref) = ctx.champions.get(actor) {
             let champ = champ_ref.borrow();
-            champ.state().abilities.get_state(AbilitySlot::W).map(|s| s.level).unwrap_or(1)
+            champ
+                .state()
+                .abilities
+                .get_state(AbilitySlot::W)
+                .map(|s| s.level)
+                .unwrap_or(1)
         } else {
             1
         };
@@ -505,9 +560,17 @@ impl Ability for AhriW {
             ctx.trigger_on_damage_dealt(actor, damage_result.final_damage, true, AbilitySlot::W);
 
             if let Some(d) = ctx.champions.get(target) {
-                let is_dead = d.borrow_mut().take_damage(damage_result.final_damage).is_dead;
+                let is_dead = d
+                    .borrow_mut()
+                    .take_damage(damage_result.final_damage)
+                    .is_dead;
                 if is_dead {
-                    ctx.new_events.push((0.0, Box::new(lol_core::event::DeathEvent { target: target.clone() })));
+                    ctx.new_events.push((
+                        0.0,
+                        Box::new(lol_core::event::DeathEvent {
+                            target: target.clone(),
+                        }),
+                    ));
                     break;
                 }
             }
@@ -536,7 +599,12 @@ impl Ability for AhriE {
     fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, target: &ChampionId) {
         let level = if let Some(champ_ref) = ctx.champions.get(actor) {
             let champ = champ_ref.borrow();
-            champ.state().abilities.get_state(AbilitySlot::E).map(|s| s.level).unwrap_or(1)
+            champ
+                .state()
+                .abilities
+                .get_state(AbilitySlot::E)
+                .map(|s| s.level)
+                .unwrap_or(1)
         } else {
             1
         };
@@ -580,9 +648,17 @@ impl Ability for AhriE {
         ctx.apply_buff(target, Box::new(AhriCharmDebuff));
 
         if let Some(d) = ctx.champions.get(target) {
-            let is_dead = d.borrow_mut().take_damage(damage_result.final_damage).is_dead;
+            let is_dead = d
+                .borrow_mut()
+                .take_damage(damage_result.final_damage)
+                .is_dead;
             if is_dead {
-                ctx.new_events.push((0.0, Box::new(lol_core::event::DeathEvent { target: target.clone() })));
+                ctx.new_events.push((
+                    0.0,
+                    Box::new(lol_core::event::DeathEvent {
+                        target: target.clone(),
+                    }),
+                ));
             }
         }
     }
@@ -615,7 +691,12 @@ impl Ability for AhriR {
     fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, target: &ChampionId) {
         let level = if let Some(champ_ref) = ctx.champions.get(actor) {
             let champ = champ_ref.borrow();
-            champ.state().abilities.get_state(AbilitySlot::R).map(|s| s.level).unwrap_or(1)
+            champ
+                .state()
+                .abilities
+                .get_state(AbilitySlot::R)
+                .map(|s| s.level)
+                .unwrap_or(1)
         } else {
             1
         };
@@ -636,7 +717,8 @@ impl Ability for AhriR {
 
         let _is_first = {
             let mut custom = self.custom_state.borrow_mut();
-            let is_first = custom.spirit_rush_charges == 0 || ctx.current_time.as_f64() > custom.spirit_rush_window_end;
+            let is_first = custom.spirit_rush_charges == 0
+                || ctx.current_time.as_f64() > custom.spirit_rush_window_end;
 
             if is_first {
                 // First dash consumes 100 mana and sets up charges
@@ -657,7 +739,8 @@ impl Ability for AhriR {
                 // Start static 1.0s cooldown
                 if let Some(champ_ref) = ctx.champions.get(actor) {
                     let mut champ = champ_ref.borrow_mut();
-                    if let Some(r_state) = champ.state_mut().abilities.get_state_mut(AbilitySlot::R) {
+                    if let Some(r_state) = champ.state_mut().abilities.get_state_mut(AbilitySlot::R)
+                    {
                         r_state.cooldown.start_cooldown(ctx.current_time, 1.0);
                     }
                 }
@@ -671,15 +754,21 @@ impl Ability for AhriR {
                         let ah = champ.state().stats.current.ability_haste;
                         let cdr = ah / (100.0 + ah);
                         let full_cooldown = self.base_cooldown(level) * (1.0 - cdr);
-                        if let Some(r_state) = champ.state_mut().abilities.get_state_mut(AbilitySlot::R) {
-                            r_state.cooldown.start_cooldown(ctx.current_time, full_cooldown);
+                        if let Some(r_state) =
+                            champ.state_mut().abilities.get_state_mut(AbilitySlot::R)
+                        {
+                            r_state
+                                .cooldown
+                                .start_cooldown(ctx.current_time, full_cooldown);
                         }
                     }
                 } else {
                     // Start static 1.0s cooldown
                     if let Some(champ_ref) = ctx.champions.get(actor) {
                         let mut champ = champ_ref.borrow_mut();
-                        if let Some(r_state) = champ.state_mut().abilities.get_state_mut(AbilitySlot::R) {
+                        if let Some(r_state) =
+                            champ.state_mut().abilities.get_state_mut(AbilitySlot::R)
+                        {
                             r_state.cooldown.start_cooldown(ctx.current_time, 1.0);
                         }
                     }
@@ -712,9 +801,17 @@ impl Ability for AhriR {
         ctx.trigger_on_damage_dealt(actor, damage_result.final_damage, true, AbilitySlot::R);
 
         if let Some(d) = ctx.champions.get(target) {
-            let is_dead = d.borrow_mut().take_damage(damage_result.final_damage).is_dead;
+            let is_dead = d
+                .borrow_mut()
+                .take_damage(damage_result.final_damage)
+                .is_dead;
             if is_dead {
-                ctx.new_events.push((0.0, Box::new(lol_core::event::DeathEvent { target: target.clone() })));
+                ctx.new_events.push((
+                    0.0,
+                    Box::new(lol_core::event::DeathEvent {
+                        target: target.clone(),
+                    }),
+                ));
             }
         }
     }
@@ -740,7 +837,9 @@ impl SimEvent for SpiritRushExpiryEvent {
                 let cdr = ah / (100.0 + ah);
                 let full_cooldown = self.base_cooldown * (1.0 - cdr);
                 if let Some(r_state) = champ.state_mut().abilities.get_state_mut(AbilitySlot::R) {
-                    r_state.cooldown.start_cooldown(ctx.current_time, full_cooldown);
+                    r_state
+                        .cooldown
+                        .start_cooldown(ctx.current_time, full_cooldown);
                 }
             }
         }
@@ -753,9 +852,9 @@ impl SimEvent for SpiritRushExpiryEvent {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use lol_core::buff::StatusEffect;
     use lol_core::stats::StatBlock;
     use lol_core::types::DamageType;
-    use lol_core::buff::StatusEffect;
 
     #[test]
     fn test_charm_damage_amplification() {
@@ -763,7 +862,8 @@ mod tests {
         let mut defender = StatBlock::new();
 
         // Baseline
-        let res_magic = DamagePipeline::process(100.0, DamageType::Magic, false, &attacker, &defender);
+        let res_magic =
+            DamagePipeline::process(100.0, DamageType::Magic, false, &attacker, &defender);
         assert_eq!(res_magic.final_damage, 100.0);
 
         // Charm debuff applied
@@ -771,11 +871,13 @@ mod tests {
         let mods = charm.stat_modifiers(1);
         defender.damage_reduction_percent = mods.damage_reduction_percent;
 
-        let res_magic_amp = DamagePipeline::process(100.0, DamageType::Magic, false, &attacker, &defender);
+        let res_magic_amp =
+            DamagePipeline::process(100.0, DamageType::Magic, false, &attacker, &defender);
         assert_eq!(res_magic_amp.final_damage, 120.0);
 
         // Charm amplifies true damage as well
-        let res_true_amp = DamagePipeline::process(100.0, DamageType::True, false, &attacker, &defender);
+        let res_true_amp =
+            DamagePipeline::process(100.0, DamageType::True, false, &attacker, &defender);
         assert_eq!(res_true_amp.final_damage, 120.0);
     }
 }

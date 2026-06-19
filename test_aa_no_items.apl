@@ -1,3 +1,0 @@
-actions+=/AutoAttack
-items=
-runes=

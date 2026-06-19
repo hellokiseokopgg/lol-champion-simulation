@@ -4,7 +4,7 @@ use lol_core::champion::{ChampionConfig, ChampionInstance, ChampionModule, Champ
 use lol_core::damage::DamagePipeline;
 use lol_core::event::{SimContext, SimEvent};
 use lol_core::stats::StatBlock;
-use lol_core::types::{AbilitySlot, ChampionId, DamageType, EffectId, CCType, SimTime};
+use lol_core::types::{AbilitySlot, CCType, ChampionId, DamageType, EffectId, SimTime};
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -55,11 +55,15 @@ impl ChampionModule for ZedModule {
         }));
 
         let mut abilities: Vec<Box<dyn Ability>> = vec![
-            Box::new(ZedAutoAttack { custom_state: custom_state.clone() }),
+            Box::new(ZedAutoAttack {
+                custom_state: custom_state.clone(),
+            }),
             Box::new(ZedQ),
             Box::new(ZedW),
             Box::new(ZedE),
-            Box::new(ZedR { custom_state: custom_state.clone() }),
+            Box::new(ZedR {
+                custom_state: custom_state.clone(),
+            }),
         ];
 
         // Register active items dynamically
@@ -137,10 +141,12 @@ impl ChampionInstance for ZedInstance {
             1.0
         };
         total_bonus = total_bonus
-            + self
-                .state
-                .rune_manager
-                .get_bonus_stats(time, &self.state.stats.base, level, hp_ratio);
+            + self.state.rune_manager.get_bonus_stats(
+                time,
+                &self.state.stats.base,
+                level,
+                hp_ratio,
+            );
         self.state.stats.recalculate_current(&total_bonus);
     }
 
@@ -166,7 +172,10 @@ impl ChampionInstance for ZedInstance {
         is_ability: bool,
         slot: AbilitySlot,
     ) -> Vec<lol_core::rune_manager::RuneEvent> {
-        let has_mark_active = self.state.buffs.has_effect_by_id(&EffectId("DeathMarkActiveIndicator".into()), time);
+        let has_mark_active = self
+            .state
+            .buffs
+            .has_effect_by_id(&EffectId("DeathMarkActiveIndicator".into()), time);
         if has_mark_active {
             let mut custom = self.custom_state.borrow_mut();
             custom.death_mark_accumulated += amount;
@@ -369,12 +378,25 @@ impl Ability for ZedAutoAttack {
 
         ctx.trigger_on_hit(actor, target, &damage_result);
         ctx.trigger_on_physical_damage(actor, target, &damage_result);
-        ctx.trigger_on_damage_dealt(actor, damage_result.final_damage, false, AbilitySlot::AutoAttack);
+        ctx.trigger_on_damage_dealt(
+            actor,
+            damage_result.final_damage,
+            false,
+            AbilitySlot::AutoAttack,
+        );
 
         if let Some(d) = ctx.champions.get(target) {
-            let is_dead = d.borrow_mut().take_damage(damage_result.final_damage).is_dead;
+            let is_dead = d
+                .borrow_mut()
+                .take_damage(damage_result.final_damage)
+                .is_dead;
             if is_dead {
-                ctx.new_events.push((0.0, Box::new(lol_core::event::DeathEvent { target: target.clone() })));
+                ctx.new_events.push((
+                    0.0,
+                    Box::new(lol_core::event::DeathEvent {
+                        target: target.clone(),
+                    }),
+                ));
                 return;
             }
         }
@@ -400,12 +422,25 @@ impl Ability for ZedAutoAttack {
                 );
             }
 
-            ctx.trigger_on_damage_dealt(actor, magic_result.final_damage, false, AbilitySlot::Passive);
+            ctx.trigger_on_damage_dealt(
+                actor,
+                magic_result.final_damage,
+                false,
+                AbilitySlot::Passive,
+            );
 
             if let Some(d) = ctx.champions.get(target) {
-                let is_dead = d.borrow_mut().take_damage(magic_result.final_damage).is_dead;
+                let is_dead = d
+                    .borrow_mut()
+                    .take_damage(magic_result.final_damage)
+                    .is_dead;
                 if is_dead {
-                    ctx.new_events.push((0.0, Box::new(lol_core::event::DeathEvent { target: target.clone() })));
+                    ctx.new_events.push((
+                        0.0,
+                        Box::new(lol_core::event::DeathEvent {
+                            target: target.clone(),
+                        }),
+                    ));
                 }
             }
         }
@@ -433,7 +468,12 @@ impl Ability for ZedQ {
     fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, target: &ChampionId) {
         let level = if let Some(champ_ref) = ctx.champions.get(actor) {
             let champ = champ_ref.borrow();
-            champ.state().abilities.get_state(AbilitySlot::Q).map(|s| s.level).unwrap_or(1)
+            champ
+                .state()
+                .abilities
+                .get_state(AbilitySlot::Q)
+                .map(|s| s.level)
+                .unwrap_or(1)
         } else {
             1
         };
@@ -444,7 +484,10 @@ impl Ability for ZedQ {
 
         let (attacker_stats, attacker_base) = if let Some(champ_ref) = ctx.champions.get(actor) {
             let champ = champ_ref.borrow();
-            (champ.state().stats.current.clone(), champ.state().stats.base.clone())
+            (
+                champ.state().stats.current.clone(),
+                champ.state().stats.base.clone(),
+            )
         } else {
             return;
         };
@@ -484,17 +527,29 @@ impl Ability for ZedQ {
         let mut is_dead = false;
 
         if let Some(d) = ctx.champions.get(target) {
-            is_dead = d.borrow_mut().take_damage(damage_result.final_damage).is_dead;
+            is_dead = d
+                .borrow_mut()
+                .take_damage(damage_result.final_damage)
+                .is_dead;
         }
 
         if is_dead {
-            ctx.new_events.push((0.0, Box::new(lol_core::event::DeathEvent { target: target.clone() })));
+            ctx.new_events.push((
+                0.0,
+                Box::new(lol_core::event::DeathEvent {
+                    target: target.clone(),
+                }),
+            ));
             return;
         }
 
         // 2. Replicated Q from shadow
         let has_shadow = if let Some(champ_ref) = ctx.champions.get(actor) {
-            champ_ref.borrow().state().buffs.has_effect_by_id(&EffectId("ZedShadow".into()), ctx.current_time)
+            champ_ref
+                .borrow()
+                .state()
+                .buffs
+                .has_effect_by_id(&EffectId("ZedShadow".into()), ctx.current_time)
         } else {
             false
         };
@@ -522,12 +577,25 @@ impl Ability for ZedQ {
             }
 
             ctx.trigger_on_physical_damage(actor, target, &shadow_damage_result);
-            ctx.trigger_on_damage_dealt(actor, shadow_damage_result.final_damage, true, AbilitySlot::Q);
+            ctx.trigger_on_damage_dealt(
+                actor,
+                shadow_damage_result.final_damage,
+                true,
+                AbilitySlot::Q,
+            );
 
             if let Some(d) = ctx.champions.get(target) {
-                let is_dead = d.borrow_mut().take_damage(shadow_damage_result.final_damage).is_dead;
+                let is_dead = d
+                    .borrow_mut()
+                    .take_damage(shadow_damage_result.final_damage)
+                    .is_dead;
                 if is_dead {
-                    ctx.new_events.push((0.0, Box::new(lol_core::event::DeathEvent { target: target.clone() })));
+                    ctx.new_events.push((
+                        0.0,
+                        Box::new(lol_core::event::DeathEvent {
+                            target: target.clone(),
+                        }),
+                    ));
                 }
             }
         }
@@ -561,7 +629,12 @@ impl Ability for ZedW {
     fn execute(&self, ctx: &mut SimContext, actor: &ChampionId, _target: &ChampionId) {
         let level = if let Some(champ_ref) = ctx.champions.get(actor) {
             let champ = champ_ref.borrow();
-            champ.state().abilities.get_state(AbilitySlot::W).map(|s| s.level).unwrap_or(1)
+            champ
+                .state()
+                .abilities
+                .get_state(AbilitySlot::W)
+                .map(|s| s.level)
+                .unwrap_or(1)
         } else {
             1
         };
@@ -600,7 +673,13 @@ impl Ability for ZedE {
         ctx.consume_resource(actor, 50.0);
 
         let level = if let Some(champ_ref) = ctx.champions.get(actor) {
-            champ_ref.borrow().state().abilities.get_state(AbilitySlot::E).map(|s| s.level).unwrap_or(1)
+            champ_ref
+                .borrow()
+                .state()
+                .abilities
+                .get_state(AbilitySlot::E)
+                .map(|s| s.level)
+                .unwrap_or(1)
         } else {
             1
         };
@@ -609,7 +688,10 @@ impl Ability for ZedE {
 
         let (attacker_stats, attacker_base) = if let Some(champ_ref) = ctx.champions.get(actor) {
             let champ = champ_ref.borrow();
-            (champ.state().stats.current.clone(), champ.state().stats.base.clone())
+            (
+                champ.state().stats.current.clone(),
+                champ.state().stats.base.clone(),
+            )
         } else {
             return;
         };
@@ -648,17 +730,29 @@ impl Ability for ZedE {
 
         let mut is_dead = false;
         if let Some(d) = ctx.champions.get(target) {
-            is_dead = d.borrow_mut().take_damage(damage_result.final_damage).is_dead;
+            is_dead = d
+                .borrow_mut()
+                .take_damage(damage_result.final_damage)
+                .is_dead;
         }
 
         if is_dead {
-            ctx.new_events.push((0.0, Box::new(lol_core::event::DeathEvent { target: target.clone() })));
+            ctx.new_events.push((
+                0.0,
+                Box::new(lol_core::event::DeathEvent {
+                    target: target.clone(),
+                }),
+            ));
             return;
         }
 
         // 2. Shadow replicated E
         let has_shadow = if let Some(champ_ref) = ctx.champions.get(actor) {
-            champ_ref.borrow().state().buffs.has_effect_by_id(&EffectId("ZedShadow".into()), ctx.current_time)
+            champ_ref
+                .borrow()
+                .state()
+                .buffs
+                .has_effect_by_id(&EffectId("ZedShadow".into()), ctx.current_time)
         } else {
             false
         };
@@ -688,12 +782,25 @@ impl Ability for ZedE {
             }
 
             ctx.trigger_on_physical_damage(actor, target, &shadow_damage_result);
-            ctx.trigger_on_damage_dealt(actor, shadow_damage_result.final_damage, true, AbilitySlot::E);
+            ctx.trigger_on_damage_dealt(
+                actor,
+                shadow_damage_result.final_damage,
+                true,
+                AbilitySlot::E,
+            );
 
             if let Some(d) = ctx.champions.get(target) {
-                let is_dead = d.borrow_mut().take_damage(shadow_damage_result.final_damage).is_dead;
+                let is_dead = d
+                    .borrow_mut()
+                    .take_damage(shadow_damage_result.final_damage)
+                    .is_dead;
                 if is_dead {
-                    ctx.new_events.push((0.0, Box::new(lol_core::event::DeathEvent { target: target.clone() })));
+                    ctx.new_events.push((
+                        0.0,
+                        Box::new(lol_core::event::DeathEvent {
+                            target: target.clone(),
+                        }),
+                    ));
                 }
             }
         }
@@ -728,12 +835,18 @@ impl Ability for ZedR {
         // R leaves a shadow (ZedShadow) and applies the mark
         ctx.apply_buff(actor, Box::new(ZedShadowBuff));
         ctx.apply_buff(target, Box::new(DeathMarkBuff));
-        
+
         // Also apply an indicator buff to Zed himself to track damage accumulation
         ctx.apply_buff(actor, Box::new(DeathMarkActiveIndicator));
 
         let level = if let Some(champ_ref) = ctx.champions.get(actor) {
-            champ_ref.borrow().state().abilities.get_state(AbilitySlot::R).map(|s| s.level).unwrap_or(1)
+            champ_ref
+                .borrow()
+                .state()
+                .abilities
+                .get_state(AbilitySlot::R)
+                .map(|s| s.level)
+                .unwrap_or(1)
         } else {
             1
         };
@@ -817,12 +930,25 @@ impl SimEvent for DeathMarkPopEvent {
         }
 
         ctx.trigger_on_physical_damage(&self.attacker, &self.defender, &damage_result);
-        ctx.trigger_on_damage_dealt(&self.attacker, damage_result.final_damage, true, AbilitySlot::R);
+        ctx.trigger_on_damage_dealt(
+            &self.attacker,
+            damage_result.final_damage,
+            true,
+            AbilitySlot::R,
+        );
 
         if let Some(d) = ctx.champions.get(&self.defender) {
-            let is_dead = d.borrow_mut().take_damage(damage_result.final_damage).is_dead;
+            let is_dead = d
+                .borrow_mut()
+                .take_damage(damage_result.final_damage)
+                .is_dead;
             if is_dead {
-                ctx.new_events.push((0.0, Box::new(lol_core::event::DeathEvent { target: self.defender.clone() })));
+                ctx.new_events.push((
+                    0.0,
+                    Box::new(lol_core::event::DeathEvent {
+                        target: self.defender.clone(),
+                    }),
+                ));
             }
         }
     }
@@ -834,8 +960,8 @@ impl SimEvent for DeathMarkPopEvent {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::rc::Rc;
     use std::cell::RefCell;
+    use std::rc::Rc;
 
     #[test]
     fn test_death_mark_damage_accumulation_and_pop() {
@@ -867,9 +993,19 @@ mod tests {
     #[test]
     fn test_living_shadow_replication_check() {
         let mut buffs = lol_core::buff::BuffManager::new();
-        buffs.apply_effect(Box::new(ZedShadowBuff), lol_core::types::SimTime::new(0.0), 0.0);
+        buffs.apply_effect(
+            Box::new(ZedShadowBuff),
+            lol_core::types::SimTime::new(0.0),
+            0.0,
+        );
 
-        assert!(buffs.has_effect_by_id(&EffectId("ZedShadow".into()), lol_core::types::SimTime::new(2.0)));
-        assert!(!buffs.has_effect_by_id(&EffectId("ZedShadow".into()), lol_core::types::SimTime::new(6.0)));
+        assert!(buffs.has_effect_by_id(
+            &EffectId("ZedShadow".into()),
+            lol_core::types::SimTime::new(2.0)
+        ));
+        assert!(!buffs.has_effect_by_id(
+            &EffectId("ZedShadow".into()),
+            lol_core::types::SimTime::new(6.0)
+        ));
     }
 }

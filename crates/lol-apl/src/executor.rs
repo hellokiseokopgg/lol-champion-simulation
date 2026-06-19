@@ -31,7 +31,11 @@ impl AplExecutor {
 
             // Check if champion has enough resources to cast
             if let Some(ability) = champion.get_ability(action.slot) {
-                let level = champion.state().abilities.get_state(action.slot).map_or(1, |s| s.level);
+                let level = champion
+                    .state()
+                    .abilities
+                    .get_state(action.slot)
+                    .map_or(1, |s| s.level);
                 let cost = ability.cost(level);
                 if champion.state().resource.current < cost {
                     continue;
@@ -78,11 +82,13 @@ impl lol_core::event::SimEvent for AbilityExecuteEvent {
             return;
         }
 
-        let ability_box: Option<Box<dyn lol_core::ability::Ability>> = {
-            let champ_ref = ctx.champions.get(&self.actor).unwrap();
-            let champ = champ_ref.borrow();
-            champ.get_ability(self.slot).map(|a| a.clone_box())
-        };
+        let ability_box: Option<Box<dyn lol_core::ability::Ability>> =
+            if let Some(champ_ref) = ctx.champions.get(&self.actor) {
+                let champ = champ_ref.borrow();
+                champ.get_ability(self.slot).map(|a| a.clone_box())
+            } else {
+                None
+            };
 
         if let Some(ability) = ability_box {
             ability.execute(ctx, &self.actor, &self.target);
@@ -131,7 +137,8 @@ impl lol_core::event::SimEvent for ActorTickEvent {
                                 level = state.level;
                             }
                             cost = ability.cost(level);
-                            resource_type = format!("{:?}", champ_inst.state().resource.resource_type);
+                            resource_type =
+                                format!("{:?}", champ_inst.state().resource.resource_type);
 
                             if slot == lol_core::types::AbilitySlot::AutoAttack {
                                 let stats = &champ_inst.state().stats.current;
@@ -190,6 +197,8 @@ impl lol_core::event::SimEvent for ActorTickEvent {
                 }
             }
 
+            ctx.trigger_on_ability_cast(&self.actor, slot);
+
             let gcd = 0.25;
             let delay = cast_time.max(gcd);
 
@@ -203,11 +212,13 @@ impl lol_core::event::SimEvent for ActorTickEvent {
                     }),
                 ));
             } else {
-                let ability_box: Option<Box<dyn lol_core::ability::Ability>> = {
-                    let champ_ref = ctx.champions.get(&self.actor).unwrap();
-                    let champ = champ_ref.borrow();
-                    champ.get_ability(slot).map(|a| a.clone_box())
-                };
+                let ability_box: Option<Box<dyn lol_core::ability::Ability>> =
+                    if let Some(champ_ref) = ctx.champions.get(&self.actor) {
+                        let champ = champ_ref.borrow();
+                        champ.get_ability(slot).map(|a| a.clone_box())
+                    } else {
+                        None
+                    };
 
                 if let Some(ability) = ability_box {
                     ability.execute(ctx, &self.actor, &self.target);

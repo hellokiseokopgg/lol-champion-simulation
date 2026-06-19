@@ -59,7 +59,8 @@ pub struct DataCollector {
     pub champion_items: std::collections::HashMap<ChampionId, Vec<(String, String)>>,
     // (id, name, tree)
     pub champion_runes: std::collections::HashMap<ChampionId, Vec<(String, String, String)>>,
-    pub champion_initial_stats: std::collections::HashMap<lol_core::types::ChampionId, lol_core::stats::StatBlock>,
+    pub champion_initial_stats:
+        std::collections::HashMap<lol_core::types::ChampionId, lol_core::stats::StatBlock>,
 }
 
 impl DataCollector {
@@ -121,7 +122,13 @@ impl DataCollector {
         });
     }
 
-    pub fn record_heal(&mut self, time: SimTime, source: ChampionId, target: ChampionId, amount: f64) {
+    pub fn record_heal(
+        &mut self,
+        time: SimTime,
+        source: ChampionId,
+        target: ChampionId,
+        amount: f64,
+    ) {
         self.events.push(CombatEvent::Heal {
             time,
             source,
@@ -207,13 +214,7 @@ impl lol_core::event::EventRecorder for DataCollector {
         self.record_cast(time, source, ability, cost, resource_type);
     }
 
-    fn record_heal(
-        &mut self,
-        time: SimTime,
-        source: ChampionId,
-        target: ChampionId,
-        amount: f64,
-    ) {
+    fn record_heal(&mut self, time: SimTime, source: ChampionId, target: ChampionId, amount: f64) {
         self.record_heal(time, source, target, amount);
     }
 

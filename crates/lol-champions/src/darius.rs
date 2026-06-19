@@ -848,10 +848,12 @@ impl ChampionInstance for DariusInstance {
             1.0
         };
         total_bonus = total_bonus
-            + self
-                .state
-                .rune_manager
-                .get_bonus_stats(time, &self.state.stats.base, level_u32, hp_ratio);
+            + self.state.rune_manager.get_bonus_stats(
+                time,
+                &self.state.stats.base,
+                level_u32,
+                hp_ratio,
+            );
         self.state.stats.recalculate_current(&total_bonus);
     }
 
@@ -868,15 +870,27 @@ impl ChampionInstance for DariusInstance {
         let mut final_damage = amount;
 
         // Check Bone Plating
-        let has_bp_buff = self.state.buffs.has_effect_by_id(&lol_core::types::EffectId("BonePlatingBuff".to_string()), time);
+        let has_bp_buff = self.state.buffs.has_effect_by_id(
+            &lol_core::types::EffectId("BonePlatingBuff".to_string()),
+            time,
+        );
         if has_bp_buff {
             let blocked = 30.0 + (30.0 / 17.0) * (level as f64 - 1.0);
             final_damage = (final_damage - blocked).max(0.0);
-            self.state.buffs.decrement_stacks(&lol_core::types::EffectId("BonePlatingBuff".to_string()));
-            println!("Darius's Bone Plating blocked {:.1} damage at time {:.3}", blocked, time.as_f64());
+            self.state
+                .buffs
+                .decrement_stacks(&lol_core::types::EffectId("BonePlatingBuff".to_string()));
+            println!(
+                "Darius's Bone Plating blocked {:.1} damage at time {:.3}",
+                blocked,
+                time.as_f64()
+            );
         } else {
             let has_bp_rune = self.state.rune_manager.has_rune("Bone Plating");
-            let on_cooldown = self.state.buffs.has_effect_by_id(&lol_core::types::EffectId("BonePlatingCooldown".to_string()), time);
+            let on_cooldown = self.state.buffs.has_effect_by_id(
+                &lol_core::types::EffectId("BonePlatingCooldown".to_string()),
+                time,
+            );
             if has_bp_rune && !on_cooldown {
                 self.state.buffs.apply_effect(
                     Box::new(lol_core::buff::BonePlatingCooldown),
@@ -890,8 +904,14 @@ impl ChampionInstance for DariusInstance {
                 );
                 let blocked = 30.0 + (30.0 / 17.0) * (level as f64 - 1.0);
                 final_damage = (final_damage - blocked).max(0.0);
-                self.state.buffs.decrement_stacks(&lol_core::types::EffectId("BonePlatingBuff".to_string()));
-                println!("Darius's Bone Plating blocked {:.1} damage at time {:.3}", blocked, time.as_f64());
+                self.state
+                    .buffs
+                    .decrement_stacks(&lol_core::types::EffectId("BonePlatingBuff".to_string()));
+                println!(
+                    "Darius's Bone Plating blocked {:.1} damage at time {:.3}",
+                    blocked,
+                    time.as_f64()
+                );
             }
         }
 

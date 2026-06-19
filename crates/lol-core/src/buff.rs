@@ -86,6 +86,16 @@ impl BuffManager {
 
         let expiration_time = current_time + duration;
 
+        let is_expired = if let Some(active) = self.active_effects.get(&id) {
+            active.expiration_time <= current_time
+        } else {
+            false
+        };
+
+        if is_expired {
+            self.active_effects.remove(&id);
+        }
+
         if let Some(active) = self.active_effects.get_mut(&id) {
             match effect.refresh_behavior() {
                 RefreshBehavior::RefreshDuration => {
@@ -179,7 +189,9 @@ impl BuffManager {
 
     /// Decrements the stack count of an effect by 1. If the stack count becomes 0 or if stacks <= 1, removes the effect.
     pub fn decrement_stacks(&mut self, id: &EffectId) {
-        if let std::collections::hash_map::Entry::Occupied(mut entry) = self.active_effects.entry(id.clone()) {
+        if let std::collections::hash_map::Entry::Occupied(mut entry) =
+            self.active_effects.entry(id.clone())
+        {
             if entry.get().stacks > 1 {
                 entry.get_mut().stacks -= 1;
             } else {
@@ -213,6 +225,16 @@ impl BuffManager {
     /// Returns the number of stacks of a specific effect, or 0 if not active.
     pub fn get_stacks(&self, id: &EffectId) -> u32 {
         self.active_effects.get(id).map_or(0, |e| e.stacks)
+    }
+
+    /// Sets or mutates the stack count of an active effect.
+    /// If stacks is set to 0, the effect is removed.
+    pub fn set_stacks(&mut self, id: &EffectId, stacks: u32) {
+        if stacks == 0 {
+            self.active_effects.remove(id);
+        } else if let Some(active) = self.active_effects.get_mut(id) {
+            active.stacks = stacks.min(active.effect.max_stacks());
+        }
     }
 }
 

@@ -61,6 +61,8 @@ pub struct StatBlock {
     pub damage_amp_percent: f64,
     /// Percentage health bonus (e.g. 0.035 for 3.5%)
     pub health_percent_bonus: f64,
+    /// Percentage ability power bonus (e.g. 0.35 for 35%)
+    pub ability_power_percent_bonus: f64,
 }
 
 impl StatBlock {
@@ -118,6 +120,7 @@ impl StatBlock {
             grievous_wounds: self.grievous_wounds,
             damage_amp_percent: self.damage_amp_percent,
             health_percent_bonus: self.health_percent_bonus,
+            ability_power_percent_bonus: self.ability_power_percent_bonus,
         }
     }
     pub fn apply_bonus(&self, bonus: &StatBlock) -> Self {
@@ -166,6 +169,8 @@ impl std::ops::Add for StatBlock {
             grievous_wounds: f64::max(self.grievous_wounds, rhs.grievous_wounds),
             damage_amp_percent: self.damage_amp_percent + rhs.damage_amp_percent,
             health_percent_bonus: self.health_percent_bonus + rhs.health_percent_bonus,
+            ability_power_percent_bonus: self.ability_power_percent_bonus
+                + rhs.ability_power_percent_bonus,
         }
     }
 }
@@ -195,12 +200,25 @@ impl ThreeLayerStats {
     /// Re-calculates `initial` stats by applying static bonuses (items/runes) to `base` stats.
     pub fn recalculate_initial(&mut self, items_and_runes: &StatBlock) {
         self.initial = self.base.apply_bonus(items_and_runes);
-        // Special logic like Rabadon's or multiplicative stats would go here in a full engine
+        if self.initial.ability_power_percent_bonus > 0.0 {
+            self.initial.ability_power *= 1.0 + self.initial.ability_power_percent_bonus;
+        }
     }
 
     /// Re-calculates `current` stats by applying temporary buffs to the `initial` stats.
     pub fn recalculate_current(&mut self, buffs: &StatBlock) {
+        let initial_ap_unscaled = if self.initial.ability_power_percent_bonus > 0.0 {
+            self.initial.ability_power / (1.0 + self.initial.ability_power_percent_bonus)
+        } else {
+            self.initial.ability_power
+        };
+
         self.current = self.initial.apply_bonus(buffs);
+
+        self.current.ability_power = initial_ap_unscaled + buffs.ability_power;
+        if self.current.ability_power_percent_bonus > 0.0 {
+            self.current.ability_power *= 1.0 + self.current.ability_power_percent_bonus;
+        }
 
         // Apply health percent bonus
         self.current.health *= 1.0 + self.current.health_percent_bonus;
@@ -280,5 +298,27 @@ mod tests {
 
         // Base should remain unchanged
         assert_eq!(stats.base.attack_damage, 60.0);
+    }
+
+    #[test]
+    fn test_rabadon_ap_scaling() {
+        let base = StatBlock::default();
+        let mut stats = ThreeLayerStats::new(base);
+
+        let items = StatBlock {
+            ability_power: 100.0,
+            ability_power_percent_bonus: 0.35,
+            ..Default::default()
+        };
+        stats.recalculate_initial(&items);
+        assert_eq!(stats.initial.ability_power, 135.0);
+
+        let buffs = StatBlock {
+            ability_power: 50.0,
+            ..Default::default()
+        };
+        stats.recalculate_current(&buffs);
+        // (100.0 + 50.0) * 1.35 = 202.5
+        assert_eq!(stats.current.ability_power, 202.5);
     }
 }
